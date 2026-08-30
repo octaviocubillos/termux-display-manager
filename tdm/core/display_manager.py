@@ -27,6 +27,35 @@ from tdm.constants import (
 class DisplayManager:
     """Gestor principal de pantallas de TDM (Controlador de Sesión Única Nativa :0)."""
 
+def get_memory_info() -> Dict[str, Any]:
+    """Obtiene la telemetría de memoria RAM del sistema en tiempo real (/proc/meminfo)."""
+    try:
+        with open("/proc/meminfo", "r") as f:
+            mem = {}
+            for line in f:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    k = parts[0].strip()
+                    v_str = parts[1].strip().split()[0]
+                    if v_str.isdigit():
+                        mem[k] = int(v_str)
+            total_kb = mem.get("MemTotal", 0)
+            available_kb = mem.get("MemAvailable", mem.get("MemFree", 0))
+            used_kb = max(0, total_kb - available_kb)
+            pct = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0
+            return {
+                "total_mb": total_kb // 1024,
+                "used_mb": used_kb // 1024,
+                "available_mb": available_kb // 1024,
+                "percent": pct,
+                "formatted": f"{used_kb // 1024} MB / {total_kb // 1024} MB ({pct}%)"
+            }
+    except Exception:
+        return {"total_mb": 0, "used_mb": 0, "available_mb": 0, "percent": 0, "formatted": "N/A"}
+
+class DisplayManager:
+    """Orquestador principal de pantalla y ciclo de vida de escritorios."""
+
     def __init__(self):
         self.active_session: Optional[DisplaySession] = None
         self.active_backend_obj: Optional[BaseDisplayBackend] = None
@@ -48,10 +77,11 @@ class DisplayManager:
         }
 
     def get_status(self) -> Dict[str, Any]:
-        """Devuelve el estado completo del sistema, escritorio instalado, pantalla activa y red."""
+        """Devuelve el estado completo del sistema, memoria RAM, escritorio instalado, pantalla activa y red."""
         installed_de = self.get_installed_desktop()
         backends = discover_backends()
         network = discover_network_interfaces()
+        mem_info = get_memory_info()
         
         session_dict = None
         if self.active_session and self.active_session.status == DisplayStatus.RUNNING:
@@ -61,6 +91,7 @@ class DisplayManager:
             "installed_desktop": installed_de,
             "available_backends": backends,
             "network": network,
+            "memory": mem_info,
             "is_screen_active": bool(self.active_session and self.active_session.status == DisplayStatus.RUNNING),
             "active_screen": session_dict
         }
