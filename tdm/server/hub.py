@@ -149,13 +149,19 @@ echo -e "\\033[1;34m=====================================================\\033[0
 
 # 1. Habilitar x11-repo e instalar dependencias del sistema
 echo -e "\\033[1;33m[1/3] Habilitando repositorio x11-repo y Python...\\033[0m"
-apt-get update -y || true
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" openssl x11-repo python || true
-
-# 2. Instalar componentes Xorg, D-Bus y Servidores Gráficos (Termux:X11, VNC)
-echo -e "\\033[1;33m[2/3] Instalando dependencias gráficas y servidores (Termux:X11, VNC, D-Bus)...\\033[0m"
-apt-get update -y || true
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dbus xorg-xauth xorg-xsetroot procps termux-x11-nightly tigervnc || true
+if command -v pkg >/dev/null 2>&1; then
+    pkg update -y || true
+    pkg install -y openssl x11-repo python curl tar || true
+    pkg update -y || true
+    echo -e "\\033[1;33m[2/3] Instalando dependencias gráficas y servidores (Termux:X11, VNC, D-Bus)...\\033[0m"
+    pkg install -y dbus xorg-xauth xorg-xsetroot procps termux-x11-nightly tigervnc || true
+else
+    apt-get update -y || true
+    apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" openssl x11-repo python curl tar || true
+    apt-get update -y || true
+    echo -e "\\033[1;33m[2/3] Instalando dependencias gráficas y servidores (Termux:X11, VNC, D-Bus)...\\033[0m"
+    apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dbus xorg-xauth xorg-xsetroot procps termux-x11-nightly tigervnc || true
+fi
 
 # 3. Descargar y configurar motor TDM mediante script Python seguro
 echo -e "\\033[1;33m[3/3] Descargando y configurando motor TDM Core...\\033[0m"
@@ -183,15 +189,24 @@ ctx.verify_mode = ssl.CERT_NONE
 
 bundle_path = os.path.join(tmpdir, "tdm-bundle.tar.gz")
 base_url = sys.argv[1] if len(sys.argv) > 1 else "https://tdm.oton.cl"
-req = urllib.request.Request(base_url + "/tdm-bundle.tar.gz", headers={{"User-Agent": "TDM-Installer"}})
-with urllib.request.urlopen(req, context=ctx) as r, open(bundle_path, "wb") as f:
-    f.write(r.read())
+download_url = base_url.rstrip("/") + "/tdm-bundle.tar.gz"
 
-with tarfile.open(bundle_path, "r:gz") as t:
-    t.extractall(path=tdm_dir)
+try:
+    req = urllib.request.Request(download_url, headers={{"User-Agent": "TDM-Installer"}})
+    with urllib.request.urlopen(req, context=ctx, timeout=20) as r, open(bundle_path, "wb") as f:
+        f.write(r.read())
+except Exception as e:
+    os.system(f"curl -sSL '{{download_url}}' -o '{{bundle_path}}'")
 
-if os.path.exists(bundle_path):
+if not os.path.exists(bundle_path) or os.path.getsize(bundle_path) < 100:
+    os.system(f"curl -k -sSL '{{download_url}}' -o '{{bundle_path}}'")
+
+if os.path.exists(bundle_path) and os.path.getsize(bundle_path) > 100:
+    with tarfile.open(bundle_path, "r:gz") as t:
+        t.extractall(path=tdm_dir)
     os.remove(bundle_path)
+else:
+    print("[!] Error descargando bundle de TDM")
 
 py_ver = str(sys.version_info.major) + "." + str(sys.version_info.minor)
 sp = os.path.join(prefix, "lib", "python" + py_ver, "site-packages")

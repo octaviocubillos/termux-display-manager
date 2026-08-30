@@ -506,6 +506,48 @@
             transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
+        /* UPDATE BANNER */
+        .update-banner {
+            background: linear-gradient(135deg, rgba(76, 141, 246, 0.18) 0%, rgba(109, 213, 140, 0.18) 100%);
+            border: 1px solid rgba(76, 141, 246, 0.4);
+            border-radius: var(--md-shape-corner-xl);
+            padding: 0.85rem 1.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            margin-bottom: 0.5rem;
+            animation: fadeInSlide 0.3s ease;
+        }
+
+        .update-icon-pulse {
+            background: rgba(76, 141, 246, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse-update 2s infinite;
+        }
+
+        @keyframes pulse-update {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(76, 141, 246, 0.5); }
+            70% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(76, 141, 246, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(76, 141, 246, 0); }
+        }
+
+        .version-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-primary);
+            padding: 0.15rem 0.5rem;
+            border-radius: var(--md-shape-corner-full);
+            margin-left: 0.4rem;
+            border: 1px solid var(--md-sys-color-outline-variant);
+        }
     </style>
 </head>
 <body>
@@ -516,12 +558,17 @@
             <div class="brand-logo">
                 <span class="material-symbols-rounded filled">desktop_windows</span>
             </div>
-            <div class="brand-title">
+            <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
+                <span id="lblHeaderVersion" class="version-badge">v1.1.0</span>
             </div>
         </div>
 
         <div class="nav-actions">
+            <button class="btn-m3 btn-m3-tonal" id="btnHeaderUpdate" onclick="apiCheckUpdate()" title="Buscar actualizaciones de TDM">
+                <span class="material-symbols-rounded">sync</span>
+                <span>Actualizar</span>
+            </button>
             <button class="btn-m3 btn-m3-tonal" onclick="openLogsModal()">
                 <span class="material-symbols-rounded">terminal</span>
                 <span>Logs</span>
@@ -540,6 +587,30 @@
     <!-- MAIN DASHBOARD -->
     <main>
         
+        <!-- BANNER DE ACTUALIZACIÓN DISPONIBLE (AUTOMÁTICO) -->
+        <div id="bannerUpdateAvailable" class="update-banner" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="update-icon-pulse">
+                    <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-primary); font-size: 1.4rem;">system_update</span>
+                </div>
+                <div>
+                    <div style="font-weight: 800; font-size: 0.9rem; color: #fff;">
+                        ¡Nueva versión disponible: <span id="lblUpdateNewVer" style="color: var(--md-sys-color-primary);">v1.2.0</span>!
+                    </div>
+                    <div style="font-size: 0.76rem; color: var(--md-sys-color-on-surface-variant);">
+                        Tu versión actual es <span id="lblUpdateCurrentVer">v1.1.0</span>. Pulsa actualizar para aplicar las últimas mejoras.
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="btn-m3 btn-m3-filled" id="btnPerformUpdate" onclick="apiTriggerUpdate()" style="background: var(--md-sys-color-primary); color: #000; font-weight: 700; padding: 0.45rem 0.9rem;">
+                    <span class="material-symbols-rounded">download</span>
+                    <span>Actualizar</span>
+                </button>
+                <button class="btn-m3 btn-m3-tonal" onclick="dismissUpdateBanner()" style="padding: 0.4rem 0.6rem;" title="Descartar aviso">✕</button>
+            </div>
+        </div>
+
         <!-- ESTADO 1: SIN DISPOSITIVO VINCULADO (VISTA LIMPIA POR DEFECTO) -->
         <section class="card-surface" id="boxNoDevicePaired" style="display: flex;">
             <div style="text-align: center; padding: 2.25rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 1.15rem;">
@@ -756,6 +827,9 @@
             // Sondeo periódico de salud cada 4s
             if (healthPollInterval) clearInterval(healthPollInterval);
             healthPollInterval = setInterval(refreshStatus, 4000);
+
+            // Comprobar actualizaciones automáticamente de forma silenciosa
+            setTimeout(() => apiCheckUpdate(true), 1500);
         });
 
         async function initPairing() {
@@ -1139,13 +1213,92 @@
             });
         }
 
-        function triggerPwaInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(() => {
-                    deferredPrompt = null;
-                    document.getElementById('btnInstallPwa').style.display = 'none';
-                });
+        let updateInfo = null;
+
+        async function apiCheckUpdate(silent = false) {
+            try {
+                let res = null;
+                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+                    res = await sendCommand('check_update');
+                } else {
+                    const resp = await fetch('/api/update/check');
+                    if (resp.ok) res = await resp.json();
+                }
+
+                if (res) {
+                    updateInfo = res;
+                    const curVer = res.current_version || '1.1.0';
+                    const badge = document.getElementById('lblHeaderVersion');
+                    if (badge) badge.innerText = `v${curVer}`;
+                    const curSpan = document.getElementById('lblUpdateCurrentVer');
+                    if (curSpan) curSpan.innerText = `v${curVer}`;
+
+                    if (res.update_available) {
+                        const banner = document.getElementById('bannerUpdateAvailable');
+                        const newSpan = document.getElementById('lblUpdateNewVer');
+                        if (newSpan) newSpan.innerText = `v${res.latest_version}`;
+                        if (banner) banner.style.display = 'flex';
+                        if (!silent) {
+                            showToast(`¡Nueva versión disponible: v${res.latest_version}!`, 'system_update');
+                        }
+                    } else {
+                        const banner = document.getElementById('bannerUpdateAvailable');
+                        if (banner) banner.style.display = 'none';
+                        if (!silent) {
+                            showToast(`TDM está actualizado (v${curVer})`, 'check_circle');
+                        }
+                    }
+                }
+            } catch(e) {
+                if (!silent) showToast('No se pudo verificar actualizaciones', 'info');
+            }
+        }
+
+        function dismissUpdateBanner() {
+            const banner = document.getElementById('bannerUpdateAvailable');
+            if (banner) banner.style.display = 'none';
+        }
+
+        async function apiTriggerUpdate() {
+            showToast('Iniciando actualización...', 'downloading');
+            document.getElementById('logsDrawer').classList.add('open');
+            const logBox = document.getElementById('liveTerminalContent');
+            logBox.innerText = `[TDM] Descargando e instalando actualización de backend...\n`;
+
+            const btn = document.getElementById('btnPerformUpdate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Actualizando...';
+            }
+
+            try {
+                let res = null;
+                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+                    res = await sendCommand('update');
+                } else {
+                    const resp = await fetch('/api/update', { method: 'POST' });
+                    if (resp.ok) res = await resp.json();
+                    else throw new Error(`HTTP ${resp.status}`);
+                }
+
+                if (res && res.success) {
+                    showToast(`¡Actualizado con éxito a v${res.new_version || ''}!`, 'check_circle');
+                    dismissUpdateBanner();
+                    if (res.new_version) {
+                        const badge = document.getElementById('lblHeaderVersion');
+                        if (badge) badge.innerText = `v${res.new_version}`;
+                    }
+                    setTimeout(refreshStatus, 2000);
+                } else {
+                    showToast(`Error al actualizar: ${res?.error || 'Desconocido'}`, 'error');
+                }
+            } catch(e) {
+                showToast(`Error al actualizar: ${e.message}`, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-rounded">download</span><span>Actualizar</span>';
+                }
             }
         }
     </script>

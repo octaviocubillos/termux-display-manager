@@ -182,6 +182,24 @@ class TDMAgent:
                     "result": {"stopped": stopped}
                 })
 
+            elif cmd_type == "install_desktop":
+                desktop = data.get("desktop") or data.get("target")
+                success = await installer_service.install_desktop(desktop)
+                await self.ws.send_json({
+                    "type": "response",
+                    "req_id": req_id,
+                    "result": {"success": success, "target": desktop, "desktop": desktop}
+                })
+
+            elif cmd_type == "install_server":
+                server = data.get("server") or data.get("target")
+                success = await installer_service.install_server(server)
+                await self.ws.send_json({
+                    "type": "response",
+                    "req_id": req_id,
+                    "result": {"success": success, "target": server, "server": server}
+                })
+
             elif cmd_type == "install_package":
                 action = data.get("action")
                 target = data.get("target")
@@ -194,6 +212,26 @@ class TDMAgent:
                     "type": "response",
                     "req_id": req_id,
                     "result": {"success": success, "target": target}
+                })
+
+            elif cmd_type == "check_update":
+                from tdm.core.updater import check_for_updates
+                hub_url = data.get("hub") or self.hub_url
+                upd_info = check_for_updates(hub_url)
+                await self.ws.send_json({
+                    "type": "response",
+                    "req_id": req_id,
+                    "result": upd_info
+                })
+
+            elif cmd_type == "update":
+                from tdm.core.updater import perform_update
+                hub_url = data.get("hub") or self.hub_url
+                res = await perform_update(hub_url)
+                await self.ws.send_json({
+                    "type": "response",
+                    "req_id": req_id,
+                    "result": res
                 })
 
             elif cmd_type == "exec":

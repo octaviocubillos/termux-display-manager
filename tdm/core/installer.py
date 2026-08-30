@@ -66,11 +66,19 @@ class PackageInstaller:
         bash_bin = shutil.which("bash") or "/data/data/com.termux/files/usr/bin/bash"
         cmd = [bash_bin, str(script_path)] + (args or [])
 
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        env = {
+            **os.environ,
+            "PATH": f"{prefix}/bin:" + os.environ.get("PATH", ""),
+            "PYTHONPATH": f"{TDM_DIR.parent}:" + os.environ.get("PYTHONPATH", ""),
+        }
+
         try:
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
+                stderr=asyncio.subprocess.STDOUT,
+                env=env
             )
 
             while True:

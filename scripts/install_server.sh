@@ -1,9 +1,14 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/usr/bin/env bash
 # ==============================================================================
 # Termux Display Manager (TDM) - Instalador de Servidor Gráfico Bajo Demanda
 # ==============================================================================
+# Uso: ./install_server.sh [termux-x11|novnc|vnc|rdp|audio]
+# Soporta: Termux (pkg/apt), Alpine/postmarketOS (apk), Debian/Ubuntu (apt), Arch (pacman), Fedora (dnf)
+# ==============================================================================
+
 set -e
 export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
 
 SERVER="$1"
 
@@ -19,39 +24,62 @@ if [ -z "$SERVER" ]; then
     exit 1
 fi
 
-apt-get update -y || true
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" x11-repo || true
+# Detectar elevación de privilegios
+SUDO=""
+if [ "$(id -u)" -ne 0 ] && [ ! -d "/data/data/com.termux" ]; then
+    if command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    elif command -v doas >/dev/null 2>&1; then
+        SUDO="doas"
+    fi
+fi
+
+# Detectar gestor de paquetes
+PKG_MGR=""
+if command -v pkg >/dev/null 2>&1; then
+    PKG_MGR="pkg"
+elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
+    PKG_MGR="apk"
+elif command -v apt-get >/dev/null 2>&1; then
+    PKG_MGR="apt"
+elif command -v pacman >/dev/null 2>&1; then
+    PKG_MGR="pacman"
+elif command -v dnf >/dev/null 2>&1; then
+    PKG_MGR="dnf"
+fi
+
+echo "====================================================="
+echo "🛠️ [TDM] Gestor de paquetes detectado: ${PKG_MGR:-desconocido}"
+echo "====================================================="
 
 PKGS=""
 case "$SERVER" in
     termux-x11|x11)
-        echo "====================================================="
         echo "⚡ [TDM] Instalando Servidor Termux:X11 (Nativo)..."
-        echo "====================================================="
         PKGS="termux-x11-nightly"
         ;;
     novnc)
-        echo "====================================================="
         echo "🌐 [TDM] Instalando noVNC Web Server (HTML5)..."
-        echo "====================================================="
-        PKGS="tigervnc python-numpy xorg-xauth xorg-xsetroot"
+        if [ "$PKG_MGR" = "apk" ]; then
+            PKGS="tigervnc py3-numpy xauth xsetroot"
+        else
+            PKGS="tigervnc novnc python-numpy xorg-xauth xorg-xsetroot"
+        fi
         ;;
     vnc|tigervnc)
-        echo "====================================================="
         echo "🖥️ [TDM] Instalando TigerVNC Server..."
-        echo "====================================================="
-        PKGS="tigervnc xorg-xauth xorg-xrdb xorg-xsetroot xorg-xdpyinfo"
+        if [ "$PKG_MGR" = "apk" ]; then
+            PKGS="tigervnc xauth xrdb xsetroot xdpyinfo"
+        else
+            PKGS="tigervnc xorg-xauth xorg-xrdb xorg-xsetroot xorg-xdpyinfo"
+        fi
         ;;
     rdp|xrdp)
-        echo "====================================================="
         echo "📡 [TDM] Instalando Servidor Remote Desktop (xrdp)..."
-        echo "====================================================="
         PKGS="xrdp pulseaudio"
         ;;
     audio|pulseaudio)
-        echo "====================================================="
         echo "🔊 [TDM] Instalando Soporte de Audio (PulseAudio)..."
-        echo "====================================================="
         PKGS="pulseaudio"
         ;;
     *)
@@ -61,19 +89,69 @@ case "$SERVER" in
         ;;
 esac
 
-# Registrar en SQLite los paquetes que no existían previamente
+# Registrar en SQLite Manifest
 if command -v python3 >/dev/null 2>&1; then
     python3 -c "
-from tdm.core.manifest import manifest_ledger
-manifest_ledger.record_packages_if_new('$PKGS'.split(), component='server:$SERVER')
+try:
+    from tdm.core.manifest import manifest_ledger
+    manifest_ledger.record_packages_if_new('$PKGS'.split(), component='server:$SERVER')
+except Exception:
+    pass
 " 2>/dev/null || true
 fi
 
-apt-get update -y || true
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $PKGS || true
+case "$PKG_MGR" in
+    pkg)
+        echo "[*] Asegurando repositorio x11-repo en Termux..."
+        pkg install -y x11-repo || true
+        pkg update -y || true
+        echo "[*] Instalando paquetes: $PKGS..."
+        pkg install -y $PKGS || {
+            for p in $PKGS; do
+                pkg install -y "$p" || echo "[!] Advertencia: no se pudo instalar $p"
+            done
+        }
+        ;;
+    apk)
+        echo "[*] Actualizando e instalando con apk..."
+        $SUDO apk update || true
+        $SUDO apk add $PKGS || {
+            for p in $PKGS; do
+                $SUDO apk add "$p" || echo "[!] Advertencia: no se pudo instalar $p"
+            done
+        }
+        ;;
+    apt)
+        echo "[*] Actualizando e instalando con apt..."
+        $SUDO apt-get update -y || true
+        if [ -d "/data/data/com.termux" ]; then
+            $SUDO apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" x11-repo || true
+            $SUDO apt-get update -y || true
+        fi
+        $SUDO apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $PKGS || {
+            for p in $PKGS; do
+                $SUDO apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" || true
+            done
+        }
+        ;;
+    pacman)
+        $SUDO pacman -Sy --noconfirm $PKGS || true
+        ;;
+    dnf)
+        $SUDO dnf install -y $PKGS || true
+        ;;
+    *)
+        echo "❌ No se encontró un gestor de paquetes compatible."
+        exit 1
+        ;;
+esac
 
 if [ "$SERVER" = "novnc" ]; then
-    pip install --no-deps websockify || true
+    if command -v pip >/dev/null 2>&1; then
+        pip install --no-deps websockify || true
+    elif command -v pip3 >/dev/null 2>&1; then
+        pip3 install --no-deps websockify || true
+    fi
 fi
 
 echo "====================================================="

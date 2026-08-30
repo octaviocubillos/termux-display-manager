@@ -350,7 +350,25 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"success": success, "target": target, "message": f"Instalación de servidor {target} iniciada"})
             return
 
-        # 11. Archivos Estáticos Web (HTML, CSS, JS)
+        # 11. Endpoints de Versionado y Actualización
+        if path in ["/api/version", "/api/update/check"] and method == "GET":
+            from tdm.core.updater import check_for_updates
+            upd_info = check_for_updates()
+            self.send_json_response(writer, upd_info)
+            return
+
+        if path == "/api/update" and method == "POST":
+            try:
+                req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+                hub_url = req_data.get("hub")
+                from tdm.core.updater import perform_update
+                result = await perform_update(hub_url=hub_url)
+                self.send_json_response(writer, result)
+            except Exception as e:
+                self.send_json_response(writer, {"success": False, "error": str(e)}, status_code=400)
+            return
+
+        # 12. Archivos Estáticos Web (HTML, CSS, JS)
         if path in ["/", "/index.html"]:
             index_file = WEB_DIR / "index.html"
             if not index_file.exists():

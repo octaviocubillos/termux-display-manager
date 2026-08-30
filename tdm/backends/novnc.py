@@ -31,9 +31,13 @@ class NoVNCBackend(VNCBackend):
                 novnc_web_dir = cand
                 break
                 
-        websockify_bin = shutil.which("websockify") or f"{PREFIX}/bin/websockify"
-        
-        cmd = [websockify_bin]
+        websockify_bin = shutil.which("websockify")
+        if websockify_bin:
+            cmd = [websockify_bin]
+        else:
+            python_bin = shutil.which("python3") or f"{PREFIX}/bin/python3"
+            cmd = [python_bin, "-m", "websockify"]
+            
         if novnc_web_dir:
             cmd.extend(["--web", novnc_web_dir])
         cmd.extend([str(web_port), vnc_target])

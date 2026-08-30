@@ -87,11 +87,15 @@ class DisplayManager:
         if self.active_session and self.active_session.status == DisplayStatus.RUNNING:
             session_dict = self.active_session.to_dict()
 
+        from tdm.version import get_version_info
+        ver_info = get_version_info()
+
         return {
             "installed_desktop": installed_de,
             "available_backends": backends,
             "network": network,
             "memory": mem_info,
+            "version": ver_info,
             "is_screen_active": bool(self.active_session and self.active_session.status == DisplayStatus.RUNNING),
             "active_screen": session_dict
         }
