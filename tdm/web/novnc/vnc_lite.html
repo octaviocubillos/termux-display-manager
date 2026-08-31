@@ -155,6 +155,9 @@
 
         function connectedToServer(e) {
             setStatus("Conectado: " + desktopName, "online");
+            if (currentScaleSetting && currentScaleSetting !== 'auto') {
+                setCustomScale(currentScaleSetting);
+            }
         }
 
         function disconnectedFromServer(e) {
@@ -286,31 +289,19 @@
             }, 250);
         });
 
+        let currentScaleSetting = 'auto';
+
         function setCustomScale(scaleFactor) {
-            const screenElem = document.getElementById('screen');
-            const canvas = screenElem ? screenElem.querySelector('canvas') : null;
+            currentScaleSetting = scaleFactor || 'auto';
             if (!rfb) return;
 
-            if (scaleFactor === 'auto') {
+            if (currentScaleSetting === 'auto') {
                 isAutoScaling = true;
                 rfb.scaleViewport = true;
-                if (canvas) {
-                    canvas.style.width = '';
-                    canvas.style.height = '';
-                    canvas.style.transform = '';
-                }
-                try { rfb._rescale(); } catch(e){}
             } else {
                 isAutoScaling = false;
-                rfb.scaleViewport = false;
-                const factor = parseFloat(scaleFactor) || 1.0;
-                const fbW = rfb._fbWidth || (canvas ? canvas.width : 1280);
-                const fbH = rfb._fbHeight || (canvas ? canvas.height : 720);
-                if (canvas) {
-                    canvas.style.transform = '';
-                    canvas.style.width = Math.round(fbW * factor) + 'px';
-                    canvas.style.height = Math.round(fbH * factor) + 'px';
-                }
+                const factor = parseFloat(currentScaleSetting) || 1.0;
+                rfb.scale = factor;
             }
         }
 

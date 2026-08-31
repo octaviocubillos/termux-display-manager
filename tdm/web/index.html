@@ -811,7 +811,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.28</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.29</span>
             </div>
         </div>
 
@@ -1753,7 +1753,16 @@
             const extraParams = isLite ? '&scale=true&resize=true&embedded=true' : '&resize=remote&autoconnect=true&embedded=true';
             const url = `/novnc/${page}?host=${host}&port=${port}&path=websockify${extraParams}`;
 
+            const selScale = document.getElementById('selVncScale');
+            if (selScale) selScale.value = 'auto';
+
             const ifr = document.getElementById('novncIframe');
+            ifr.onload = () => {
+                const sel = document.getElementById('selVncScale');
+                if (sel && sel.value !== 'auto') {
+                    changeVncScale(sel.value);
+                }
+            };
             ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
             if (link) link.href = url;
