@@ -85,17 +85,24 @@
             flex: 1;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            min-height: 0;
+            overflow: auto;
             display: flex;
             align-items: center;
             justify-content: center;
             background: #000;
+            touch-action: pan-x pan-y pinch-zoom;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #screen > div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #screen canvas {
-            max-width: 100% !important;
-            max-height: 100% !important;
-            object-fit: contain;
+            display: block;
         }
     </style>
 </head>
@@ -282,20 +289,27 @@
         function setCustomScale(scaleFactor) {
             const screenElem = document.getElementById('screen');
             const canvas = screenElem ? screenElem.querySelector('canvas') : null;
+            if (!rfb) return;
+
             if (scaleFactor === 'auto') {
                 isAutoScaling = true;
-                if (rfb) rfb.scaleViewport = true;
+                rfb.scaleViewport = true;
                 if (canvas) {
+                    canvas.style.width = '';
+                    canvas.style.height = '';
                     canvas.style.transform = '';
-                    canvas.style.transformOrigin = '';
                 }
+                try { rfb._rescale(); } catch(e){}
             } else {
                 isAutoScaling = false;
+                rfb.scaleViewport = false;
                 const factor = parseFloat(scaleFactor) || 1.0;
-                if (rfb) rfb.scaleViewport = false;
+                const fbW = rfb._fbWidth || (canvas ? canvas.width : 1280);
+                const fbH = rfb._fbHeight || (canvas ? canvas.height : 720);
                 if (canvas) {
-                    canvas.style.transformOrigin = 'top left';
-                    canvas.style.transform = `scale(${factor})`;
+                    canvas.style.transform = '';
+                    canvas.style.width = Math.round(fbW * factor) + 'px';
+                    canvas.style.height = Math.round(fbH * factor) + 'px';
                 }
             }
         }
