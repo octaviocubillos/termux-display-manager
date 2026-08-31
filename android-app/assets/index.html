@@ -769,7 +769,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.26</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.27</span>
             </div>
         </div>
 
@@ -811,10 +811,9 @@
             <section class="status-island">
                 <div class="island-header">
                     <div class="device-info-box">
-                        <span class="status-dot online" id="devStatusDot"></span>
                         <div>
                             <div class="device-title" id="txtDevTitle">Termux Display Manager</div>
-                            <div class="device-subtitle" id="txtDevSubtitle">🟢 Termux Local • Conectando...</div>
+                            <div class="device-subtitle" id="txtDevSubtitle">Termux Local • Conectando...</div>
                         </div>
                     </div>
 
@@ -1046,7 +1045,6 @@
             <div id="vncModalHeader" style="padding: 0.35rem 0.65rem; background: #11151e; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); z-index: 20; min-height: 40px;">
                 <!-- ESTADO Y TÍTULO -->
                 <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
-                    <span class="status-dot online" id="vncModalDot" style="width: 8px; height: 8px; flex-shrink: 0;"></span>
                     <span style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="lblModalViewerTitle">noVNC Display</span>
                 </div>
 
@@ -1322,7 +1320,7 @@
             const btnStopAll = document.getElementById('btnHeaderStopAll');
 
             if (isOnline && data) {
-                dot.className = 'status-dot online';
+                if (dot) dot.className = 'status-dot online';
                 isScreenActive = data.is_screen_active;
                 const de = data.installed_desktop;
                 const act = data.active_screen || {};
@@ -1341,9 +1339,9 @@
                 const lanIp = data.network?.lan_ip || '127.0.0.1';
                 if (data.is_screen_active) {
                     const deTitle = act.desktop_name || (de?.name || 'Entorno Gráfico');
-                    sub.innerText = `🟢 Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
+                    sub.innerText = `Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
                 } else {
-                    sub.innerText = `⚪ Termux Local • IP: ${lanIp} • Apagado`;
+                    sub.innerText = `Termux Local • IP: ${lanIp} • Apagado`;
                 }
 
                 // TELEMETRÍA EN TIEMPO REAL:
@@ -1437,8 +1435,8 @@
                 btnLaunch.style.opacity = '1';
                 updateLaunchButton(data);
             } else {
-                dot.className = 'status-dot offline';
-                sub.innerText = '🔴 Termux Core Desconectado';
+                if (dot) dot.className = 'status-dot offline';
+                sub.innerText = 'Termux Core Desconectado';
                 isScreenActive = false;
                 if (btnStopScreen) btnStopScreen.style.display = 'none';
                 if (btnStopAll) btnStopAll.style.display = 'none';
