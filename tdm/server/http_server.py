@@ -214,6 +214,11 @@ class AsyncHTTPServer:
             await self.handle_vnc_bridge(ws)
             return
 
+        # 5. Puente Interactivo WebSocket <-> Termux PTY (/ws/terminal, /terminal/ws, /ws/pty)
+        elif path in ["/ws/terminal", "/terminal/ws", "/ws/pty"] or path.startswith("/ws/terminal"):
+            await self.handle_terminal_pty_ws(ws)
+            return
+
         else:
             await ws.close()
 
@@ -461,6 +466,133 @@ class AsyncHTTPServer:
         finally:
             await ws.close()
 
+    async def handle_terminal_pty_ws(self, ws: WebSocketConnection):
+        """Puente interactivo WebSocket <-> Termux PTY (Terminal bash interactivo con xterm.js)."""
+        import pty
+        import termios
+        import struct
+        import fcntl
+        import os
+        import subprocess
+
+        master_fd, slave_fd = pty.openpty()
+
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        home = os.environ.get("HOME", "/data/data/com.termux/files/home")
+        shell_candidates = [
+            os.environ.get("SHELL", ""),
+            f"{prefix}/bin/bash",
+            f"{prefix}/bin/zsh",
+            f"{prefix}/bin/sh",
+            "/bin/bash",
+            "/bin/sh"
+        ]
+        shell_bin = next((s for s in shell_candidates if s and os.path.exists(s)), "/bin/sh")
+
+        env = {
+            **os.environ,
+            "TERM": "xterm-256color",
+            "COLORTERM": "truecolor",
+            "LANG": os.environ.get("LANG", "en_US.UTF-8"),
+            "PATH": f"{prefix}/bin:" + os.environ.get("PATH", "/usr/bin:/bin"),
+            "HOME": home,
+            "PREFIX": prefix
+        }
+
+        # Establecer tamaño inicial del terminal (cols=90, rows=28)
+        try:
+            winsize = struct.pack("HHHH", 28, 90, 0, 0)
+            fcntl.ioctl(slave_fd, termios.TIOCSWINSZ, winsize)
+        except Exception:
+            pass
+
+        proc = subprocess.Popen(
+            [shell_bin, "-l"],
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            cwd=home if os.path.exists(home) else "/",
+            env=env,
+            preexec_fn=os.setsid,
+            close_fds=True
+        )
+        os.close(slave_fd)
+
+        loop = asyncio.get_event_loop()
+        output_queue = asyncio.Queue()
+
+        def on_pty_readable():
+            try:
+                data = os.read(master_fd, 4096)
+                if data:
+                    loop.call_soon_threadsafe(output_queue.put_nowait, data)
+                else:
+                    loop.call_soon_threadsafe(output_queue.put_nowait, None)
+            except Exception:
+                loop.call_soon_threadsafe(output_queue.put_nowait, None)
+
+        loop.add_reader(master_fd, on_pty_readable)
+
+        async def pty_to_ws():
+            try:
+                while not ws.closed:
+                    data = await output_queue.get()
+                    if data is None:
+                        break
+                    await ws.send_binary(data)
+            except Exception:
+                pass
+
+        async def ws_to_pty():
+            try:
+                while not ws.closed:
+                    try:
+                        opcode, payload = await ws.recv_frame()
+                    except Exception:
+                        break
+                    if opcode == 0x08 or ws.closed:
+                        break
+                    elif opcode in (0x01, 0x02):
+                        if opcode == 0x01 and payload:
+                            try:
+                                text_str = payload.decode("utf-8")
+                                if text_str.startswith("{") and text_str.endswith("}"):
+                                    cmd = json.loads(text_str)
+                                    if cmd.get("type") == "resize":
+                                        cols = int(cmd.get("cols", 80))
+                                        rows = int(cmd.get("rows", 24))
+                                        winsize = struct.pack("HHHH", rows, cols, 0, 0)
+                                        fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+                                        continue
+                            except Exception:
+                                pass
+                        if payload:
+                            os.write(master_fd, payload)
+            except Exception:
+                pass
+
+        writer_task = asyncio.create_task(pty_to_ws())
+        reader_task = asyncio.create_task(ws_to_pty())
+
+        try:
+            done, pending = await asyncio.wait([writer_task, reader_task], return_when=asyncio.FIRST_COMPLETED)
+            for t in pending:
+                t.cancel()
+        finally:
+            try:
+                loop.remove_reader(master_fd)
+            except Exception:
+                pass
+            try:
+                os.close(master_fd)
+            except Exception:
+                pass
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+            await ws.close()
+
     async def route_request(self, method: str, path: str, headers: dict, query_params: dict, body_bytes: bytes, writer: asyncio.StreamWriter):
         host_hdr = headers.get("x-forwarded-host") or headers.get("host", f"localhost:{self.port}")
         proto = "https" if (headers.get("x-forwarded-proto") == "https" or headers.get("x-forwarded-ssl") == "on") else "http"
@@ -626,6 +758,8 @@ class AsyncHTTPServer:
                 resolved_file = target_file.resolve()
                 resolved_web_dir = WEB_DIR.resolve()
                 if resolved_web_dir in resolved_file.parents or resolved_file == resolved_web_dir:
+                    if resolved_file.is_dir() and (resolved_file / "index.html").is_file():
+                        resolved_file = resolved_file / "index.html"
                     if resolved_file.is_file():
                         ext = resolved_file.suffix.lower()
                         mime_map = {
