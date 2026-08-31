@@ -823,7 +823,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.31</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.32</span>
             </div>
         </div>
 
@@ -1490,7 +1490,11 @@
                     }
                 }
 
-                if (de && de.installed && de.id !== 'terminal') {
+                const inst = data.installer || {};
+                const isInstalling = (inst.status === 'running' || window._localInstallingState === true);
+                const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
+
+                if (isDeInstalled) {
                     document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
                     document.getElementById('txtDePath').innerText = de.executable || 'Listo para ejecutar';
                     const imgLogo = document.getElementById('imgDeLogo');
@@ -1508,8 +1512,6 @@
                     document.getElementById('viewDePicker').style.display = 'flex';
                 }
 
-                btnLaunch.disabled = false;
-                btnLaunch.style.opacity = '1';
                 updateLaunchButton(data);
             } else {
                 if (dot) dot.className = 'status-dot offline';
@@ -1518,6 +1520,8 @@
                 if (btnStopScreen) btnStopScreen.style.display = 'none';
                 if (btnStopAll) btnStopAll.style.display = 'none';
                 btnLaunch.disabled = true;
+                btnLaunch.style.opacity = '0.55';
+                btnLaunch.style.cursor = 'not-allowed';
             }
         }
 
@@ -1528,12 +1532,47 @@
             const btnStopScreen = document.getElementById('btnHeaderStopScreen');
 
             const isScreenOn = !!(data && data.is_screen_active);
+            const de = data?.installed_desktop;
+            const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
+            const inst = data?.installer || {};
+            const isInstalling = (inst.status === 'running' || window._localInstallingState === true);
             const act = data ? data.active_screen : null;
             const currentBackend = act?.backend || null;
 
             if (btnStopScreen) {
                 btnStopScreen.style.display = isScreenOn ? 'inline-flex' : 'none';
             }
+
+            // CASO 1: SE ESTÁ INSTALANDO UN ENTORNO
+            if (isInstalling) {
+                btn.disabled = true;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+                btn.style.background = 'var(--md-sys-color-surface-container-high)';
+                btn.style.color = 'var(--md-sys-color-on-surface-variant)';
+                lbl.innerText = 'Instalando entorno...';
+                ico.innerText = 'hourglass_top';
+                btn.onclick = null;
+                return;
+            }
+
+            // CASO 2: NO HAY NINGÚN ENTORNO INSTALADO Y LA PANTALLA NO ESTÁ ENCENDIDA
+            if (!isDeInstalled && !isScreenOn) {
+                btn.disabled = true;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+                btn.style.background = 'var(--md-sys-color-surface-container-high)';
+                btn.style.color = 'var(--md-sys-color-on-surface-variant)';
+                lbl.innerText = 'Instala un entorno para iniciar';
+                ico.innerText = 'download_for_offline';
+                btn.onclick = () => toggleDeList(true);
+                return;
+            }
+
+            // CASO 3: ENTORNO INSTALADO / PANTALLA OPERATIVA (BOTÓN ACTIVO)
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
 
             if (isScreenOn) {
                 if (selectedBackend === currentBackend) {
@@ -1616,6 +1655,14 @@
 
         async function apiInstallPickedDesktop() {
             if (!selectedDesktop) return;
+            window._localInstallingState = true;
+            const btnInst = document.getElementById('btnInstallDeAction');
+            if (btnInst) {
+                btnInst.disabled = true;
+                btnInst.style.opacity = '0.6';
+            }
+            if (lastStatusData) updateLaunchButton(lastStatusData);
+
             showToast(`Instalando ${selectedDesktop.toUpperCase()}...`, 'download');
             const drawer = document.getElementById('logsDrawer');
             if (drawer) drawer.classList.add('open');
@@ -1636,9 +1683,15 @@
                 }
                 showToast('¡Instalación Finalizada!', 'check_circle');
                 toggleDeList(false);
-                refreshStatus();
             } catch(e) {
                 showToast(`Error al instalar: ${e.message || e}`, 'error');
+            } finally {
+                window._localInstallingState = false;
+                if (btnInst) {
+                    btnInst.disabled = false;
+                    btnInst.style.opacity = '1';
+                }
+                await refreshStatus();
             }
         }
 
