@@ -305,26 +305,19 @@
             text-overflow: ellipsis;
         }
 
-        /* TELEMETRY GRID & CARDS */
+        /* TELEMETRY GRID & CARDS (2 POR FILA EN DESKTOP) */
         .telemetry-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.65rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
             width: 100%;
             box-sizing: border-box;
         }
 
-        @media (max-width: 860px) {
-            .telemetry-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 0.55rem;
-            }
-        }
-
-        @media (max-width: 480px) {
+        @media (max-width: 540px) {
             .telemetry-grid {
                 grid-template-columns: 1fr;
-                gap: 0.5rem;
+                gap: 0.55rem;
             }
         }
 
@@ -734,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.16</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.17</span>
             </div>
         </div>
 
@@ -824,18 +817,18 @@
                         <div class="telemetry-card-sub" id="txtStorageSub">Termux Home</div>
                     </div>
 
-                    <!-- NETWORK & DEVICE -->
+                    <!-- NETWORK & PING -->
                     <div class="telemetry-card">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.3rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #ffb4ab;">wifi</span>
-                                <span>RED & DISPOSITIVO</span>
+                                <span>RED & LATENCIA</span>
                             </span>
-                            <span class="status-badge online" id="dotNetState" style="width:6px; height:6px;"></span>
+                            <span id="txtClientPing" style="font-size: 0.7rem; font-weight: 800; color: #22c55e;">-- ms</span>
                         </div>
-                        <div class="telemetry-card-value" id="txtNetIp" style="font-size: 0.92rem;">127.0.0.1</div>
+                        <div class="telemetry-card-value" id="txtNetIp" style="font-size: 0.95rem;">127.0.0.1</div>
                         <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" style="width: 100%; background: #22c55e;"></div>
+                            <div class="telemetry-progress-fill" id="barPing" style="width: 100%; background: #22c55e;"></div>
                         </div>
                         <div class="telemetry-card-sub" id="txtDevModelName">POCO F3 • Android 13</div>
                     </div>
@@ -1100,14 +1093,20 @@
             } catch(e) {}
         }
 
+        let clientPingMs = null;
+
         async function refreshStatus() {
+            const t0 = performance.now();
             try {
                 const res = await fetch('/api/status');
+                const t1 = performance.now();
+                clientPingMs = Math.round(t1 - t0);
                 if (!res.ok) throw new Error('Servidor local offline');
                 const data = await res.json();
                 lastStatusData = data;
                 setDeviceOnlineState(true, data);
             } catch(e) {
+                clientPingMs = null;
                 setDeviceOnlineState(false);
             }
         }
@@ -1176,13 +1175,30 @@
                     barStorage.style.background = (storage.percent || 0) > 90 ? '#ef4444' : '#3b82f6';
                 }
 
-                // 4. Red y Dispositivo
+                // 4. Red, Dispositivo y Ping Web -> Backend
                 const dev = data.device || {};
                 const net = data.network || {};
                 const txtNetIp = document.getElementById('txtNetIp');
                 const txtDevModelName = document.getElementById('txtDevModelName');
+                const txtClientPing = document.getElementById('txtClientPing');
+                const barPing = document.getElementById('barPing');
+
                 if (txtNetIp) txtNetIp.innerText = `IP: ${net.lan_ip || '127.0.0.1'}`;
                 if (txtDevModelName) txtDevModelName.innerText = dev.os_details || `${dev.brand || 'Android'} ${dev.model || ''}`;
+
+                if (txtClientPing) {
+                    if (clientPingMs !== null) {
+                        txtClientPing.innerText = `${clientPingMs} ms`;
+                        txtClientPing.style.color = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
+                        if (barPing) {
+                            barPing.style.background = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
+                            const quality = Math.max(15, Math.min(100, 100 - Math.round(clientPingMs / 2)));
+                            barPing.style.width = `${quality}%`;
+                        }
+                    } else {
+                        txtClientPing.innerText = '-- ms';
+                    }
+                }
 
                 if (de && de.installed && de.id !== 'terminal') {
                     document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
