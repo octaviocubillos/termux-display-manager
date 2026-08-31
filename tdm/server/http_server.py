@@ -222,7 +222,56 @@ class AsyncHTTPServer:
                 await ws.close()
             return
 
+        # 4. Puente Nativo WebSocket <-> VNC RFB (/websockify, /ws/vnc)
+        elif path in ["/websockify", "/ws/vnc", "/ws/novnc"] or path.startswith("/websockify"):
+            await self.handle_vnc_bridge(ws)
+            return
+
         else:
+            await ws.close()
+
+    async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = 19053):
+        """Puente nativo asíncrono WebSocket (noVNC RFC 6455) a TCP (TigerVNC RFB) sin dependencias externas."""
+        try:
+            tcp_reader, tcp_writer = await asyncio.open_connection(target_host, target_port)
+        except Exception as e:
+            print(f"[!] Error conectando puente VNC TCP {target_host}:{target_port} -> {e}")
+            await ws.close()
+            return
+
+        async def tcp_to_ws():
+            try:
+                while not ws.closed:
+                    data = await tcp_reader.read(65536)
+                    if not data:
+                        break
+                    await ws.send_binary(data)
+            except Exception:
+                pass
+            finally:
+                await ws.close()
+
+        async def ws_to_tcp():
+            try:
+                while not ws.closed:
+                    opcode, payload = await ws.recv_frame()
+                    if opcode == 0x8 or ws.closed:
+                        break
+                    if opcode in (0x1, 0x2) and payload:
+                        tcp_writer.write(payload)
+                        await tcp_writer.drain()
+            except Exception:
+                pass
+            finally:
+                try:
+                    tcp_writer.close()
+                    await tcp_writer.wait_closed()
+                except Exception:
+                    pass
+
+        try:
+            await asyncio.gather(tcp_to_ws(), ws_to_tcp())
+        finally:
             await ws.close()
 
     async def route_request(self, method: str, path: str, headers: dict, query_params: dict, body_bytes: bytes, writer: asyncio.StreamWriter):

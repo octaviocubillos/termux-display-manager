@@ -140,6 +140,9 @@ class WebSocketConnection:
     async def send_text(self, text: str):
         await self.send_frame(OPCODE_TEXT, text.encode("utf-8"))
 
+    async def send_binary(self, data: bytes):
+        await self.send_frame(OPCODE_BINARY, data)
+
     async def send_json(self, data: Any):
         await self.send_text(json.dumps(data))
 

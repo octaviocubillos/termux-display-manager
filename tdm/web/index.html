@@ -995,7 +995,8 @@
 
         function openWebViewer(ip) {
             const host = ip || window.location.hostname || '127.0.0.1';
-            const url = `http://${host}:19050/novnc/vnc.html?host=${host}&port=19052&path=websockify&autoconnect=true&resize=remote`;
+            const port = window.location.port || 19050;
+            const url = `http://${host}:${port}/novnc/vnc.html?host=${host}&port=${port}&path=websockify&autoconnect=true&resize=remote`;
             const ifr = document.getElementById('novncIframe');
             ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
