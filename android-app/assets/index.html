@@ -176,14 +176,14 @@
 
         /* MAIN CONTAINER */
         main {
-            flex: 1;
             max-width: 880px;
             width: 100%;
             margin: 0 auto;
-            padding: 1.5rem 1.25rem 5rem;
+            padding: 1.25rem 1rem 5rem;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.15rem;
+            box-sizing: border-box;
         }
 
         /* HERO CARD / STATUS ISLAND */
@@ -191,11 +191,21 @@
             background: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: var(--md-shape-corner-xl);
-            padding: 1.5rem;
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1rem;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        @media (max-width: 600px) {
+            .status-island {
+                padding: 1rem 0.85rem;
+                gap: 0.85rem;
+            }
         }
 
         .island-header {
@@ -203,13 +213,22 @@
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.75rem;
+            width: 100%;
+            min-width: 0;
         }
 
         .device-info-box {
             display: flex;
             align-items: center;
-            gap: 0.9rem;
+            gap: 0.75rem;
+            min-width: 0;
+            flex: 1 1 240px;
+        }
+
+        .device-info-box > div {
+            min-width: 0;
+            overflow: hidden;
         }
 
         .status-dot {
@@ -220,6 +239,7 @@
             box-shadow: 0 0 8px rgba(100, 116, 139, 0.4);
             display: inline-block;
             transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
         .status-dot.online {
@@ -233,34 +253,43 @@
         }
 
         .device-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 800;
             color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .device-subtitle {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--md-sys-color-on-surface-variant);
             margin-top: 0.15rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* TELEMETRY GRID & CARDS */
         .telemetry-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 0.65rem;
-            margin-top: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         @media (max-width: 860px) {
             .telemetry-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.55rem;
             }
         }
 
         @media (max-width: 480px) {
             .telemetry-grid {
                 grid-template-columns: 1fr;
+                gap: 0.5rem;
             }
         }
 
@@ -271,8 +300,12 @@
             padding: 0.75rem 0.85rem;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
             gap: 0.35rem;
             transition: all 0.2s ease;
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .telemetry-card-header {
@@ -283,15 +316,29 @@
             font-weight: 700;
             color: var(--md-sys-color-on-surface-variant);
             letter-spacing: 0.5px;
+            min-width: 0;
+            gap: 0.3rem;
+        }
+
+        .telemetry-card-header span {
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .telemetry-card-value {
-            font-size: 1.05rem;
+            font-size: 1.02rem;
             font-weight: 800;
             color: #fff;
             display: flex;
             align-items: baseline;
             gap: 0.3rem;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.25;
         }
 
         .telemetry-card-sub {
@@ -300,6 +347,8 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            min-width: 0;
+            line-height: 1.2;
         }
 
         .telemetry-progress-bg {
@@ -309,6 +358,7 @@
             border-radius: 2px;
             overflow: hidden;
             margin-top: 0.15rem;
+            flex-shrink: 0;
         }
 
         .telemetry-progress-fill {
@@ -325,20 +375,22 @@
             border-radius: var(--md-shape-corner-lg);
             padding: 0.35rem;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 0.35rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         @media (max-width: 600px) {
             .segmented-bar {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
         .segment-btn {
             background: transparent;
             border: none;
-            padding: 0.65rem 0.5rem;
+            padding: 0.65rem 0.4rem;
             border-radius: var(--md-shape-corner-md);
             color: var(--md-sys-color-on-surface-variant);
             font-size: 0.8rem;
@@ -349,6 +401,16 @@
             align-items: center;
             gap: 0.3rem;
             transition: all 0.2s var(--ease-m3);
+            min-width: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .segment-btn span:last-child {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .segment-btn:hover {
@@ -634,7 +696,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.7</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.8</span>
             </div>
         </div>
 
