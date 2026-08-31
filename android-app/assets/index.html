@@ -616,6 +616,47 @@
             display: flex;
         }
 
+        .vnc-menu-popover {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: #1a202c;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--md-shape-corner-md);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+            padding: 0.35rem 0;
+            min-width: 185px;
+            z-index: 50;
+            flex-direction: column;
+        }
+
+        .vnc-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.85rem;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            font-size: 0.78rem;
+            font-weight: 500;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .vnc-menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--md-sys-color-primary);
+        }
+
+        .vnc-menu-item .material-symbols-rounded {
+            font-size: 1.05rem;
+            color: #94a3b8;
+        }
+
         .modal-card {
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
@@ -728,7 +769,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.25</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.26</span>
             </div>
         </div>
 
@@ -997,61 +1038,92 @@
     </main>
 
     <!-- WEB VIEWER MODAL (noVNC) -->
-    <!-- MODAL INTEGRADO DE VISOR noVNC (BARRA ÚNICA CONSOLIDADA) -->
-    <div class="modal-overlay" id="webViewerModal">
-        <div style="background: #000; border-radius: var(--md-shape-corner-xl); width: 96vw; height: 92vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--md-sys-color-outline-variant);">
-            <!-- BARRA SUPERIOR ÚNICA CONSOLIDADA -->
-            <div style="padding: 0.45rem 0.85rem; background: #161b22; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.45rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); z-index: 10;">
+    <!-- MODAL INTEGRADO DE VISOR noVNC (BARRA ULTRA-COMPACTA CON DESPLEGABLE) -->
+    <div class="modal-overlay" id="webViewerModal" style="padding: 0;">
+        <div id="vncModalContainer" style="background: #000; border-radius: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+            
+            <!-- BARRA SUPERIOR ULTRA-COMPACTA -->
+            <div id="vncModalHeader" style="padding: 0.35rem 0.65rem; background: #11151e; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); z-index: 20; min-height: 40px;">
                 <!-- ESTADO Y TÍTULO -->
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span class="status-dot online" id="vncModalDot" style="width: 9px; height: 9px;"></span>
-                    <span style="font-size: 0.86rem; font-weight: 700; color: #fff;" id="lblModalViewerTitle">noVNC Display</span>
-                    <span style="font-size: 0.72rem; color: #94a3b8;" id="lblModalViewerSub">Conectando...</span>
+                <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
+                    <span class="status-dot online" id="vncModalDot" style="width: 8px; height: 8px; flex-shrink: 0;"></span>
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="lblModalViewerTitle">noVNC Display</span>
                 </div>
 
-                <!-- CONTROLES INTEGRADOS SIN DUPLICADOS -->
-                <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;" id="vncModalControls">
-                    <!-- Selector de Modo -->
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalModeLite" onclick="switchViewerMode('lite')">⚡ Lite</button>
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalModeFull" onclick="switchViewerMode('full')">🎛️ Completo</button>
+                <!-- CONTROLES COMPACTOS -->
+                <div style="display: flex; gap: 0.35rem; align-items: center;">
+                    <!-- SELECTOR DE ESCALA (1x hasta 2x y Auto) -->
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #94a3b8; position: absolute; left: 6px; pointer-events: none;">zoom_in</span>
+                        <select id="selVncScale" onchange="changeVncScale(this.value)" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: var(--md-shape-corner-sm); padding: 0.25rem 0.45rem 0.25rem 1.4rem; font-size: 0.76rem; font-weight: 600; outline: none; cursor: pointer;">
+                            <option value="auto">📐 Auto</option>
+                            <option value="1.0">1.0x (100%)</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="1.75">1.75x</option>
+                            <option value="2.0">2.0x (200%)</option>
+                        </select>
+                    </div>
 
-                    <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
-
-                    <!-- Controles Lite Integrados -->
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnVncDynamicResize" onclick="sendIframeVncAction('toggle_resize')">
-                        <span class="material-symbols-rounded">aspect_ratio</span>
-                        <span>Dinámica</span>
-                    </button>
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnVncScale" onclick="sendIframeVncAction('toggle_scale')">
-                        <span class="material-symbols-rounded">fit_screen</span>
-                        <span>Auto-Escala</span>
-                    </button>
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="sendIframeVncAction('ctrl_alt_del')">
-                        <span class="material-symbols-rounded">keyboard</span>
-                        <span>Ctrl+Alt+Del</span>
-                    </button>
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="sendIframeVncAction('reconnect')">
-                        <span class="material-symbols-rounded">refresh</span>
-                        <span>Reconectar</span>
-                    </button>
-
-                    <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
-
-                    <!-- Acciones de Ventana -->
-                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalFullscreen" onclick="toggleModalFullscreen()">
+                    <!-- PANTALLA COMPLETA -->
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" id="btnModalFullscreen" onclick="toggleModalFullscreen()" title="Pantalla Completa">
                         <span class="material-symbols-rounded">fullscreen</span>
-                        <span>Pantalla Completa</span>
                     </button>
-                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal btn-m3-sm">
-                        <span class="material-symbols-rounded">open_in_new</span>
-                        <span>Pestaña</span>
-                    </a>
-                    <button class="btn-m3 btn-m3-error btn-m3-sm" onclick="closeWebViewer()">
+
+                    <!-- DESPLEGABLE MÁS OPCIONES (⋮) -->
+                    <div style="position: relative;">
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" id="btnVncMoreMenu" onclick="toggleVncDropdownMenu()" title="Más opciones">
+                            <span class="material-symbols-rounded">more_vert</span>
+                        </button>
+                        <!-- MENÚ FLOTANTE M3 -->
+                        <div id="vncDropdownMenu" class="vnc-menu-popover">
+                            <button class="vnc-menu-item" onclick="switchViewerMode('lite'); closeVncDropdown();">
+                                <span class="material-symbols-rounded">bolt</span>
+                                <span>Modo Lite</span>
+                            </button>
+                            <button class="vnc-menu-item" onclick="switchViewerMode('full'); closeVncDropdown();">
+                                <span class="material-symbols-rounded">tune</span>
+                                <span>Modo Completo</span>
+                            </button>
+                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
+                            <button class="vnc-menu-item" onclick="sendIframeVncAction('toggle_resize'); closeVncDropdown();">
+                                <span class="material-symbols-rounded">aspect_ratio</span>
+                                <span>Resolución Dinámica</span>
+                            </button>
+                            <button class="vnc-menu-item" onclick="sendIframeVncAction('ctrl_alt_del'); closeVncDropdown();">
+                                <span class="material-symbols-rounded">keyboard</span>
+                                <span>Enviar Ctrl+Alt+Del</span>
+                            </button>
+                            <button class="vnc-menu-item" onclick="sendIframeVncAction('reconnect'); closeVncDropdown();">
+                                <span class="material-symbols-rounded">refresh</span>
+                                <span>Reconectar noVNC</span>
+                            </button>
+                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
+                            <a id="lnkOpenNewTab" href="#" target="_blank" class="vnc-menu-item" onclick="closeVncDropdown();" style="text-decoration: none;">
+                                <span class="material-symbols-rounded">open_in_new</span>
+                                <span>Abrir en Pestaña</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- CERRAR -->
+                    <button class="btn-m3 btn-m3-error btn-m3-sm btn-m3-icon-only" onclick="closeWebViewer()" title="Cerrar visor">
                         <span class="material-symbols-rounded">close</span>
-                        <span>Cerrar</span>
                     </button>
                 </div>
             </div>
+
+            <!-- BOTÓN FLOTANTE / NOTCH EN PANTALLA COMPLETA -->
+            <div id="floatingVncControl" style="display: none; position: absolute; top: 10px; right: 14px; z-index: 100; background: rgba(15, 20, 30, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--md-shape-corner-full); padding: 3px 6px; align-items: center; gap: 4px; box-shadow: 0 4px 16px rgba(0,0,0,0.6);">
+                <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleModalFullscreen()" style="padding: 0.2rem 0.55rem; font-size: 0.72rem; height: 28px; background: rgba(255,255,255,0.15);">
+                    <span class="material-symbols-rounded" style="font-size: 0.95rem;">fullscreen_exit</span>
+                    <span>Salir</span>
+                </button>
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="toggleVncDropdownMenu()" style="width: 28px; height: 28px;">
+                    <span class="material-symbols-rounded" style="font-size: 0.95rem;">more_vert</span>
+                </button>
+            </div>
+
             <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" allow="fullscreen" allowfullscreen="true" src="about:blank"></iframe>
         </div>
     </div>
@@ -1581,12 +1653,40 @@
             d.classList.toggle('open');
         }
 
-        function sendIframeVncAction(action) {
+        function sendIframeVncAction(action, extraData = {}) {
             const ifr = document.getElementById('novncIframe');
             if (ifr && ifr.contentWindow) {
-                ifr.contentWindow.postMessage({ type: 'vnc_action', action: action }, '*');
+                ifr.contentWindow.postMessage({ type: 'vnc_action', action: action, ...extraData }, '*');
             }
         }
+
+        function changeVncScale(scaleVal) {
+            sendIframeVncAction('set_scale', { scale: scaleVal });
+        }
+
+        function toggleVncDropdownMenu() {
+            const menu = document.getElementById('vncDropdownMenu');
+            if (menu) {
+                menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+            }
+        }
+
+        function closeVncDropdown() {
+            const menu = document.getElementById('vncDropdownMenu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        // Cerrar menú emergente al tocar/hacer clic fuera
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('vncDropdownMenu');
+            const btnMore = document.getElementById('btnVncMoreMenu');
+            const floating = document.getElementById('floatingVncControl');
+            if (menu && menu.style.display === 'flex') {
+                if (!menu.contains(e.target) && !btnMore?.contains(e.target) && !floating?.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
 
         // Escuchar eventos de estado enviados desde el iframe del visor noVNC
         window.addEventListener('message', (e) => {
@@ -1597,17 +1697,6 @@
                 if (sub) sub.innerText = data.text || '';
                 if (dot) {
                     dot.className = "status-dot " + (data.state === 'online' ? 'online' : data.state === 'offline' ? 'offline' : '');
-                }
-            } else if (data.type === 'vnc_state_update') {
-                const btnScale = document.getElementById('btnVncScale');
-                const btnResize = document.getElementById('btnVncDynamicResize');
-                if (btnScale) {
-                    btnScale.style.background = data.scale ? 'rgba(59, 130, 246, 0.3)' : '';
-                    btnScale.style.borderColor = data.scale ? '#3b82f6' : '';
-                }
-                if (btnResize) {
-                    btnResize.style.background = data.resize ? 'rgba(59, 130, 246, 0.3)' : '';
-                    btnResize.style.borderColor = data.resize ? '#3b82f6' : '';
                 }
             }
         });
@@ -1630,24 +1719,8 @@
             const link = document.getElementById('lnkOpenNewTab');
             if (link) link.href = url;
 
-            const btnLite = document.getElementById('btnModalModeLite');
-            const btnFull = document.getElementById('btnModalModeFull');
             const title = document.getElementById('lblModalViewerTitle');
             if (title) title.innerText = isLite ? 'noVNC Display (Lite)' : 'noVNC Display (Completo)';
-            if (btnLite) {
-                btnLite.style.background = isLite ? 'var(--md-sys-color-primary)' : 'rgba(255,255,255,0.1)';
-                btnLite.style.color = isLite ? '#000' : '#fff';
-            }
-            if (btnFull) {
-                btnFull.style.background = !isLite ? 'var(--md-sys-color-primary)' : 'rgba(255,255,255,0.1)';
-                btnFull.style.color = !isLite ? '#000' : '#fff';
-            }
-
-            // Ocultar botones específicos de Lite si estamos en Full
-            const btnResize = document.getElementById('btnVncDynamicResize');
-            const btnScale = document.getElementById('btnVncScale');
-            if (btnResize) btnResize.style.display = isLite ? 'inline-flex' : 'none';
-            if (btnScale) btnScale.style.display = isLite ? 'inline-flex' : 'none';
 
             document.getElementById('webViewerModal').classList.add('active');
         }
@@ -1658,10 +1731,11 @@
             }
             document.getElementById('novncIframe').src = 'about:blank';
             document.getElementById('webViewerModal').classList.remove('active');
+            closeVncDropdown();
         }
 
         function toggleModalFullscreen() {
-            const modalBox = document.querySelector('#webViewerModal > div');
+            const modalBox = document.getElementById('vncModalContainer');
             if (!document.fullscreenElement) {
                 if (modalBox && modalBox.requestFullscreen) {
                     modalBox.requestFullscreen().catch(() => {});
@@ -1678,6 +1752,24 @@
                 }
             }
         }
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFs = !!document.fullscreenElement;
+            const header = document.getElementById('vncModalHeader');
+            const floating = document.getElementById('floatingVncControl');
+            const icoFs = document.querySelector('#btnModalFullscreen .material-symbols-rounded');
+
+            if (isFs) {
+                if (header) header.style.display = 'none';
+                if (floating) floating.style.display = 'flex';
+                if (icoFs) icoFs.innerText = 'fullscreen_exit';
+            } else {
+                if (header) header.style.display = 'flex';
+                if (floating) floating.style.display = 'none';
+                if (icoFs) icoFs.innerText = 'fullscreen';
+                closeVncDropdown();
+            }
+        });
 
         function showToast(msg, icon = 'info') {
             const t = document.getElementById('toastBox');
