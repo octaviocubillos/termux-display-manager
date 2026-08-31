@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "termux-display-manager"
-version = "0.0.29"
+version = "0.0.30"
 description = "Motor unificado de entornos gráficos nativos y visor web para Termux y Android"
 readme = "README.md"
 authors = [{ name = "TDM Project" }]

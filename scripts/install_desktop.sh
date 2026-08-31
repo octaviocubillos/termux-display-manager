@@ -98,6 +98,74 @@ case "$DESKTOP" in
         ;;
 esac
 
+# ==============================================================================
+# LIMPIEZA DE ENTORNOS ANTERIORES (Liberación de espacio y eliminación de conflictos)
+# ==============================================================================
+echo "====================================================="
+echo "🧹 [TDM] Limpiando entornos anteriores para evitar conflictos y liberar espacio..."
+echo "====================================================="
+
+ALL_DESKTOPS="kde mate xfce lxqt i3 openbox"
+PKGS_TO_PURGE=""
+
+for d in $ALL_DESKTOPS; do
+    if [ "$d" != "$DESKTOP" ] && { [ "$d" != "xfce" ] || [ "$DESKTOP" != "xfce4" ]; }; then
+        case "$d" in
+            kde)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE plasma-desktop plasma-workspace breeze konsole dolphin kwrite kded5 kded6 kwin"
+                ;;
+            mate)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon"
+                ;;
+            xfce)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE xfce4 xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-terminal thunar xfconf"
+                ;;
+            lxqt)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE lxqt lxqt-session lxqt-panel qterminal pcmanfm-qt lxqt-globalkeys"
+                ;;
+            i3)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE i3 i3wm i3status dmenu"
+                ;;
+            openbox)
+                PKGS_TO_PURGE="$PKGS_TO_PURGE openbox tint2 obconf"
+                ;;
+        esac
+    fi
+done
+
+case "$PKG_MGR" in
+    pkg|apt)
+        PURGED_ANY=0
+        for p in $PKGS_TO_PURGE; do
+            if dpkg -s "$p" >/dev/null 2>&1; then
+                echo "🗑️ Desinstalando entorno anterior ($p)..."
+                apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                PURGED_ANY=1
+            fi
+        done
+        if [ "$PURGED_ANY" -eq 1 ]; then
+            echo "🧹 Liberando dependencias huérfanas y caché de paquetes..."
+            apt-get autoremove -y --purge >/dev/null 2>&1 || true
+            apt-get clean >/dev/null 2>&1 || true
+        fi
+        ;;
+    apk)
+        for p in $PKGS_TO_PURGE; do
+            $SUDO apk del "$p" >/dev/null 2>&1 || true
+        done
+        ;;
+    pacman)
+        for p in $PKGS_TO_PURGE; do
+            $SUDO pacman -Rns --noconfirm "$p" >/dev/null 2>&1 || true
+        done
+        ;;
+    dnf)
+        for p in $PKGS_TO_PURGE; do
+            $SUDO dnf remove -y "$p" >/dev/null 2>&1 || true
+        done
+        ;;
+esac
+
 # Registrar en SQLite Manifest
 if command -v python3 >/dev/null 2>&1; then
     python3 -c "
