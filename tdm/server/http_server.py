@@ -332,7 +332,7 @@ class AsyncHTTPServer:
                             "error": str(e)
                         })
 
-                # 5. Apagar Todo (detener pantalla y apagar servicio/demonio TDM)
+                # 5. Apagar Todo (detener todos los procesos gráficos y entornos en Termux, manteniendo TDM activo)
                 elif req_type in ["stop_service", "shutdown", "stop_all"]:
                     try:
                         stopped = await display_manager.stop_screen()
@@ -341,19 +341,10 @@ class AsyncHTTPServer:
                             "action": "stop_service",
                             "id": req_id,
                             "success": True,
-                            "message": "Apagando pantalla y cerrando todos los servicios de Termux..."
+                            "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
                         })
-                        async def _kill_daemon():
-                            await asyncio.sleep(0.5)
-                            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
-                            sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
-                            if os.path.exists(sv_bin) and os.path.exists(f"{prefix}/var/service/tdm"):
-                                subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
-                            termux_wake_unlock = shutil.which("termux-wake-unlock") or f"{prefix}/bin/termux-wake-unlock"
-                            if os.path.exists(termux_wake_unlock):
-                                subprocess.run([termux_wake_unlock], capture_output=True)
-                            os._exit(0)
-                        asyncio.create_task(_kill_daemon())
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
                     except Exception as e:
                         await ws.send_json({
                             "type": "action_result",
@@ -535,20 +526,10 @@ class AsyncHTTPServer:
 
         if path in ["/api/service/stop", "/api/system/shutdown"] and method == "POST":
             stopped = await display_manager.stop_screen()
-            self.send_json_response(writer, {"stopped": True, "message": "Apagando pantalla y cerrando todos los servicios de Termux..."})
-            async def _kill_daemon():
-                await asyncio.sleep(0.6)
-                prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
-                sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
-                if os.path.exists(sv_bin) and os.path.exists(f"{prefix}/var/service/tdm"):
-                    import subprocess
-                    subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
-                termux_wake_unlock = shutil.which("termux-wake-unlock") or f"{prefix}/bin/termux-wake-unlock"
-                if os.path.exists(termux_wake_unlock):
-                    import subprocess
-                    subprocess.run([termux_wake_unlock], capture_output=True)
-                os._exit(0)
-            asyncio.create_task(_kill_daemon())
+            self.send_json_response(writer, {
+                "stopped": True,
+                "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
+            })
             return
 
         # 6. Instalador de Componentes

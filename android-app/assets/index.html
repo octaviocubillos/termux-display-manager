@@ -727,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.23</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.24</span>
             </div>
         </div>
 
@@ -1550,8 +1550,8 @@
         }
 
         async function apiStopAllService() {
-            if (!confirm('¿Deseas apagar la pantalla y cerrar completamente todos los servicios de Termux?')) return;
-            showToast('Apagando todo y cerrando procesos...', 'power_settings_new');
+            if (!confirm('¿Deseas cerrar todos los entornos gráficos y procesos en segundo plano de Termux? (El gestor TDM seguirá activo)')) return;
+            showToast('Apagando todos los procesos y entornos...', 'power_settings_new');
             userSelectedBackendManually = false;
             try {
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
@@ -1559,13 +1559,11 @@
                 } else {
                     await fetch('/api/service/stop', { method: 'POST' });
                 }
-                showToast('Servicios y entorno detenidos al 100%', 'check_circle');
-                setTimeout(() => {
-                    setDeviceOnlineState(false);
-                }, 1000);
+                showToast('Entornos y procesos apagados al 100%', 'check_circle');
+                refreshStatus();
             } catch(e) {
-                showToast('Servicios detenidos', 'check_circle');
-                setDeviceOnlineState(false);
+                showToast('Procesos detenidos', 'check_circle');
+                refreshStatus();
             }
         }
 
