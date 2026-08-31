@@ -142,6 +142,10 @@ async def handle_service(action: str):
     logs_dir.mkdir(parents=True, exist_ok=True)
     python_bin = shutil.which("python3") or f"{prefix}/bin/python3"
     tdm_dir = home / "termux-display-manager"
+    sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
+    sv_enable_bin = shutil.which("sv-enable") or f"{prefix}/bin/sv-enable"
+    sv_disable_bin = shutil.which("sv-disable") or f"{prefix}/bin/sv-disable"
+    has_sv = os.path.exists(sv_bin) and os.path.exists(f"{prefix}/var/service/tdm/run")
 
     env = {
         **os.environ,
@@ -151,23 +155,30 @@ async def handle_service(action: str):
         "PREFIX": str(prefix)
     }
 
-    if action == "start":
-        print("🚀 [TDM Service] Iniciando servicios en segundo plano...")
+    if action in ["start", "enable"]:
+        print("🚀 [TDM Service] Iniciando/Habilitando servicio...")
         wake_lock = shutil.which("termux-wake-lock") or f"{prefix}/bin/termux-wake-lock"
         if os.path.exists(wake_lock):
             subprocess.run([wake_lock], capture_output=True)
             print("🔒 Termux Wake-Lock activado (evita suspensión por ahorro de batería)")
 
-        # Iniciar server HTTP
+        # Si termux-services está configurado, usar sv / sv-enable
+        if has_sv:
+            if action == "enable" and os.path.exists(sv_enable_bin):
+                subprocess.run([sv_enable_bin, "tdm"], capture_output=True)
+            subprocess.run([sv_bin, "up", "tdm"], capture_output=True)
+            print("⚙️  Servicio 'tdm' gestionado por termux-services (sv up)")
+
+        # Iniciar server HTTP como daemon si no está corriendo
         res = subprocess.run(["pgrep", "-f", "tdm.cli.main server"], capture_output=True, text=True)
         if not res.stdout.strip():
             server_log = open(logs_dir / "server.log", "a")
             subprocess.Popen([python_bin, "-m", "tdm.cli.main", "server", "--port", str(PORT_TDM_SERVER)], stdout=server_log, stderr=server_log, env=env)
             print(f"🟢 Servidor HTTP API iniciado en background (:{PORT_TDM_SERVER})")
         else:
-            print(f"ℹ️ Servidor HTTP API ya estaba en ejecución (:{PORT_TDM_SERVER})")
+            print(f"ℹ️ Servidor HTTP API en ejecución (:{PORT_TDM_SERVER})")
 
-        # Iniciar agent
+        # Iniciar agent si existe configuración
         cfg_file = home / ".tdm" / "config" / "agent.json"
         if cfg_file.exists():
             res = subprocess.run(["pgrep", "-f", "tdm.agent.client"], capture_output=True, text=True)
@@ -175,12 +186,16 @@ async def handle_service(action: str):
                 agent_log = open(logs_dir / "agent.log", "a")
                 subprocess.Popen([python_bin, "-m", "tdm.agent.client"], stdout=agent_log, stderr=agent_log, env=env)
                 print("🟢 Agente WebSocket TDM iniciado en background")
-            else:
-                print("ℹ️ Agente WebSocket TDM ya estaba en ejecución")
-        print("✅ Servicios TDM activos en segundo plano.")
+        print("✅ Servicios TDM activos.")
 
-    elif action == "stop":
-        print("🛑 [TDM Service] Deteniendo servicios en segundo plano...")
+    elif action in ["stop", "disable"]:
+        print("🛑 [TDM Service] Deteniendo/Deshabilitando servicios...")
+        if has_sv:
+            subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
+            if action == "disable" and os.path.exists(sv_disable_bin):
+                subprocess.run([sv_disable_bin, "tdm"], capture_output=True)
+            print("⚙️  Servicio 'tdm' detenido en termux-services (sv down)")
+
         subprocess.run(["pkill", "-f", "tdm.agent.client"], capture_output=True)
         subprocess.run(["pkill", "-f", "tdm.cli.main server"], capture_output=True)
         wake_unlock = shutil.which("termux-wake-unlock") or f"{prefix}/bin/termux-wake-unlock"
@@ -188,13 +203,30 @@ async def handle_service(action: str):
             subprocess.run([wake_unlock], capture_output=True)
         print("✅ Servicios TDM detenidos y Wake-Lock liberado.")
 
+    elif action == "restart":
+        print("🔄 [TDM Service] Reiniciando servicios...")
+        await handle_service("stop")
+        await asyncio.sleep(1)
+        await handle_service("start")
+
     elif action == "status":
         s_res = subprocess.run(["pgrep", "-f", "tdm.cli.main server"], capture_output=True, text=True)
         a_res = subprocess.run(["pgrep", "-f", "tdm.agent.client"], capture_output=True, text=True)
         s_status = "🟢 En ejecución" if s_res.stdout.strip() else "🔴 Detenido"
         a_status = "🟢 En ejecución" if a_res.stdout.strip() else "🔴 Detenido"
-        print(f"📌 Servidor HTTP (:{PORT_TDM_SERVER}): {s_status}")
-        print(f"📌 Agente Hub WebSocket:  {a_status}")
+        
+        print("=====================================================")
+        print("📌 [TDM] Estado de los Servicios en Segundo Plano:")
+        print("=====================================================")
+        print(f"  • Servidor HTTP API (:{PORT_TDM_SERVER}):  {s_status}")
+        print(f"  • Agente Hub WebSocket:         {a_status}")
+        
+        if has_sv:
+            sv_out = subprocess.run([sv_bin, "status", "tdm"], capture_output=True, text=True).stdout.strip()
+            print(f"  • Gestor Termux (runit/sv):     {sv_out or 'Supervisado'}")
+        else:
+            print(f"  • Gestor Termux (runit/sv):     No configurado (se instala con setup_minimal.sh)")
+        print("=====================================================")
 
 async def handle_logs(args):
     """Muestra y gestiona los registros de TDM (agente, servidor y sesión gráfica)."""
@@ -451,9 +483,9 @@ def main():
     install_parser.add_argument("--desktop", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox"], help="Instala un escritorio específico")
     install_parser.add_argument("--full", "-f", action="store_true", help="Instala todos los servidores y utilidades")
 
-    # tdm service [start|stop|status]
-    service_parser = subparsers.add_parser("service", help="Gestiona los servicios de TDM en segundo plano (daemon y wake-lock)")
-    service_parser.add_argument("action", choices=["start", "stop", "status"], default="status", nargs="?", help="Acción a realizar")
+    # tdm service [start|stop|restart|status|enable|disable]
+    service_parser = subparsers.add_parser("service", help="Gestiona los servicios de TDM con el Gestor de Servicios de Termux (termux-services / sv)")
+    service_parser.add_argument("action", choices=["start", "stop", "restart", "status", "enable", "disable"], default="status", nargs="?", help="Acción a realizar")
 
     # tdm agy [start|attach|web|qr|status|stop]
     agy_parser = subparsers.add_parser("agy", help="Terminal dinámico multidispositivo con agy y tmux")
