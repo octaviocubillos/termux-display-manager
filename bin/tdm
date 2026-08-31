@@ -1,0 +1,7 @@
+#!/data/data/com.termux/files/usr/bin/bash
+PROJECT_DIR="${HOME}/termux-display-manager"
+if [ ! -d "$PROJECT_DIR" ]; then
+    PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+fi
+export PYTHONPATH="$PROJECT_DIR:${PYTHONPATH}"
+exec python3 -m tdm.cli.main "$@"
