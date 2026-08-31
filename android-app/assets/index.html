@@ -10,6 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TDM">
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a8c7fa'><path d='M4 6h16v10H4V6zm-2 0a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-6v2h2a1 1 0 110 2H8a1 1 0 110-2h2v-2H4a2 2 0 01-2-2V6z'/></svg>" type="image/svg+xml">
 
     <!-- Google Fonts: Inter & Material Symbols Rounded -->
@@ -727,7 +728,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.24</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.25</span>
             </div>
         </div>
 
@@ -1687,6 +1688,10 @@
         }
 
         function initPwa() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+            }
+
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
             
             window.addEventListener('beforeinstallprompt', (e) => {
@@ -1703,7 +1708,7 @@
                 if (!isDismissed) {
                     setTimeout(() => {
                         showPwaInstallBanner();
-                    }, 1500);
+                    }, 1200);
                 }
             }
         }
@@ -1721,25 +1726,22 @@
             sessionStorage.setItem('tdm_pwa_dismissed', 'true');
         }
 
-        function triggerPwaInstall() {
+        async function triggerPwaInstall() {
             if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choice) => {
+                try {
+                    deferredPrompt.prompt();
+                    const choice = await deferredPrompt.userChoice;
                     if (choice && choice.outcome === 'accepted') {
                         showToast('¡App TDM instalada con éxito!', 'check_circle');
                         dismissPwaBanner();
                     }
-                    deferredPrompt = null;
-                    const b = document.getElementById('btnInstallPwa');
-                    if (b) b.style.display = 'none';
-                });
+                } catch(e) {}
+                deferredPrompt = null;
+                const b = document.getElementById('btnInstallPwa');
+                if (b) b.style.display = 'none';
             } else {
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                if (isAndroid) {
-                    showToast('En el menú de Chrome (⋮) pulsa "Instalar aplicación" o "Añadir a pantalla de inicio"', 'info');
-                } else {
-                    showToast('Pulsa el botón "Instalar" o menú del navegador para añadir la PWA', 'info');
-                }
+                showToast('Iniciando instalación de TDM...', 'download');
+                dismissPwaBanner();
             }
         }
 
