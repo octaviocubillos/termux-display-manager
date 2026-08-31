@@ -732,8 +732,17 @@
     <div class="modal-overlay" id="webViewerModal">
         <div style="background: #000; border-radius: var(--md-shape-corner-xl); width: 95vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--md-sys-color-outline-variant);">
             <div style="padding: 0.65rem 1rem; background: var(--md-sys-color-surface-container-high); display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">🌐 noVNC Web Display</span>
-                <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()">Cerrar</button>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-primary); font-size: 1.2rem;">language</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">noVNC Web Display</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal" style="text-decoration: none; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                        <span class="material-symbols-rounded" style="font-size: 1rem;">open_in_new</span>
+                        <span>Nueva Pestaña</span>
+                    </a>
+                    <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()">Cerrar</button>
+                </div>
             </div>
             <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" src="about:blank"></iframe>
         </div>
@@ -867,9 +876,9 @@
                     btn.style.background = 'linear-gradient(135deg, #ffb4ab 0%, #ba1a1a 100%)';
                     btn.style.color = '#690005';
                 } else {
-                    lbl.innerText = 'Abrir Pantalla (Visor Web)';
+                    lbl.innerText = 'Abrir Pantalla (Visor Web noVNC)';
                     ico.innerText = 'language';
-                    btn.onclick = () => openWebViewer(data.network?.lan_ip || '127.0.0.1');
+                    btn.onclick = () => openWebViewer();
                     btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
                     btn.style.color = '#062e6f';
                 }
@@ -930,7 +939,7 @@
         }
 
         async function apiStartScreen() {
-            showToast(`Iniciando ${selectedBackend}...`, 'rocket_launch');
+            showToast(`Iniciando ${selectedBackend.toUpperCase()}...`, 'rocket_launch');
             try {
                 const res = await fetch('/api/screen/start', {
                     method: 'POST',
@@ -945,14 +954,17 @@
                     })
                 });
                 const d = await res.json();
-                if (d.started) {
-                    showToast('¡Pantalla Iniciada!', 'check_circle');
+                if (d.status === 'running' || d.started || d.server_pid) {
+                    showToast('¡Pantalla Iniciada con éxito!', 'check_circle');
+                    if (selectedBackend === 'novnc') {
+                        setTimeout(() => openWebViewer(), 600);
+                    }
                 } else {
-                    showToast(`Error: ${d.error || 'No se pudo iniciar'}`, 'error');
+                    showToast(`Error: ${d.error || d.error_message || 'No se pudo iniciar'}`, 'error');
                 }
                 refreshStatus();
             } catch(e) {
-                showToast('Error al conectar con servidor', 'error');
+                showToast('Error al conectar con servidor local', 'error');
             }
         }
 
@@ -982,8 +994,12 @@
         }
 
         function openWebViewer(ip) {
+            const host = ip || window.location.hostname || '127.0.0.1';
+            const url = `http://${host}:19052/vnc.html?autoconnect=true&resize=remote`;
             const ifr = document.getElementById('novncIframe');
-            ifr.src = `http://${ip}:19052/vnc.html?autoconnect=true&resize=remote`;
+            ifr.src = url;
+            const link = document.getElementById('lnkOpenNewTab');
+            if (link) link.href = url;
             document.getElementById('webViewerModal').classList.add('active');
         }
 

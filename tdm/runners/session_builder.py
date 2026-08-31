@@ -14,13 +14,15 @@ def build_session_script(display_num: int, desktop_id: str, custom_command: Opti
     de_info = get_desktop_by_id(desktop_id, custom_list) if not custom_command else None
     
     lines = [
-        "#!/bin/sh",
+        "#!/usr/bin/env sh",
         f"# Auto-generated session script for Display :{display_num}",
+        "PREFIX=\"${PREFIX:-/data/data/com.termux/files/usr}\"",
+        "export PATH=\"$PREFIX/bin:$PATH\"",
         f"export DISPLAY=:{display_num}",
         "",
         "# Esperar a que el socket X11 esté disponible",
         "for i in $(seq 1 30); do",
-        f"    if [ -e /tmp/.X11-unix/X{display_num} ] || [ -e /tmp/X11-pipe/X{display_num} ] || xdpyinfo -display :{display_num} >/dev/null 2>&1; then",
+        f"    if [ -e /tmp/.X11-unix/X{display_num} ] || [ -e /tmp/X11-pipe/X{display_num} ] || [ -e \"$PREFIX/tmp/.X11-unix/X{display_num}\" ] || xdpyinfo -display :{display_num} >/dev/null 2>&1; then",
         "        break",
         "    fi",
         "    sleep 0.2",
