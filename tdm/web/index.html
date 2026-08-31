@@ -727,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.20</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.21</span>
             </div>
         </div>
 
@@ -1263,7 +1263,7 @@
                 dot.className = 'status-dot offline';
                 sub.innerText = '🔴 Termux Core Desconectado';
                 isScreenActive = false;
-                btnStop.style.display = 'none';
+                if (btnStopScreen) btnStopScreen.style.display = 'none';
                 btnLaunch.disabled = true;
             }
         }
@@ -1272,15 +1272,17 @@
             const btn = document.getElementById('btnMainLaunch');
             const lbl = document.getElementById('lblMainLaunch');
             const ico = document.getElementById('icoMainLaunch');
-            const btnStop = document.getElementById('btnHeaderStop');
+            const btnStopScreen = document.getElementById('btnHeaderStopScreen');
 
             const isScreenOn = !!(data && data.is_screen_active);
             const act = data ? data.active_screen : null;
             const currentBackend = act?.backend || null;
 
+            if (btnStopScreen) {
+                btnStopScreen.style.display = isScreenOn ? 'inline-flex' : 'none';
+            }
+
             if (isScreenOn) {
-                btnStop.style.display = 'inline-flex';
-                
                 if (selectedBackend === currentBackend) {
                     if (selectedBackend === 'novnc') {
                         lbl.innerText = `Abrir Visor noVNC (${act?.desktop_name || 'Escritorio'})`;
@@ -1309,7 +1311,6 @@
                     btn.style.color = '#062e6f';
                 }
             } else {
-                btnStop.style.display = 'none';
                 lbl.innerText = `Lanzar ${selectedBackend.toUpperCase()}`;
                 ico.innerText = 'rocket_launch';
                 btn.onclick = apiStartScreen;
