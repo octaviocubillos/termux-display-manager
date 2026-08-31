@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 from tdm.discovery.desktops import get_desktop_by_id
 from tdm.config import TDM_RUN_DIR
 
-def build_session_script(display_num: int, desktop_id: str, custom_command: Optional[str] = None, custom_list=None) -> Path:
+def build_session_script(display_num: int, desktop_id: str, custom_command: Optional[str] = None, custom_list=None, backend: str = "termux-x11") -> Path:
     """Genera un script ejecutable limpio para iniciar el entorno de escritorio en el display indicado."""
     TDM_RUN_DIR.mkdir(parents=True, exist_ok=True)
     script_path = TDM_RUN_DIR / f"session-display-{display_num}.sh"
@@ -39,14 +39,19 @@ def build_session_script(display_num: int, desktop_id: str, custom_command: Opti
         "if command -v xsetroot >/dev/null 2>&1; then",
         "    xsetroot -solid '#1e1e2e'",
         "fi",
-        "",
-        "# Lanzar la aplicación Android Termux:X11",
-        "if command -v am >/dev/null 2>&1; then",
-        "    am start --user 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || \\",
-        "    am start -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true",
-        "fi",
         ""
     ]
+
+    # Solo lanzar la app Termux:X11 en Android si el backend elegido es explícitamente Termux:X11
+    if backend == "termux-x11":
+        lines.extend([
+            "# Lanzar la aplicación Android Termux:X11 (solo si el backend es Termux:X11)",
+            "if command -v am >/dev/null 2>&1; then",
+            "    am start --user 0 -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || \\",
+            "    am start -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1 || true",
+            "fi",
+            ""
+        ])
     
     if custom_command:
         lines.append(f"# Ejecutar aplicación personalizada")

@@ -317,7 +317,7 @@ class DisplayManager:
             return session.to_dict()
 
         # 4. Construir y lanzar la sesión de escritorio (ej. openbox o xfce4) sobre el Display
-        session_script = build_session_script(config.display_num, config.desktop_id, config.custom_command)
+        session_script = build_session_script(config.display_num, config.desktop_id, config.custom_command, backend=config.backend)
         session_proc = await self._launch_desktop_session(session_script, session.log_file)
 
         session.server_pid = backend_obj.process.pid if backend_obj.process else os.getpid()
