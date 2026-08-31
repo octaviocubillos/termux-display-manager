@@ -68,7 +68,8 @@ def build_session_script(display_num: int, desktop_id: str, custom_command: Opti
         lines.append("exec mate-session")
     elif desktop_id in ["xfce", "xfce4"]:
         lines.append("# Configurar logo de menú en panel XFCE")
-        lines.append("LOGO_PATH=\"$HOME/.tdm/assets/xfce.gif\"")
+        lines.append("LOGO_PATH=\"$HOME/.tdm/assets/xfce.svg\"")
+        lines.append("if [ ! -f \"$LOGO_PATH\" ]; then LOG_PATH=\"$HOME/.tdm/assets/xfce.png\"; fi")
         lines.append("if [ -f \"$LOGO_PATH\" ] && command -v xfconf-query >/dev/null 2>&1; then")
         lines.append("    (sleep 1 && xfconf-query -c xfce4-panel -p /plugins/plugin-1/button-icon -s \"$LOGO_PATH\" --create -t string >/dev/null 2>&1) &")
         lines.append("fi")
