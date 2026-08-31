@@ -30,7 +30,9 @@ pkg install -y \
     tar \
     procps \
     psmisc \
-    net-tools
+    net-tools \
+    tmux \
+    qrencode || true
 
 # 3. Instalar servidores gráficos y de pantalla (Backends)
 echo "[*] Instalando servidores gráficos (Termux:X11, TigerVNC, noVNC, xrdp)..."

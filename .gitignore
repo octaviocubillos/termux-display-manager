@@ -52,5 +52,7 @@ unaligned.apk
 .coverage
 htmlcov/
 
-# Local Docker Termux Home
+# Local Docker Termux Home & Core dumps
 termux-home/
+core.*
+core
