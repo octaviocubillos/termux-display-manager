@@ -76,6 +76,139 @@ class DisplayManager:
             "executable": "xterm"
         }
 
+    def detect_running_graphical_session(self) -> Optional[Dict[str, Any]]:
+        """
+        Escanea el sistema para detectar si hay servidores gráficos o entornos de escritorio activos,
+        incluso si se iniciaron de forma externa o antes de reiniciar el servicio TDM.
+        """
+        current_pid = os.getpid()
+        graphical_procs = []
+        detected_backend = None
+        detected_desktop = None
+        detected_desktop_name = None
+        detected_display = ":0"
+
+        backend_signatures = {
+            "termux-x11": "termux-x11",
+            "Xvnc": "vnc",
+            "vncserver": "vnc",
+            "tigervnc": "vnc",
+            "xrdp": "rdp",
+            "websockify": "novnc"
+        }
+
+        desktop_signatures = {
+            "xfce4-session": ("xfce4", "XFCE4"),
+            "xfwm4": ("xfce4", "XFCE4"),
+            "startxfce4": ("xfce4", "XFCE4"),
+            "plasmashell": ("kde", "KDE Plasma"),
+            "startplasma-x11": ("kde", "KDE Plasma"),
+            "kwin_x11": ("kde", "KDE Plasma"),
+            "kwin": ("kde", "KDE Plasma"),
+            "mate-session": ("mate", "MATE Desktop"),
+            "startlxqt": ("lxqt", "LXQt"),
+            "lxqt-session": ("lxqt", "LXQt"),
+            "i3": ("i3", "i3 WM"),
+            "openbox": ("openbox", "Openbox"),
+            "openbox-session": ("openbox", "Openbox"),
+        }
+
+        try:
+            entries = os.listdir("/proc")
+        except Exception:
+            entries = []
+
+        for entry in entries:
+            if not entry.isdigit():
+                continue
+            pid = int(entry)
+            if pid == current_pid or pid == 1:
+                continue
+
+            try:
+                comm_file = f"/proc/{pid}/comm"
+                cmd_file = f"/proc/{pid}/cmdline"
+                env_file = f"/proc/{pid}/environ"
+
+                comm = ""
+                cmdline = ""
+                environ_str = ""
+
+                if os.path.exists(comm_file):
+                    with open(comm_file, "r", errors="ignore") as f:
+                        comm = f.read().strip()
+                if os.path.exists(cmd_file):
+                    with open(cmd_file, "rb") as f:
+                        cmdline = f.read().decode("utf-8", errors="ignore").replace("\x00", " ")
+                if os.path.exists(env_file):
+                    with open(env_file, "rb") as f:
+                        environ_str = f.read().decode("utf-8", errors="ignore")
+
+                # Ignorar servidor TDM
+                if any(safe in cmdline for safe in ["tdm.cli.main", "tdm.agent.client", "tdm.server.service"]):
+                    continue
+
+                is_graphical = False
+
+                for b_proc, b_type in backend_signatures.items():
+                    if b_proc == comm or b_proc in cmdline:
+                        is_graphical = True
+                        if not detected_backend:
+                            detected_backend = b_type
+
+                for d_proc, (d_id, d_name) in desktop_signatures.items():
+                    if d_proc == comm or d_proc in cmdline:
+                        is_graphical = True
+                        if not detected_desktop:
+                            detected_desktop = d_id
+                            detected_desktop_name = d_name
+
+                if "DISPLAY=:" in environ_str:
+                    is_graphical = True
+                    for chunk in environ_str.split("\x00"):
+                        if chunk.startswith("DISPLAY="):
+                            detected_display = chunk.split("=")[1]
+                            break
+
+                if is_graphical:
+                    graphical_procs.append({
+                        "pid": pid,
+                        "comm": comm,
+                        "cmd": cmdline[:60]
+                    })
+            except Exception:
+                continue
+
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        for disp in range(3):
+            sock1 = f"/tmp/.X11-unix/X{disp}"
+            sock2 = f"{prefix}/tmp/.X11-unix/X{disp}"
+            pipe = f"/tmp/X11-pipe/X{disp}"
+            if os.path.exists(sock1) or os.path.exists(sock2) or os.path.exists(pipe):
+                if not detected_backend:
+                    detected_backend = "termux-x11"
+                detected_display = f":{disp}"
+
+        if graphical_procs or detected_backend or detected_desktop:
+            if not detected_backend:
+                detected_backend = "termux-x11"
+            if not detected_desktop:
+                installed = self.get_installed_desktop()
+                detected_desktop = installed["id"]
+                detected_desktop_name = installed["name"]
+
+            return {
+                "is_active": True,
+                "backend": detected_backend,
+                "desktop_id": detected_desktop,
+                "desktop_name": detected_desktop_name or detected_desktop.upper(),
+                "display": detected_display,
+                "process_count": len(graphical_procs),
+                "processes": [p["comm"] for p in graphical_procs[:8]]
+            }
+
+        return None
+
     def get_status(self) -> Dict[str, Any]:
         """Devuelve el estado completo del sistema, memoria RAM, escritorio instalado, pantalla activa y red."""
         installed_de = self.get_installed_desktop()
@@ -92,9 +225,27 @@ class DisplayManager:
         mem_info = get_memory_telemetry()
         storage_info = get_storage_telemetry()
         
+        detected = self.detect_running_graphical_session()
+        is_screen_active = bool(detected or (self.active_session and self.active_session.status == DisplayStatus.RUNNING))
+
         session_dict = None
         if self.active_session and self.active_session.status == DisplayStatus.RUNNING:
             session_dict = self.active_session.to_dict()
+        elif detected:
+            session_dict = {
+                "id": f"detected-screen-{detected['display'].replace(':', '')}",
+                "status": "running",
+                "backend": detected["backend"],
+                "desktop": detected["desktop_id"],
+                "desktop_name": detected["desktop_name"],
+                "display": detected["display"],
+                "resolution": "Nativo / Detectado",
+                "dpi": 96,
+                "audio": True,
+                "virgl": True,
+                "process_count": detected["process_count"],
+                "processes": detected["processes"]
+            }
 
         from tdm.version import get_version_info
         ver_info = get_version_info()
@@ -108,7 +259,7 @@ class DisplayManager:
             "memory": mem_info,
             "storage": storage_info,
             "version": ver_info,
-            "is_screen_active": bool(self.active_session and self.active_session.status == DisplayStatus.RUNNING),
+            "is_screen_active": is_screen_active,
             "active_screen": session_dict
         }
 
@@ -128,8 +279,7 @@ class DisplayManager:
         backend = backend_id or backend
 
         # 1. Si hay una pantalla activa, detenerla primero limpiamente
-        if self.active_session and self.active_session.status == DisplayStatus.RUNNING:
-            await self.stop_screen()
+        await self.stop_screen()
 
         if not desktop_id:
             installed_de = self.get_installed_desktop()
@@ -180,8 +330,9 @@ class DisplayManager:
         return session.to_dict()
 
     async def stop_screen(self) -> bool:
-        """Detiene completamente cualquier servidor gráfico, entorno de escritorio y cierra la app UI."""
-        log_event("display", "Iniciando proceso de detención completa de pantalla y entorno gráfico...")
+        """Detiene completamente cualquier servidor gráfico, entorno de escritorio y deja Termux totalmente limpio."""
+        log_event("display", "Iniciando proceso de apagado total y limpieza absoluta de procesos gráficos...")
+        
         # 1. Matar procesos del backend activo
         if self.active_backend_obj:
             try:
@@ -200,15 +351,15 @@ class DisplayManager:
 
         # 3. Matar forzosamente todos los procesos de entornos de escritorio, servidores y apps gráficas
         target_names = {
-            "termux-x11", "Xvnc", "vncserver", "xrdp", "xrdp-sesman", "websockify",
-            "xfce4-session", "xfce4-panel", "xfce4-power-manager", "xfce4-notifyd",
-            "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfconfd", "xfsettingsd",
-            "startplasma-x11", "plasmashell", "kwin_x11", "plasma-session", "kded5", "klauncher", "ksmserver", "kaccess",
-            "mate-session", "mate-panel", "marco", "caja", "mate-settings-daemon",
-            "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel", "lxqt-globalkeysd", "lxqt-notificationd",
-            "openbox", "openbox-session", "tint2", "i3", "i3bar", "i3status",
-            "xterm", "qterminal", "mate-terminal", "xfce4-terminal",
-            "pulseaudio", "virgl_test_server"
+            "termux-x11", "Xvnc", "vncserver", "tigervnc", "xrdp", "xrdp-sesman", "websockify",
+            "xfce4-session", "xfce4-panel", "xfce4-power-manager", "xfce4-notifyd", "xfce4-appfinder",
+            "xfwm4", "xfdesktop", "thunar", "Thunar", "wrapper-2.0", "xfconfd", "xfsettingsd",
+            "startplasma-x11", "plasmashell", "kwin_x11", "kwin", "plasma-session", "kded5", "kded6",
+            "klauncher", "ksmserver", "kaccess", "mate-session", "mate-panel", "marco", "caja",
+            "mate-settings-daemon", "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel",
+            "lxqt-globalkeysd", "lxqt-notificationd", "openbox", "openbox-session", "tint2",
+            "i3", "i3bar", "i3status", "xterm", "qterminal", "mate-terminal", "xfce4-terminal",
+            "pulseaudio", "virgl_test_server", "virgl_test_server_android", "xorg-xsetroot", "xsetroot"
         }
 
         current_pid = os.getpid()
@@ -242,8 +393,8 @@ class DisplayManager:
                     with open(env_file, "rb") as f:
                         environ_str = f.read().decode("utf-8", errors="ignore")
 
-                # No matar el agente de TDM, ni el servidor CLI ni procesos del sistema
-                if any(safe in cmdline for safe in ["tdm.cli.main", "tdm.agent.client", "tdm hub", "tdm server"]):
+                # No matar el agente de TDM, ni el servidor CLI ni procesos esenciales
+                if any(safe in cmdline for safe in ["tdm.cli.main", "tdm.agent.client", "tdm.server.service", "tdm hub", "tdm server"]):
                     continue
 
                 should_kill = False
@@ -256,11 +407,15 @@ class DisplayManager:
                 elif comm in target_names or comm.startswith("xfce4-") or comm.startswith("mate-") or comm.startswith("lxqt-") or comm.startswith("plasma-"):
                     should_kill = True
 
-                # C. Si es un script de inicio de sesión
-                elif any(runner in cmdline for runner in ["session-display", "startxfce4", "startplasma", "startlxqt", "launch_x11"]):
+                # C. Si es un script de inicio de sesión o binario gráfico
+                elif any(runner in cmdline for runner in ["session-display", "startxfce4", "startplasma", "startlxqt", "launch_x11", "Xvnc", "termux-x11"]):
                     should_kill = True
 
                 if should_kill:
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                    except Exception:
+                        pass
                     try:
                         os.kill(pid, signal.SIGKILL)
                     except Exception:
@@ -271,8 +426,9 @@ class DisplayManager:
         # 4. Barrido de respaldo con pkill por patrones
         patterns = [
             "xfce4", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd",
-            "plasmashell", "startplasma", "kwin_x11", "mate-session", "startlxqt",
-            "openbox", "i3", "termux-x11", "Xvnc", "virgl_test_server"
+            "plasmashell", "startplasma", "kwin", "mate-session", "mate-panel", "startlxqt", "lxqt",
+            "openbox", "i3", "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server",
+            "pulseaudio", "session-display"
         ]
         for pat in patterns:
             try:
@@ -284,21 +440,30 @@ class DisplayManager:
         for cmd in [
             ["am", "broadcast", "-a", "com.termux.x11.ACTION_STOP"],
             ["am", "force-stop", "com.termux.x11"],
-            ["termux-am", "broadcast", "-a", "com.termux.x11.ACTION_STOP"]
+            ["termux-am", "broadcast", "-a", "com.termux.x11.ACTION_STOP"],
+            ["termux-am", "force-stop", "com.termux.x11"]
         ]:
             try:
                 subprocess.run(cmd, capture_output=True, timeout=1)
             except Exception:
                 pass
 
-        # 6. Limpiar sockets y archivos temporales de X11 en todas las rutas posibles
-        self._cleanup_x11_sockets(DEFAULT_DISPLAY_NUM)
+        # 6. Limpiar sockets y archivos temporales de X11 en todos los displays (0 a 9)
+        for disp_num in range(10):
+            self._cleanup_x11_sockets(disp_num)
+
+        # 7. Limpiar scripts de sesión temporales
+        try:
+            for p in TDM_RUN_DIR.glob("session-display-*.sh"):
+                p.unlink(missing_ok=True)
+        except Exception:
+            pass
 
         if self.active_session:
             self.active_session.status = DisplayStatus.STOPPED
             self.active_session = None
 
-        log_event("display", "Pantalla y entorno gráfico detenidos y liberados con éxito.")
+        log_event("display", "Apagado total completado. Termux quedó completamente limpio de procesos gráficos.")
         return True
 
     async def _launch_desktop_session(self, script_path: Path, log_file: str) -> Optional[asyncio.subprocess.Process]:

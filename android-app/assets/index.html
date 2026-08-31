@@ -696,7 +696,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.11</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.12</span>
             </div>
         </div>
 
@@ -1048,8 +1048,13 @@
                 const de = data.installed_desktop;
 
                 const lanIp = data.network?.lan_ip || '127.0.0.1';
-                const ramInfo = data.memory?.formatted || '';
-                sub.innerText = `🟢 Termux Local • IP: ${lanIp}`;
+                if (data.is_screen_active) {
+                    const act = data.active_screen || {};
+                    const deTitle = act.desktop_name || (de?.name || 'Entorno Gráfico');
+                    sub.innerText = `🟢 Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
+                } else {
+                    sub.innerText = `⚪ Termux Local • IP: ${lanIp} • Apagado`;
+                }
 
                 // TELEMETRÍA EN TIEMPO REAL:
                 // 1. CPU
@@ -1145,13 +1150,13 @@
                 btnStop.style.display = 'inline-flex';
 
                 if (b === 'termux-x11') {
-                    lbl.innerText = 'Pantalla Activa en Termux:X11 (Apagar)';
+                    lbl.innerText = `Apagar ${act?.desktop_name || 'Entorno'} (Encendido en Termux:X11)`;
                     ico.innerText = 'power_settings_new';
                     btn.onclick = apiStopScreen;
                     btn.style.background = 'linear-gradient(135deg, #ffb4ab 0%, #ba1a1a 100%)';
                     btn.style.color = '#690005';
                 } else {
-                    lbl.innerText = 'Abrir Pantalla (Visor Web noVNC)';
+                    lbl.innerText = `Abrir Visor noVNC (${act?.desktop_name || 'Escritorio'})`;
                     ico.innerText = 'language';
                     btn.onclick = () => openWebViewer();
                     btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
