@@ -696,7 +696,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.8</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.9</span>
             </div>
         </div>
 
@@ -829,7 +829,9 @@
                 <!-- VISTA: ENTORNO DETECTADO -->
                 <div id="viewInstalledDe" class="de-banner">
                     <div class="de-info">
-                        <div class="de-icon" id="txtDeIcon">🐭</div>
+                        <div class="de-icon" id="txtDeIcon" style="padding: 4px; overflow: hidden; width: 64px; height: 38px;">
+                            <img id="imgDeLogo" src="assets/logos/xfce.gif" alt="XFCE" style="max-height: 28px; max-width: 100%; object-fit: contain;">
+                        </div>
                         <div>
                             <div style="font-weight: 800; font-size: 0.95rem; color: #fff;" id="txtDeName">XFCE4 Desktop</div>
                             <div style="font-size: 0.74rem; color: var(--md-sys-color-on-surface-variant);" id="txtDePath">Instalado y listo para ejecutar</div>
@@ -847,28 +849,59 @@
                         Elige un entorno de escritorio:
                     </div>
                     <div class="de-grid">
-                        <div class="de-pill-card selected" onclick="pickDe('xfce', 'XFCE4', '🐭', this)">
-                            <h5><span>🐭 XFCE4</span> <span style="font-size: 0.65rem; color: #6dd58c;">Recomendado</span></h5>
+                        <div class="de-pill-card selected" onclick="pickDe('xfce', 'XFCE4', 'assets/logos/xfce.gif', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/xfce.gif" alt="XFCE" style="height: 18px; object-fit: contain;">
+                                    <span>XFCE4</span>
+                                </span>
+                                <span style="font-size: 0.65rem; color: #6dd58c;">Recomendado</span>
+                            </h5>
                             <p>Ultraligero y fluido a 120 FPS.</p>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('kde', 'KDE Plasma', '❄️', this)">
-                            <h5><span>❄️ KDE Plasma</span></h5>
+                        <div class="de-pill-card" onclick="pickDe('kde', 'KDE Plasma', 'assets/logos/kde.svg', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/kde.svg" alt="KDE" style="height: 18px; width: 18px;">
+                                    <span>KDE Plasma</span>
+                                </span>
+                            </h5>
                             <p>Efectos visuales modernos.</p>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('mate', 'MATE', '🧉', this)">
-                            <h5><span>🧉 MATE</span></h5>
+                        <div class="de-pill-card" onclick="pickDe('mate', 'MATE', 'assets/logos/mate.svg', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/mate.svg" alt="MATE" style="height: 18px; width: 18px;">
+                                    <span>MATE</span>
+                                </span>
+                            </h5>
                             <p>Tradicional y confiable.</p>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('lxqt', 'LXQt', '🚀', this)">
-                            <h5><span>🚀 LXQt</span></h5>
+                        <div class="de-pill-card" onclick="pickDe('lxqt', 'LXQt', 'assets/logos/lxqt.svg', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/lxqt.svg" alt="LXQt" style="height: 18px; width: 18px;">
+                                    <span>LXQt</span>
+                                </span>
+                            </h5>
                             <p>Ligero con librerías Qt.</p>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('i3', 'i3 WM', '🪟', this)">
-                            <h5><span>🪟 i3 WM</span></h5>
+                        <div class="de-pill-card" onclick="pickDe('i3', 'i3 WM', 'assets/logos/i3.svg', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/i3.svg" alt="i3" style="height: 18px; width: 18px;">
+                                    <span>i3 WM</span>
+                                </span>
+                            </h5>
                             <p>Mosaico ultrarrápido.</p>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('openbox', 'Openbox', '📦', this)">
-                            <h5><span>📦 Openbox</span></h5>
+                        <div class="de-pill-card" onclick="pickDe('openbox', 'Openbox', 'assets/logos/openbox.svg', this)">
+                            <h5>
+                                <span style="display: flex; align-items: center; gap: 0.4rem;">
+                                    <img src="assets/logos/openbox.svg" alt="Openbox" style="height: 18px; width: 18px;">
+                                    <span>Openbox</span>
+                                </span>
+                            </h5>
                             <p>Mínimo consumo RAM.</p>
                         </div>
                     </div>
@@ -1074,6 +1107,12 @@
                     document.getElementById('viewDePicker').style.display = 'none';
                     document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
                     document.getElementById('txtDePath').innerText = de.executable || 'Listo para ejecutar';
+                    const imgLogo = document.getElementById('imgDeLogo');
+                    if (imgLogo) {
+                        const deId = (de.id === 'xfce4' || de.id === 'xfce') ? 'xfce.gif' : `${de.id}.svg`;
+                        imgLogo.src = `assets/logos/${deId}`;
+                        imgLogo.alt = de.name || de.id;
+                    }
                 } else {
                     document.getElementById('viewInstalledDe').style.display = 'none';
                     document.getElementById('viewDePicker').style.display = 'flex';
