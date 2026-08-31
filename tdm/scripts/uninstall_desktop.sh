@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Termux Display Manager (TDM) - Desinstalador de Entornos de Escritorio
+# Termux Display Manager (TDM) - Desinstalador Completo de Entornos de Escritorio
 # ==============================================================================
 # Uso: ./uninstall_desktop.sh [all|kde|mate|xfce|lxqt|i3|openbox]
 # ==============================================================================
@@ -10,10 +10,11 @@ export DEBIAN_FRONTEND=noninteractive
 export APT_LISTCHANGES_FRONTEND=none
 
 TARGET="${1:-all}"
+PREFIX_PATH="${PREFIX:-/data/data/com.termux/files/usr}"
 
 echo "====================================================="
 echo "🗑️  [TDM] Desinstalador Completo de Entorno de Escritorio"
-echo "Target: $TARGET"
+echo "Objetivo: $TARGET"
 echo "====================================================="
 
 # Detectar gestor de paquetes
@@ -41,94 +42,103 @@ fi
 
 # 1. Detener todas las pantallas y procesos de escritorio activos (manteniendo servicio TDM)
 echo "[1/4] Deteniendo pantallas y procesos gráficos..."
-pkill -9 -f xfce4 2>/dev/null || true
-pkill -9 -f xfwm4 2>/dev/null || true
-pkill -9 -f xfdesktop 2>/dev/null || true
-pkill -9 -f mate-session 2>/dev/null || true
-pkill -9 -f marco 2>/dev/null || true
-pkill -9 -f plasma 2>/dev/null || true
-pkill -9 -f kwin 2>/dev/null || true
-pkill -9 -f startlxqt 2>/dev/null || true
-pkill -9 -f lxqt-session 2>/dev/null || true
-pkill -9 -f openbox 2>/dev/null || true
-pkill -9 -f i3 2>/dev/null || true
-
-pkill -9 -f termux-x11 2>/dev/null || true
-pkill -9 -f Xwayland 2>/dev/null || true
-pkill -9 -f Xvnc 2>/dev/null || true
-pkill -9 -f websockify 2>/dev/null || true
-pkill -9 -f pulseaudio 2>/dev/null || true
-pkill -9 -f virgl_test_server 2>/dev/null || true
+pkill -9 -f "xfce4|xfwm4|xfdesktop|mate-session|marco|caja|plasma|kwin|startlxqt|lxqt-session|openbox|i3|termux-x11|Xwayland|Xvnc|websockify|pulseaudio|virgl_test_server" 2>/dev/null || true
 
 # Limpiar sockets X11
-rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /data/data/com.termux/files/usr/tmp/.X*-lock /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
+rm -f /tmp/.X*-lock /tmp/.X11-unix/X* "${PREFIX_PATH}/tmp/.X*-lock" "${PREFIX_PATH}/tmp/.X11-unix/X*" 2>/dev/null || true
 
-# 2. Definición de paquetes por entorno
-XFCE_PKGS="xfce4 xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-terminal thunar xfconf"
-KDE_PKGS="plasma-desktop plasma-workspace breeze konsole dolphin kwrite kded5 kded6 kwin"
-MATE_PKGS="mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon"
-LXQT_PKGS="lxqt lxqt-session lxqt-panel qterminal pcmanfm-qt lxqt-globalkeys"
-I3_PKGS="i3 i3wm i3status dmenu"
-OPENBOX_PKGS="openbox tint2 obconf"
+# 2. Búsqueda y purga dinámica de paquetes
+echo "[2/4] Identificando paquetes instalados para purga completa..."
 
-PKGS_TO_REMOVE=""
-case "$TARGET" in
-    xfce|xfce4)
-        PKGS_TO_REMOVE="$XFCE_PKGS"
-        ;;
-    kde)
-        PKGS_TO_REMOVE="$KDE_PKGS"
-        ;;
-    mate)
-        PKGS_TO_REMOVE="$MATE_PKGS"
-        ;;
-    lxqt)
-        PKGS_TO_REMOVE="$LXQT_PKGS"
-        ;;
-    i3)
-        PKGS_TO_REMOVE="$I3_PKGS"
-        ;;
-    openbox)
-        PKGS_TO_REMOVE="$OPENBOX_PKGS"
-        ;;
-    all|*)
-        PKGS_TO_REMOVE="$XFCE_PKGS $KDE_PKGS $MATE_PKGS $LXQT_PKGS $I3_PKGS $OPENBOX_PKGS"
-        ;;
-esac
-
-echo "[2/4] Desinstalando y purgando paquetes del entorno..."
 case "$PKG_MGR" in
     pkg|apt)
-        for p in $PKGS_TO_REMOVE; do
-            if dpkg -s "$p" >/dev/null 2>&1; then
-                echo "🗑️ Desinstalando: $p..."
+        INSTALLED_LIST="$(dpkg -l 2>/dev/null | awk '/^ii/ {print $2}' || true)"
+        PKGS_TO_REMOVE=""
+
+        get_matching_pkgs() {
+            local pattern="$1"
+            echo "$INSTALLED_LIST" | grep -E "$pattern" || true
+        }
+
+        case "$TARGET" in
+            xfce|xfce4)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(xfce4|xfwm4|xfdesktop4?|thunar|libxfce4|xfconf)')"
+                ;;
+            kde)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(plasma-|plasma-desktop|plasma-workspace|kwin|dolphin|konsole|breeze|kded[56]|libkf[56])')"
+                ;;
+            mate)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(mate-|marco|caja)')"
+                ;;
+            lxqt)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(lxqt|liblxqt|libdbusmenu-lxqt|pcmanfm-qt|libfm-qt|qterminal)')"
+                ;;
+            i3)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(i3|i3wm|i3status|dmenu)')"
+                ;;
+            openbox)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(openbox|obconf|tint2)')"
+                ;;
+            all|*)
+                PKGS_TO_REMOVE="$(get_matching_pkgs '^(xfce4|xfwm4|xfdesktop4?|thunar|libxfce4|xfconf|plasma-|plasma-desktop|plasma-workspace|kwin|dolphin|konsole|breeze|kded[56]|libkf[56]|mate-|marco|caja|lxqt|liblxqt|libdbusmenu-lxqt|pcmanfm-qt|libfm-qt|qterminal|i3|i3wm|i3status|dmenu|openbox|obconf|tint2)')"
+                ;;
+        esac
+
+        if [ -n "$PKGS_TO_REMOVE" ]; then
+            echo "📦 Purgando paquetes encontrados:"
+            echo "$PKGS_TO_REMOVE"
+            for p in $PKGS_TO_REMOVE; do
                 apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
-            fi
-        done
+            done
+        else
+            echo "ℹ️ No se detectaron paquetes instalados para el entorno: $TARGET"
+        fi
+
         echo "[3/4] Purgando dependencias huérfanas y liberando almacenamiento..."
         apt-get autoremove -y --purge >/dev/null 2>&1 || true
         apt-get clean >/dev/null 2>&1 || true
         ;;
+
     apk)
-        for p in $PKGS_TO_REMOVE; do
-            $SUDO apk del "$p" >/dev/null 2>&1 || true
-        done
+        case "$TARGET" in
+            xfce|xfce4) $SUDO apk del xfce4 xfce4-terminal thunar 2>/dev/null || true ;;
+            kde) $SUDO apk del plasma-desktop plasma-workspace konsole dolphin 2>/dev/null || true ;;
+            mate) $SUDO apk del mate-desktop mate-panel mate-session-manager marco 2>/dev/null || true ;;
+            lxqt) $SUDO apk del lxqt-desktop lxqt-session qterminal pcmanfm-qt 2>/dev/null || true ;;
+            i3) $SUDO apk del i3wm i3status dmenu xterm 2>/dev/null || true ;;
+            openbox) $SUDO apk del openbox tint2 xterm 2>/dev/null || true ;;
+            all|*) $SUDO apk del xfce4 plasma-desktop mate-desktop lxqt-desktop i3wm openbox 2>/dev/null || true ;;
+        esac
         ;;
+
     pacman)
-        for p in $PKGS_TO_REMOVE; do
-            $SUDO pacman -Rns --noconfirm "$p" >/dev/null 2>&1 || true
-        done
+        case "$TARGET" in
+            xfce|xfce4) $SUDO pacman -Rns --noconfirm xfce4 xfce4-terminal thunar 2>/dev/null || true ;;
+            kde) $SUDO pacman -Rns --noconfirm plasma-desktop plasma-workspace konsole dolphin 2>/dev/null || true ;;
+            mate) $SUDO pacman -Rns --noconfirm mate mate-extra 2>/dev/null || true ;;
+            lxqt) $SUDO pacman -Rns --noconfirm lxqt qterminal pcmanfm-qt 2>/dev/null || true ;;
+            i3) $SUDO pacman -Rns --noconfirm i3-wm i3status dmenu 2>/dev/null || true ;;
+            openbox) $SUDO pacman -Rns --noconfirm openbox tint2 2>/dev/null || true ;;
+            all|*) $SUDO pacman -Rns --noconfirm xfce4 plasma-desktop mate lxqt i3-wm openbox 2>/dev/null || true ;;
+        esac
         ;;
+
     dnf)
-        for p in $PKGS_TO_REMOVE; do
-            $SUDO dnf remove -y "$p" >/dev/null 2>&1 || true
-        done
+        case "$TARGET" in
+            xfce|xfce4) $SUDO dnf remove -y @xfce-desktop-environment 2>/dev/null || true ;;
+            kde) $SUDO dnf remove -y @kde-desktop-environment 2>/dev/null || true ;;
+            mate) $SUDO dnf remove -y @mate-desktop-environment 2>/dev/null || true ;;
+            lxqt) $SUDO dnf remove -y @lxqt-desktop-environment 2>/dev/null || true ;;
+            i3) $SUDO dnf remove -y i3 i3status dmenu 2>/dev/null || true ;;
+            openbox) $SUDO dnf remove -y openbox tint2 2>/dev/null || true ;;
+            all|*) $SUDO dnf remove -y @xfce-desktop-environment @kde-desktop-environment @mate-desktop-environment @lxqt-desktop-environment 2>/dev/null || true ;;
+        esac
         ;;
 esac
 
-# 4. Limpiar cachés de sesión en HOME
-echo "[4/4] Limpiando configuraciones residuales..."
-rm -rf ~/.cache/sessions ~/.cache/xfce4 ~/.cache/plasma* 2>/dev/null || true
+# 4. Limpiar ejecutables residuales y cachés en HOME
+echo "[4/4] Limpiando configuraciones residuales y cachés..."
+rm -rf ~/.cache/sessions ~/.cache/xfce4 ~/.cache/plasma* ~/.cache/lxqt* ~/.config/xfce4 ~/.config/lxqt 2>/dev/null || true
 
 echo "====================================================="
 echo "✅ [TDM] Desinstalación de entorno finalizada con éxito."

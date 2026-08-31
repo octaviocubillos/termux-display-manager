@@ -60,7 +60,7 @@ case "$DESKTOP" in
         if [ "$PKG_MGR" = "apk" ]; then
             PKGS="plasma-desktop plasma-workspace konsole dolphin"
         else
-            PKGS="plasma-desktop plasma-workspace breeze konsole dolphin kwrite"
+            PKGS="plasma-desktop plasma-workspace breeze konsole dolphin"
         fi
         ;;
     mate)
@@ -105,25 +105,7 @@ echo "====================================================="
 echo "🛑 [TDM] Apagando entornos gráficos y procesos activos (manteniendo servicio TDM)..."
 echo "====================================================="
 
-pkill -9 -f xfce4 2>/dev/null || true
-pkill -9 -f xfwm4 2>/dev/null || true
-pkill -9 -f xfdesktop 2>/dev/null || true
-pkill -9 -f mate-session 2>/dev/null || true
-pkill -9 -f marco 2>/dev/null || true
-pkill -9 -f plasma 2>/dev/null || true
-pkill -9 -f kwin 2>/dev/null || true
-pkill -9 -f startlxqt 2>/dev/null || true
-pkill -9 -f lxqt-session 2>/dev/null || true
-pkill -9 -f openbox 2>/dev/null || true
-pkill -9 -f i3 2>/dev/null || true
-
-pkill -9 -f termux-x11 2>/dev/null || true
-pkill -9 -f Xwayland 2>/dev/null || true
-pkill -9 -f Xvnc 2>/dev/null || true
-pkill -9 -f websockify 2>/dev/null || true
-pkill -9 -f pulseaudio 2>/dev/null || true
-pkill -9 -f virgl_test_server 2>/dev/null || true
-
+pkill -9 -f "xfce4|xfwm4|xfdesktop|mate-session|marco|caja|plasma|kwin|startlxqt|lxqt-session|openbox|i3|termux-x11|Xwayland|Xvnc|websockify|pulseaudio|virgl_test_server" 2>/dev/null || true
 rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /data/data/com.termux/files/usr/tmp/.X*-lock /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
 
 # ==============================================================================
@@ -133,64 +115,36 @@ echo "====================================================="
 echo "🧹 [TDM] Limpiando entornos anteriores para evitar conflictos y liberar espacio..."
 echo "====================================================="
 
-ALL_DESKTOPS="kde mate xfce lxqt i3 openbox"
-PKGS_TO_PURGE=""
-
-for d in $ALL_DESKTOPS; do
-    if [ "$d" != "$DESKTOP" ] && { [ "$d" != "xfce" ] || [ "$DESKTOP" != "xfce4" ]; }; then
-        case "$d" in
-            kde)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE plasma-desktop plasma-workspace breeze konsole dolphin kwrite kded5 kded6 kwin"
-                ;;
-            mate)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon"
-                ;;
-            xfce)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE xfce4 xfce4-session xfce4-panel xfwm4 xfdesktop xfce4-terminal thunar xfconf"
-                ;;
-            lxqt)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE lxqt lxqt-session lxqt-panel qterminal pcmanfm-qt lxqt-globalkeys"
-                ;;
-            i3)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE i3 i3wm i3status dmenu"
-                ;;
-            openbox)
-                PKGS_TO_PURGE="$PKGS_TO_PURGE openbox tint2 obconf"
-                ;;
-        esac
-    fi
-done
-
 case "$PKG_MGR" in
     pkg|apt)
-        PURGED_ANY=0
-        for p in $PKGS_TO_PURGE; do
-            if dpkg -s "$p" >/dev/null 2>&1; then
-                echo "🗑️ Desinstalando entorno anterior ($p)..."
+        INSTALLED_LIST="$(dpkg -l 2>/dev/null | awk '/^ii/ {print $2}' || true)"
+        PKGS_TO_PURGE=""
+
+        get_matching() {
+            local pattern="$1"
+            echo "$INSTALLED_LIST" | grep -E "$pattern" || true
+        }
+
+        # Purga de cualquier otro DE que no sea el seleccionado
+        [ "$DESKTOP" != "xfce" ] && [ "$DESKTOP" != "xfce4" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(xfce4|xfwm4|xfdesktop4?|thunar|libxfce4|xfconf)')"
+        [ "$DESKTOP" != "kde" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(plasma-|plasma-desktop|plasma-workspace|kwin|dolphin|konsole|breeze|kded[56]|libkf[56])')"
+        [ "$DESKTOP" != "mate" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(mate-|marco|caja)')"
+        [ "$DESKTOP" != "lxqt" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(lxqt|liblxqt|libdbusmenu-lxqt|pcmanfm-qt|libfm-qt|qterminal)')"
+        [ "$DESKTOP" != "i3" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(i3|i3wm|i3status|dmenu)')"
+        [ "$DESKTOP" != "openbox" ] && PKGS_TO_PURGE="$PKGS_TO_PURGE $(get_matching '^(openbox|obconf|tint2)')"
+
+        # Eliminar duplicados
+        CLEAN_PURGE_LIST="$(echo "$PKGS_TO_PURGE" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs || true)"
+
+        if [ -n "$CLEAN_PURGE_LIST" ]; then
+            echo "🗑️ Desinstalando paquetes de entornos anteriores: $CLEAN_PURGE_LIST"
+            for p in $CLEAN_PURGE_LIST; do
                 apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
-                PURGED_ANY=1
-            fi
-        done
-        if [ "$PURGED_ANY" -eq 1 ]; then
+            done
             echo "🧹 Liberando dependencias huérfanas y caché de paquetes..."
             apt-get autoremove -y --purge >/dev/null 2>&1 || true
             apt-get clean >/dev/null 2>&1 || true
         fi
-        ;;
-    apk)
-        for p in $PKGS_TO_PURGE; do
-            $SUDO apk del "$p" >/dev/null 2>&1 || true
-        done
-        ;;
-    pacman)
-        for p in $PKGS_TO_PURGE; do
-            $SUDO pacman -Rns --noconfirm "$p" >/dev/null 2>&1 || true
-        done
-        ;;
-    dnf)
-        for p in $PKGS_TO_PURGE; do
-            $SUDO dnf remove -y "$p" >/dev/null 2>&1 || true
-        done
         ;;
 esac
 
