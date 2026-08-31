@@ -62,8 +62,8 @@ aapt2 link \
     -I "$SDK_JAR" \
     --min-sdk-version 24 \
     --target-sdk-version 34 \
-    --version-code 30 \
-    --version-name "0.0.30" \
+    --version-code 31 \
+    --version-name "0.0.31" \
     --manifest "$APP_DIR/AndroidManifest.xml" \
     -A "$BUILD_DIR/assets" \
     -o "$BUILD_DIR/unaligned.apk" \
