@@ -727,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.21</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.22</span>
             </div>
         </div>
 
@@ -1072,21 +1072,72 @@
         let localWs = null;
         let deferredPrompt = null;
         let healthPollInterval = null;
+        let pingInterval = null;
         let lastStatusData = null;
+        let clientPingMs = null;
+        let wsPendingRequests = new Map();
+        let wsReqCounter = 0;
 
         // Iniciar
         document.addEventListener('DOMContentLoaded', () => {
             initLocalWs();
             initPwa();
-            refreshStatus();
             
-            // Sondeo periódico de estado local cada 4s
-            if (healthPollInterval) clearInterval(healthPollInterval);
-            healthPollInterval = setInterval(refreshStatus, 4000);
+            // Sondeo periódico de ping / estado cada 3s
+            if (pingInterval) clearInterval(pingInterval);
+            pingInterval = setInterval(() => {
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    measureWsPing();
+                } else {
+                    refreshStatus();
+                }
+            }, 3000);
 
             // Cargar versión
             setTimeout(() => fetchVersion(), 1200);
         });
+
+        function sendWsRpc(action, payload = {}) {
+            return new Promise((resolve, reject) => {
+                if (!localWs || localWs.readyState !== WebSocket.OPEN) {
+                    reject(new Error('WebSocket desconectado'));
+                    return;
+                }
+                const reqId = `req_${++wsReqCounter}_${Date.now()}`;
+                const msg = { action: action, type: action, id: reqId, payload: payload, ...payload };
+
+                const timer = setTimeout(() => {
+                    if (wsPendingRequests.has(reqId)) {
+                        wsPendingRequests.delete(reqId);
+                        reject(new Error('Timeout de WebSocket'));
+                    }
+                }, 10000);
+
+                wsPendingRequests.set(reqId, { resolve, reject, timer });
+                localWs.send(JSON.stringify(msg));
+            });
+        }
+
+        function measureWsPing() {
+            if (localWs && localWs.readyState === WebSocket.OPEN) {
+                localWs.send(JSON.stringify({ type: 'ping', t0: performance.now() }));
+            }
+        }
+
+        function updatePingTelemetry(rtt) {
+            clientPingMs = rtt;
+            const txtClientPing = document.getElementById('txtClientPing');
+            const barPing = document.getElementById('barPing');
+            if (txtClientPing) {
+                txtClientPing.innerText = `${rtt} ms`;
+                txtClientPing.style.color = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
+            }
+            if (barPing) {
+                barPing.style.background = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
+                const quality = Math.max(15, Math.min(100, 100 - Math.round(rtt / 2)));
+                barPing.style.width = `${quality}%`;
+            }
+        }
 
         function initLocalWs() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1097,42 +1148,95 @@
                 }
                 localWs = new WebSocket(wsUrl);
 
+                localWs.onopen = () => {
+                    measureWsPing();
+                };
+
                 localWs.onmessage = (e) => {
                     try {
                         const msg = JSON.parse(e.data);
-                        if (msg.type === 'log' || msg.type === 'exec_log') {
+
+                        // 1. Mensaje de bienvenida / conectado
+                        if (msg.type === 'connected') {
+                            if (msg.status) {
+                                lastStatusData = msg.status;
+                                setDeviceOnlineState(true, msg.status);
+                            }
+                            if (msg.version?.version) {
+                                const badge = document.getElementById('lblHeaderVersion');
+                                if (badge) badge.innerText = `v${msg.version.version}`;
+                            }
+                            measureWsPing();
+                        }
+
+                        // 2. Telemetría transmitida en tiempo real por WebSocket
+                        else if (msg.type === 'status_update' || msg.type === 'status') {
+                            lastStatusData = msg.data;
+                            setDeviceOnlineState(true, msg.data);
+                        }
+
+                        // 3. Respuesta a Ping por WebSocket
+                        else if (msg.type === 'pong') {
+                            if (msg.t0) {
+                                const rtt = Math.round(performance.now() - msg.t0);
+                                updatePingTelemetry(rtt);
+                            }
+                        }
+
+                        // 4. Logs del instalador en tiempo real
+                        else if (msg.type === 'log' || msg.type === 'exec_log') {
                             const text = msg.line || msg.data;
                             if (text) {
                                 const logBox = document.getElementById('liveTerminalContent');
                                 const drawer = document.getElementById('logsDrawer');
-                                drawer.classList.add('open');
-                                logBox.innerText += '\n' + text;
-                                logBox.scrollTop = logBox.scrollHeight;
+                                if (drawer) drawer.classList.add('open');
+                                if (logBox) {
+                                    logBox.innerText += '\n' + text;
+                                    logBox.scrollTop = logBox.scrollHeight;
+                                }
+                            }
+                        }
+
+                        // 5. Resolución de peticiones RPC por WebSocket
+                        if (msg.id && wsPendingRequests.has(msg.id)) {
+                            const req = wsPendingRequests.get(msg.id);
+                            clearTimeout(req.timer);
+                            wsPendingRequests.delete(msg.id);
+                            if (msg.success !== false) {
+                                req.resolve(msg);
+                            } else {
+                                req.reject(new Error(msg.error || 'Error en operación WebSocket'));
                             }
                         }
                     } catch(err) {}
                 };
 
                 localWs.onclose = () => {
-                    setTimeout(initLocalWs, 4000);
+                    setTimeout(initLocalWs, 3000);
                 };
             } catch(e) {}
         }
 
-        let clientPingMs = null;
-
         async function refreshStatus() {
-            const t0 = performance.now();
+            measureWsPing();
+            if (localWs && localWs.readyState === WebSocket.OPEN) {
+                try {
+                    const res = await sendWsRpc('get_status');
+                    if (res.data) {
+                        lastStatusData = res.data;
+                        setDeviceOnlineState(true, res.data);
+                        return;
+                    }
+                } catch(e) {}
+            }
+            // Fallback REST si WebSocket no está conectado
             try {
                 const res = await fetch('/api/status');
-                const t1 = performance.now();
-                clientPingMs = Math.round(t1 - t0);
                 if (!res.ok) throw new Error('Servidor local offline');
                 const data = await res.json();
                 lastStatusData = data;
                 setDeviceOnlineState(true, data);
             } catch(e) {
-                clientPingMs = null;
                 setDeviceOnlineState(false);
             }
         }
@@ -1362,44 +1466,58 @@
         }
 
         async function apiInstallPickedDesktop() {
+            if (!selectedDesktop) return;
             showToast(`Instalando ${selectedDesktop.toUpperCase()}...`, 'download');
-            document.getElementById('logsDrawer').classList.add('open');
-            document.getElementById('liveTerminalContent').innerText = `[TDM] Descargando e instalando ${selectedDesktop}...\n`;
+            const drawer = document.getElementById('logsDrawer');
+            if (drawer) drawer.classList.add('open');
+            const logBox = document.getElementById('liveTerminalContent');
+            if (logBox) logBox.innerText = `[TDM] Descargando e instalando ${selectedDesktop}...\n`;
+
             try {
-                const res = await fetch('/api/install/desktop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ desktop: selectedDesktop })
-                });
-                const d = await res.json();
-                if (d.success) {
-                    showToast('¡Instalación Finalizada!', 'check_circle');
-                    toggleDeList(false);
-                    refreshStatus();
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('install_desktop', { desktop: selectedDesktop });
                 } else {
-                    showToast(`Error al instalar: ${d.error || ''}`, 'error');
+                    const res = await fetch('/api/install/desktop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ desktop: selectedDesktop })
+                    });
+                    const d = await res.json();
+                    if (!d.success) throw new Error(d.error || 'Error al instalar');
                 }
+                showToast('¡Instalación Finalizada!', 'check_circle');
+                toggleDeList(false);
+                refreshStatus();
             } catch(e) {
-                showToast('Error de conexión al instalar', 'error');
+                showToast(`Error al instalar: ${e.message || e}`, 'error');
             }
         }
 
         async function apiStartScreen() {
             showToast(`Iniciando ${selectedBackend.toUpperCase()}...`, 'rocket_launch');
+            const payload = {
+                backend: selectedBackend,
+                mode: 'desktop',
+                desktop: selectedDesktop,
+                resolution: '1080x2400',
+                dpi: 96,
+                audio: true,
+                virgl: true
+            };
             try {
-                const res = await fetch('/api/screen/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        backend: selectedBackend,
-                        mode: 'desktop',
-                        resolution: '1080x2400',
-                        dpi: 96,
-                        audio: true,
-                        virgl: true
-                    })
-                });
-                const d = await res.json();
+                let d;
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    const res = await sendWsRpc('start_screen', payload);
+                    d = res.data || res;
+                } else {
+                    const res = await fetch('/api/screen/start', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    d = await res.json();
+                }
+
                 if (d.status === 'running' || d.started || d.server_pid) {
                     showToast('¡Pantalla Iniciada con éxito!', 'check_circle');
                     if (selectedBackend === 'novnc') {
@@ -1410,7 +1528,7 @@
                 }
                 refreshStatus();
             } catch(e) {
-                showToast('Error al conectar con servidor local', 'error');
+                showToast(`Error al iniciar pantalla: ${e.message || e}`, 'error');
             }
         }
 
@@ -1418,8 +1536,11 @@
             showToast('Apagando pantalla...', 'desktop_access_disabled');
             userSelectedBackendManually = false;
             try {
-                const res = await fetch('/api/screen/stop', { method: 'POST' });
-                const d = await res.json();
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('stop_screen');
+                } else {
+                    await fetch('/api/screen/stop', { method: 'POST' });
+                }
                 showToast('Pantalla Detenida al 100%', 'check_circle');
                 refreshStatus();
             } catch(e) {
@@ -1432,7 +1553,11 @@
             showToast('Apagando todo y cerrando procesos...', 'power_settings_new');
             userSelectedBackendManually = false;
             try {
-                await fetch('/api/service/stop', { method: 'POST' });
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('stop_service');
+                } else {
+                    await fetch('/api/service/stop', { method: 'POST' });
+                }
                 showToast('Servicios y entorno detenidos al 100%', 'check_circle');
                 setTimeout(() => {
                     setDeviceOnlineState(false);

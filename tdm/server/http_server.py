@@ -9,6 +9,8 @@ import json
 import mimetypes
 import os
 import secrets
+import shutil
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -202,24 +204,9 @@ class AsyncHTTPServer:
                 await ws.close()
             return
 
-        # 3. Conexión WebSocket Local: /ws o /ws/local
+        # 3. Conexión WebSocket Local Bidireccional (Telemetría + RPC): /ws o /ws/local
         elif path in ["/ws", "/ws/local"]:
-            try:
-                def on_local_log(line):
-                    asyncio.create_task(ws.send_json({"type": "log", "line": line}))
-                
-                installer_service.subscribe(on_local_log)
-                await ws.send_json({"type": "connected", "message": "Canal local WebSocket activo"})
-
-                while not ws.closed:
-                    msg = await ws.recv_json()
-                    if msg is None:
-                        break
-                    if msg.get("type") == "ping":
-                        await ws.send_json({"type": "pong"})
-            finally:
-                installer_service.unsubscribe(on_local_log)
-                await ws.close()
+            await self.handle_local_ws(ws)
             return
 
         # 4. Puente Nativo WebSocket <-> VNC RFB (/websockify, /ws/vnc)
@@ -228,6 +215,190 @@ class AsyncHTTPServer:
             return
 
         else:
+            await ws.close()
+
+    async def handle_local_ws(self, ws: WebSocketConnection):
+        """Gestiona el canal bidireccional WebSocket para telemetría en tiempo real y comandos RPC."""
+        def on_local_log(line):
+            asyncio.create_task(ws.send_json({"type": "log", "line": line}))
+
+        installer_service.subscribe(on_local_log)
+
+        # Enviar estado inicial y confirmación de conexión inmediatamente
+        try:
+            initial_status = display_manager.get_status()
+            await ws.send_json({
+                "type": "connected",
+                "message": "Canal local WebSocket activo",
+                "status": initial_status,
+                "version": get_version_info()
+            })
+        except Exception:
+            pass
+
+        # Tarea de emisión periódica de telemetría a través del WebSocket (cada 2.5s)
+        async def telemetry_stream():
+            try:
+                while not ws.closed:
+                    await asyncio.sleep(2.5)
+                    if ws.closed:
+                        break
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
+            except Exception:
+                pass
+
+        stream_task = asyncio.create_task(telemetry_stream())
+
+        try:
+            while not ws.closed:
+                msg = await ws.recv_json()
+                if msg is None:
+                    break
+
+                req_type = msg.get("type") or msg.get("action")
+                req_id = msg.get("id") or msg.get("req_id")
+
+                # 1. Ping / Latencia (calculado por WebSocket)
+                if req_type == "ping":
+                    await ws.send_json({
+                        "type": "pong",
+                        "id": req_id,
+                        "t0": msg.get("t0"),
+                        "server_time": time.time()
+                    })
+
+                # 2. Consultar Estado
+                elif req_type in ["get_status", "status"]:
+                    st = display_manager.get_status()
+                    await ws.send_json({
+                        "type": "status_response",
+                        "id": req_id,
+                        "data": st
+                    })
+
+                # 3. Iniciar Pantalla
+                elif req_type in ["start_screen", "screen_start"]:
+                    payload = msg.get("payload") or msg.get("data") or {}
+                    try:
+                        session_dict = await display_manager.start_screen(
+                            backend=payload.get("backend", "termux-x11"),
+                            mode=payload.get("mode", "desktop"),
+                            desktop_id=payload.get("desktop"),
+                            resolution=payload.get("resolution", "1080x2400"),
+                            dpi=payload.get("dpi", 96),
+                            audio=payload.get("audio", True),
+                            virgl=payload.get("virgl", True)
+                        )
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "start_screen",
+                            "id": req_id,
+                            "success": True,
+                            "data": session_dict
+                        })
+                        # Emitir estado actualizado inmediatamente
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "start_screen",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 4. Apagar Pantalla (detener display/entorno gráfico)
+                elif req_type in ["stop_screen", "screen_stop"]:
+                    try:
+                        stopped = await display_manager.stop_screen()
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "stop_screen",
+                            "id": req_id,
+                            "success": stopped,
+                            "stopped": stopped,
+                            "message": "Pantalla apagada correctamente"
+                        })
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "stop_screen",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 5. Apagar Todo (detener pantalla y apagar servicio/demonio TDM)
+                elif req_type in ["stop_service", "shutdown", "stop_all"]:
+                    try:
+                        stopped = await display_manager.stop_screen()
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "stop_service",
+                            "id": req_id,
+                            "success": True,
+                            "message": "Apagando pantalla y cerrando todos los servicios de Termux..."
+                        })
+                        async def _kill_daemon():
+                            await asyncio.sleep(0.5)
+                            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+                            sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
+                            if os.path.exists(sv_bin) and os.path.exists(f"{prefix}/var/service/tdm"):
+                                subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
+                            termux_wake_unlock = shutil.which("termux-wake-unlock") or f"{prefix}/bin/termux-wake-unlock"
+                            if os.path.exists(termux_wake_unlock):
+                                subprocess.run([termux_wake_unlock], capture_output=True)
+                            os._exit(0)
+                        asyncio.create_task(_kill_daemon())
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "stop_service",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 6. Instalar Entorno de Escritorio
+                elif req_type in ["install_desktop", "install"]:
+                    payload = msg.get("payload") or msg.get("data") or {}
+                    target = payload.get("desktop") or payload.get("target") or msg.get("desktop")
+                    try:
+                        success = await installer_service.install_desktop(target)
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "install_desktop",
+                            "id": req_id,
+                            "success": success,
+                            "target": target,
+                            "message": f"Instalación de {target} finalizada"
+                        })
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "install_desktop",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 7. Obtener Versión
+                elif req_type in ["get_version", "version"]:
+                    await ws.send_json({
+                        "type": "version_response",
+                        "id": req_id,
+                        "data": get_version_info()
+                    })
+
+        finally:
+            stream_task.cancel()
+            installer_service.unsubscribe(on_local_log)
             await ws.close()
 
     async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = 19053):
