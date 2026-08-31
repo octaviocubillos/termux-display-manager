@@ -108,6 +108,13 @@ class PackageInstaller:
             self.process = None
 
     async def install_desktop(self, desktop: str) -> bool:
+        # Antes de cambiar de entorno, apagar todas las pantallas y procesos gráficos manteniendo TDM activo
+        try:
+            from tdm.core.display_manager import display_manager
+            self._broadcast_log("[*] Deteniendo sesiones y procesos gráficos activos antes del cambio de entorno...")
+            await display_manager.stop_screen()
+        except Exception as e:
+            self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
         return await self.run_script("install_desktop.sh", [desktop])
 
     async def install_server(self, server: str) -> bool:

@@ -2,8 +2,8 @@
 Termux Display Manager (TDM) - Información de Versionado
 """
 
-__version__ = "0.0.32"
-__version_code__ = 32
+__version__ = "0.0.33"
+__version_code__ = 33
 MANIFEST_SCHEMA_VERSION = 1
 
 def get_version_info() -> dict:

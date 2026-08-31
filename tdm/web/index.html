@@ -823,7 +823,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.32</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.33</span>
             </div>
         </div>
 
@@ -1667,9 +1667,16 @@
             const drawer = document.getElementById('logsDrawer');
             if (drawer) drawer.classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
-            if (logBox) logBox.innerText = `[TDM] Descargando e instalando ${selectedDesktop}...\n`;
-
             try {
+                // Antes de cambiar de entorno, apagar sesiones y pantallas activas manteniendo TDM
+                try {
+                    if (localWs && localWs.readyState === WebSocket.OPEN) {
+                        await sendWsRpc('stop_screen');
+                    } else {
+                        await fetch('/api/screen/stop', { method: 'POST' });
+                    }
+                } catch(e) {}
+
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('install_desktop', { desktop: selectedDesktop });
                 } else {

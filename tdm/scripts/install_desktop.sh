@@ -99,6 +99,34 @@ case "$DESKTOP" in
 esac
 
 # ==============================================================================
+# APAGAR SESIONES GRÁFICAS Y PROCESOS ANTERIORES (EXCEPTO EL SERVICIO TDM)
+# ==============================================================================
+echo "====================================================="
+echo "🛑 [TDM] Apagando entornos gráficos y procesos activos (manteniendo servicio TDM)..."
+echo "====================================================="
+
+pkill -9 -f xfce4 2>/dev/null || true
+pkill -9 -f xfwm4 2>/dev/null || true
+pkill -9 -f xfdesktop 2>/dev/null || true
+pkill -9 -f mate-session 2>/dev/null || true
+pkill -9 -f marco 2>/dev/null || true
+pkill -9 -f plasma 2>/dev/null || true
+pkill -9 -f kwin 2>/dev/null || true
+pkill -9 -f startlxqt 2>/dev/null || true
+pkill -9 -f lxqt-session 2>/dev/null || true
+pkill -9 -f openbox 2>/dev/null || true
+pkill -9 -f i3 2>/dev/null || true
+
+pkill -9 -f termux-x11 2>/dev/null || true
+pkill -9 -f Xwayland 2>/dev/null || true
+pkill -9 -f Xvnc 2>/dev/null || true
+pkill -9 -f websockify 2>/dev/null || true
+pkill -9 -f pulseaudio 2>/dev/null || true
+pkill -9 -f virgl_test_server 2>/dev/null || true
+
+rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /data/data/com.termux/files/usr/tmp/.X*-lock /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
+
+# ==============================================================================
 # LIMPIEZA DE ENTORNOS ANTERIORES (Liberación de espacio y eliminación de conflictos)
 # ==============================================================================
 echo "====================================================="
