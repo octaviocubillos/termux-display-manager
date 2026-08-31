@@ -727,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.17</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.18</span>
             </div>
         </div>
 
@@ -1040,6 +1040,7 @@
     <!-- JAVASCRIPT CORE -->
     <script>
         let selectedBackend = 'termux-x11';
+        let userSelectedBackendManually = false;
         let selectedDesktop = 'xfce';
         let isDePickerOpen = false;
         let isScreenActive = false;
@@ -1121,10 +1122,18 @@
                 dot.className = 'status-dot online';
                 isScreenActive = data.is_screen_active;
                 const de = data.installed_desktop;
+                const act = data.active_screen || {};
+
+                // Sincronizar automáticamente la pestaña activa si hay un backend encendido y no se ha cambiado manualmente
+                if (data.is_screen_active && act.backend && !userSelectedBackendManually) {
+                    selectedBackend = act.backend;
+                    document.querySelectorAll('.segment-btn').forEach(el => el.classList.remove('active'));
+                    const activeSeg = document.getElementById(`seg-${selectedBackend}`);
+                    if (activeSeg) activeSeg.classList.add('active');
+                }
 
                 const lanIp = data.network?.lan_ip || '127.0.0.1';
                 if (data.is_screen_active) {
-                    const act = data.active_screen || {};
                     const deTitle = act.desktop_name || (de?.name || 'Entorno Gráfico');
                     sub.innerText = `🟢 Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
                 } else {
@@ -1281,6 +1290,7 @@
         }
 
         function setBackend(b) {
+            userSelectedBackendManually = true;
             selectedBackend = b;
             document.querySelectorAll('.segment-btn').forEach(el => el.classList.remove('active'));
             const btn = document.getElementById(`seg-${b}`);
@@ -1376,6 +1386,7 @@
 
         async function apiStopScreen() {
             showToast('Apagando pantalla...', 'power_settings_new');
+            userSelectedBackendManually = false;
             try {
                 const res = await fetch('/api/screen/stop', { method: 'POST' });
                 const d = await res.json();
