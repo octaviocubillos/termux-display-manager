@@ -128,20 +128,55 @@
             gap: 0.5rem;
         }
 
-        /* BUTTONS */
+        /* BUTTONS (MINIMALIST & STANDARDIZED) */
         .btn-m3 {
             border: none;
-            padding: 0.5rem 1rem;
+            height: 38px;
+            min-height: 38px;
+            padding: 0 1.1rem;
             border-radius: var(--md-shape-corner-full);
             font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.45rem;
             transition: all 0.2s var(--ease-m3);
             text-decoration: none;
             outline: none;
+            box-sizing: border-box;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .btn-m3 .material-symbols-rounded {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .btn-m3-sm {
+            height: 32px;
+            min-height: 32px;
+            padding: 0 0.75rem;
+            font-size: 0.75rem;
+            gap: 0.35rem;
+        }
+
+        .btn-m3-sm .material-symbols-rounded {
+            font-size: 0.95rem;
+        }
+
+        .btn-m3-icon-only {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        .btn-m3-icon-only.btn-m3-sm {
+            width: 32px;
+            height: 32px;
         }
 
         .btn-m3-tonal {
@@ -696,7 +731,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.14</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.15</span>
             </div>
         </div>
 
@@ -730,7 +765,7 @@
                             <span class="material-symbols-rounded">power_settings_new</span>
                             <span>Apagar</span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="refreshStatus()" title="Refrescar Estado">
+                        <button class="btn-m3 btn-m3-tonal btn-m3-icon-only" onclick="refreshStatus()" title="Refrescar Estado">
                             <span class="material-symbols-rounded">refresh</span>
                         </button>
                     </div>
@@ -906,12 +941,13 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; gap: 0.65rem; align-items: center; margin-top: 0.25rem;">
-                        <button class="btn-m3 btn-m3-filled" id="btnInstallDeAction" onclick="apiInstallPickedDesktop()">
+                    <div style="display: flex; gap: 0.65rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap;">
+                        <button class="btn-m3 btn-m3-filled" id="btnInstallDeAction" onclick="apiInstallPickedDesktop()" style="flex: 1 1 140px;">
                             <span class="material-symbols-rounded">download</span>
                             <span>Instalar <span id="lblPickedDe">XFCE4</span></span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList(false)">
+                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList(false)" style="flex: 1 1 140px;">
+                            <span class="material-symbols-rounded">close</span>
                             <span>Cancelar</span>
                         </button>
                     </div>
@@ -929,7 +965,10 @@
         <section class="logs-sheet" id="logsDrawer">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-primary);">📜 Terminal de Instalación / Eventos</span>
-                <button class="btn-m3 btn-m3-tonal" onclick="toggleLogsDrawer()" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Cerrar</button>
+                <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer()">
+                    <span class="material-symbols-rounded">close</span>
+                    <span>Cerrar</span>
+                </button>
             </div>
             <div class="terminal-box" id="liveTerminalContent">Esperando eventos...</div>
         </section>
@@ -952,42 +991,42 @@
                 <!-- CONTROLES INTEGRADOS SIN DUPLICADOS -->
                 <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;" id="vncModalControls">
                     <!-- Selector de Modo -->
-                    <button class="btn-m3 btn-m3-tonal" id="btnModalModeLite" onclick="switchViewerMode('lite')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; font-weight: 700;">⚡ Lite</button>
-                    <button class="btn-m3 btn-m3-tonal" id="btnModalModeFull" onclick="switchViewerMode('full')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; font-weight: 700;">🎛️ Completo</button>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalModeLite" onclick="switchViewerMode('lite')">⚡ Lite</button>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalModeFull" onclick="switchViewerMode('full')">🎛️ Completo</button>
 
                     <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
 
                     <!-- Controles Lite Integrados -->
-                    <button class="btn-m3 btn-m3-tonal" id="btnVncDynamicResize" onclick="sendIframeVncAction('toggle_resize')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">aspect_ratio</span>
-                        <span>Dimensión Dinámica</span>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnVncDynamicResize" onclick="sendIframeVncAction('toggle_resize')">
+                        <span class="material-symbols-rounded">aspect_ratio</span>
+                        <span>Dinámica</span>
                     </button>
-                    <button class="btn-m3 btn-m3-tonal" id="btnVncScale" onclick="sendIframeVncAction('toggle_scale')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">fit_screen</span>
-                        <span>Auto-Escalar</span>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnVncScale" onclick="sendIframeVncAction('toggle_scale')">
+                        <span class="material-symbols-rounded">fit_screen</span>
+                        <span>Auto-Escala</span>
                     </button>
-                    <button class="btn-m3 btn-m3-tonal" onclick="sendIframeVncAction('ctrl_alt_del')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">keyboard</span>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="sendIframeVncAction('ctrl_alt_del')">
+                        <span class="material-symbols-rounded">keyboard</span>
                         <span>Ctrl+Alt+Del</span>
                     </button>
-                    <button class="btn-m3 btn-m3-tonal" onclick="sendIframeVncAction('reconnect')" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">refresh</span>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="sendIframeVncAction('reconnect')">
+                        <span class="material-symbols-rounded">refresh</span>
                         <span>Reconectar</span>
                     </button>
 
                     <div style="width: 1px; height: 16px; background: rgba(255,255,255,0.15); margin: 0 2px;"></div>
 
                     <!-- Acciones de Ventana -->
-                    <button class="btn-m3 btn-m3-tonal" id="btnModalFullscreen" onclick="toggleModalFullscreen()" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; display: inline-flex; align-items: center; gap: 0.25rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">fullscreen</span>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnModalFullscreen" onclick="toggleModalFullscreen()">
+                        <span class="material-symbols-rounded">fullscreen</span>
                         <span>Pantalla Completa</span>
                     </button>
-                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal" style="text-decoration: none; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.2rem 0.55rem;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">open_in_new</span>
+                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal btn-m3-sm">
+                        <span class="material-symbols-rounded">open_in_new</span>
                         <span>Pestaña</span>
                     </a>
-                    <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; background: rgba(239, 68, 68, 0.2); color: #fca5a5;">
-                        <span class="material-symbols-rounded" style="font-size: 0.88rem;">close</span>
+                    <button class="btn-m3 btn-m3-error btn-m3-sm" onclick="closeWebViewer()">
+                        <span class="material-symbols-rounded">close</span>
                         <span>Cerrar</span>
                     </button>
                 </div>
