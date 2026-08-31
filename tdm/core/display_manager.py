@@ -81,7 +81,16 @@ class DisplayManager:
         installed_de = self.get_installed_desktop()
         backends = discover_backends()
         network = discover_network_interfaces()
-        mem_info = get_memory_info()
+        from tdm.core.telemetry import (
+            get_device_info,
+            get_cpu_telemetry,
+            get_memory_telemetry,
+            get_storage_telemetry
+        )
+        dev_info = get_device_info()
+        cpu_info = get_cpu_telemetry()
+        mem_info = get_memory_telemetry()
+        storage_info = get_storage_telemetry()
         
         session_dict = None
         if self.active_session and self.active_session.status == DisplayStatus.RUNNING:
@@ -94,7 +103,10 @@ class DisplayManager:
             "installed_desktop": installed_de,
             "available_backends": backends,
             "network": network,
+            "device": dev_info,
+            "cpu": cpu_info,
             "memory": mem_info,
+            "storage": storage_info,
             "version": ver_info,
             "is_screen_active": bool(self.active_session and self.active_session.status == DisplayStatus.RUNNING),
             "active_screen": session_dict

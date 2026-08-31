@@ -324,15 +324,16 @@ class AsyncHTTPServer:
             self.send_json_response(writer, net_data)
             return
 
-        if path == "/api/system/check" and method == "GET":
+        if path in ["/api/system/check", "/api/system/stats"] and method == "GET":
             from tdm.discovery.desktops import discover_desktops
             from tdm.discovery.backends import discover_backends
-            from tdm.core.display_manager import get_memory_info
+            from tdm.core.telemetry import get_full_system_telemetry
+            telemetry = get_full_system_telemetry()
             check_data = {
                 "desktops": discover_desktops(),
                 "backends": discover_backends(),
                 "network": network_discovery.get_all_interfaces(self.port),
-                "memory": get_memory_info(),
+                **telemetry,
                 "version": get_version_info()
             }
             self.send_json_response(writer, check_data)

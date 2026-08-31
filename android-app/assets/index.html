@@ -244,6 +244,80 @@
             margin-top: 0.15rem;
         }
 
+        /* TELEMETRY GRID & CARDS */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.65rem;
+            margin-top: 0.85rem;
+        }
+
+        @media (max-width: 860px) {
+            .telemetry-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .telemetry-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .telemetry-card {
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-md);
+            padding: 0.75rem 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+        }
+
+        .telemetry-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--md-sys-color-on-surface-variant);
+            letter-spacing: 0.5px;
+        }
+
+        .telemetry-card-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            align-items: baseline;
+            gap: 0.3rem;
+        }
+
+        .telemetry-card-sub {
+            font-size: 0.72rem;
+            color: var(--md-sys-color-on-surface-variant);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .telemetry-progress-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.15rem;
+        }
+
+        .telemetry-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--md-sys-color-primary);
+            transition: width 0.4s ease, background 0.3s ease;
+        }
+
         /* SEGMENTED CONTROL / BACKEND SELECTOR */
         .segmented-bar {
             background: var(--md-sys-color-surface-container);
@@ -560,7 +634,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.6</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.7</span>
             </div>
         </div>
 
@@ -597,6 +671,73 @@
                         <button class="btn-m3 btn-m3-tonal" onclick="refreshStatus()" title="Refrescar Estado">
                             <span class="material-symbols-rounded">refresh</span>
                         </button>
+                    </div>
+                </div>
+
+                <!-- TELEMETRY METRICS GRID (CPU, RAM, DISCO, RED) -->
+                <div class="telemetry-grid">
+                    <!-- CPU -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #a8c7fa;">memory</span>
+                                <span>CPU</span>
+                            </span>
+                            <span id="txtCpuTemp" style="font-size: 0.7rem; color: #6dd58c; font-weight: 700;">-- °C</span>
+                        </div>
+                        <div class="telemetry-card-value" id="txtCpuVal">-- %</div>
+                        <div class="telemetry-progress-bg">
+                            <div class="telemetry-progress-fill" id="barCpu" style="width: 0%;"></div>
+                        </div>
+                        <div class="telemetry-card-sub" id="txtCpuModel">Detectando procesador...</div>
+                    </div>
+
+                    <!-- RAM -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #c4eed0;">view_in_ar</span>
+                                <span>MEMORIA RAM</span>
+                            </span>
+                            <span id="txtRamPct" style="font-size: 0.7rem; font-weight: 700; color: #c4eed0;">-- %</span>
+                        </div>
+                        <div class="telemetry-card-value" id="txtRamVal">-- / -- MB</div>
+                        <div class="telemetry-progress-bg">
+                            <div class="telemetry-progress-fill" id="barRam" style="width: 0%;"></div>
+                        </div>
+                        <div class="telemetry-card-sub" id="txtRamSub">Calculando...</div>
+                    </div>
+
+                    <!-- STORAGE -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #fde293;">storage</span>
+                                <span>ALMACENAMIENTO</span>
+                            </span>
+                            <span id="txtStoragePct" style="font-size: 0.7rem; font-weight: 700; color: #fde293;">-- %</span>
+                        </div>
+                        <div class="telemetry-card-value" id="txtStorageVal">-- / -- GB</div>
+                        <div class="telemetry-progress-bg">
+                            <div class="telemetry-progress-fill" id="barStorage" style="width: 0%;"></div>
+                        </div>
+                        <div class="telemetry-card-sub" id="txtStorageSub">Termux Home</div>
+                    </div>
+
+                    <!-- NETWORK & DEVICE -->
+                    <div class="telemetry-card">
+                        <div class="telemetry-card-header">
+                            <span style="display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #ffb4ab;">wifi</span>
+                                <span>RED & DISPOSITIVO</span>
+                            </span>
+                            <span class="status-badge online" id="dotNetState" style="width:6px; height:6px;"></span>
+                        </div>
+                        <div class="telemetry-card-value" id="txtNetIp" style="font-size: 0.92rem;">127.0.0.1</div>
+                        <div class="telemetry-progress-bg">
+                            <div class="telemetry-progress-fill" style="width: 100%; background: #22c55e;"></div>
+                        </div>
+                        <div class="telemetry-card-sub" id="txtDevModelName">POCO F3 • Android 13</div>
                     </div>
                 </div>
 
@@ -812,7 +953,59 @@
 
                 const lanIp = data.network?.lan_ip || '127.0.0.1';
                 const ramInfo = data.memory?.formatted || '';
-                sub.innerText = `🟢 Termux Local • IP: ${lanIp} ${ramInfo ? '• RAM: ' + ramInfo : ''}`;
+                sub.innerText = `🟢 Termux Local • IP: ${lanIp}`;
+
+                // TELEMETRÍA EN TIEMPO REAL:
+                // 1. CPU
+                const cpu = data.cpu || {};
+                const cpuPct = cpu.percent || 0;
+                const txtCpuVal = document.getElementById('txtCpuVal');
+                const txtCpuTemp = document.getElementById('txtCpuTemp');
+                const txtCpuModel = document.getElementById('txtCpuModel');
+                const barCpu = document.getElementById('barCpu');
+                if (txtCpuVal) txtCpuVal.innerText = `${cpuPct}%`;
+                if (txtCpuTemp) txtCpuTemp.innerText = cpu.temperature_formatted || '';
+                if (txtCpuModel) txtCpuModel.innerText = `${cpu.cores || 1} Núcleos • ${cpu.model || 'ARM64'}`;
+                if (barCpu) {
+                    barCpu.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+                    barCpu.style.background = cpuPct > 85 ? '#ef4444' : cpuPct > 60 ? '#eab308' : 'var(--md-sys-color-primary)';
+                }
+
+                // 2. RAM
+                const mem = data.memory || {};
+                const txtRamVal = document.getElementById('txtRamVal');
+                const txtRamPct = document.getElementById('txtRamPct');
+                const txtRamSub = document.getElementById('txtRamSub');
+                const barRam = document.getElementById('barRam');
+                if (txtRamVal) txtRamVal.innerText = `${mem.used_mb || 0} / ${mem.total_mb || 0} MB`;
+                if (txtRamPct) txtRamPct.innerText = `${mem.percent || 0}%`;
+                if (txtRamSub) txtRamSub.innerText = `${mem.available_mb || 0} MB libres`;
+                if (barRam) {
+                    barRam.style.width = `${Math.min(100, Math.max(0, mem.percent || 0))}%`;
+                    barRam.style.background = (mem.percent || 0) > 85 ? '#ef4444' : (mem.percent || 0) > 70 ? '#eab308' : '#22c55e';
+                }
+
+                // 3. Almacenamiento
+                const storage = data.storage || {};
+                const txtStorageVal = document.getElementById('txtStorageVal');
+                const txtStoragePct = document.getElementById('txtStoragePct');
+                const txtStorageSub = document.getElementById('txtStorageSub');
+                const barStorage = document.getElementById('barStorage');
+                if (txtStorageVal) txtStorageVal.innerText = `${storage.used_gb || 0} / ${storage.total_gb || 0} GB`;
+                if (txtStoragePct) txtStoragePct.innerText = `${storage.percent || 0}%`;
+                if (txtStorageSub) txtStorageSub.innerText = `${storage.free_gb || 0} GB disponibles`;
+                if (barStorage) {
+                    barStorage.style.width = `${Math.min(100, Math.max(0, storage.percent || 0))}%`;
+                    barStorage.style.background = (storage.percent || 0) > 90 ? '#ef4444' : '#3b82f6';
+                }
+
+                // 4. Red y Dispositivo
+                const dev = data.device || {};
+                const net = data.network || {};
+                const txtNetIp = document.getElementById('txtNetIp');
+                const txtDevModelName = document.getElementById('txtDevModelName');
+                if (txtNetIp) txtNetIp.innerText = `IP: ${net.lan_ip || '127.0.0.1'}`;
+                if (txtDevModelName) txtDevModelName.innerText = dev.os_details || `${dev.brand || 'Android'} ${dev.model || ''}`;
 
                 if (de && de.installed && de.id !== 'terminal') {
                     document.getElementById('viewInstalledDe').style.display = 'flex';
