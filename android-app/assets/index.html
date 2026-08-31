@@ -823,7 +823,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.33</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.34</span>
             </div>
         </div>
 
@@ -987,10 +987,16 @@
                             <div style="font-size: 0.74rem; color: var(--md-sys-color-on-surface-variant);" id="txtDePath">Instalado y listo para ejecutar</div>
                         </div>
                     </div>
-                    <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()">
-                        <span class="material-symbols-rounded">swap_horiz</span>
-                        <span>Cambiar</span>
-                    </button>
+                    <div style="display: flex; gap: 0.45rem; align-items: center;">
+                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()" title="Cambiar a otro entorno">
+                            <span class="material-symbols-rounded">swap_horiz</span>
+                            <span>Cambiar</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-error" onclick="apiUninstallCurrentDesktop()" title="Desinstalar entorno completo y liberar espacio" style="padding: 0.45rem 0.75rem; font-size: 0.76rem;">
+                            <span class="material-symbols-rounded" style="font-size: 1rem;">delete</span>
+                            <span>Desinstalar</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- VISTA: LISTA DE ENTORNOS DISPONIBLES -->
@@ -1698,6 +1704,41 @@
                     btnInst.disabled = false;
                     btnInst.style.opacity = '1';
                 }
+                await refreshStatus();
+            }
+        }
+
+        async function apiUninstallCurrentDesktop() {
+            const deName = document.getElementById('txtDeName')?.innerText || 'el entorno de escritorio';
+            if (!confirm(`¿Estás seguro de que deseas desinstalar completamente ${deName} y liberar memoria interna?\n\n(Se cerrarán sesiones activas y se purgarán todos los paquetes de escritorio)`)) return;
+
+            window._localInstallingState = true;
+            if (lastStatusData) updateLaunchButton(lastStatusData);
+
+            showToast(`Desinstalando ${deName}...`, 'delete');
+            const drawer = document.getElementById('logsDrawer');
+            if (drawer) drawer.classList.add('open');
+            const logBox = document.getElementById('liveTerminalContent');
+            if (logBox) logBox.innerText = `[TDM] Desinstalando ${deName} y liberando almacenamiento...\n`;
+
+            try {
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('uninstall_desktop', { desktop: selectedDesktop || 'all' });
+                } else {
+                    const res = await fetch('/api/uninstall/desktop', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ desktop: selectedDesktop || 'all' })
+                    });
+                    const d = await res.json();
+                    if (!d.success) throw new Error(d.error || 'Error al desinstalar');
+                }
+                showToast('¡Entorno desinstalado al 100%!', 'check_circle');
+                toggleDeList(true);
+            } catch(e) {
+                showToast(`Error al desinstalar: ${e.message || e}`, 'error');
+            } finally {
+                window._localInstallingState = false;
                 await refreshStatus();
             }
         }

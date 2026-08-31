@@ -379,7 +379,32 @@ class AsyncHTTPServer:
                             "error": str(e)
                         })
 
-                # 7. Obtener Versión
+                # 7. Desinstalar Entorno de Escritorio Completo
+                elif req_type in ["uninstall_desktop", "uninstall_de", "purge_desktop"]:
+                    payload = msg.get("payload") or msg.get("data") or {}
+                    target = payload.get("desktop") or payload.get("target") or msg.get("desktop") or "all"
+                    try:
+                        success = await installer_service.uninstall_desktop(target)
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "uninstall_desktop",
+                            "id": req_id,
+                            "success": success,
+                            "target": target,
+                            "message": f"Desinstalación de entorno finalizada"
+                        })
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "uninstall_desktop",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 8. Obtener Versión
                 elif req_type in ["get_version", "version"]:
                     await ws.send_json({
                         "type": "version_response",
@@ -538,6 +563,13 @@ class AsyncHTTPServer:
             target = req_data.get("desktop") or req_data.get("target")
             success = await installer_service.install_desktop(target)
             self.send_json_response(writer, {"success": success, "target": target, "message": f"Instalación de {target} iniciada"})
+            return
+
+        if path == "/api/uninstall/desktop" and method == "POST":
+            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+            target = req_data.get("desktop") or req_data.get("target") or "all"
+            success = await installer_service.uninstall_desktop(target)
+            self.send_json_response(writer, {"success": success, "target": target, "message": f"Desinstalación de {target} finalizada"})
             return
 
         if path == "/api/install/server" and method == "POST":

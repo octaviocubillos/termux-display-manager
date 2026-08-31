@@ -117,6 +117,16 @@ class PackageInstaller:
             self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
         return await self.run_script("install_desktop.sh", [desktop])
 
+    async def uninstall_desktop(self, desktop: Optional[str] = None) -> bool:
+        try:
+            from tdm.core.display_manager import display_manager
+            self._broadcast_log("[*] Deteniendo sesiones y procesos gráficos activos antes de la desinstalación...")
+            await display_manager.stop_screen()
+        except Exception as e:
+            self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
+        target = desktop if desktop else "all"
+        return await self.run_script("uninstall_desktop.sh", [target])
+
     async def install_server(self, server: str) -> bool:
         return await self.run_script("install_server.sh", [server])
 
