@@ -359,7 +359,25 @@ class AsyncHTTPServer:
 
         if path == "/api/screen/stop" and method == "POST":
             stopped = await display_manager.stop_screen()
-            self.send_json_response(writer, {"stopped": stopped})
+            self.send_json_response(writer, {"stopped": stopped, "message": "Pantalla apagada correctamente"})
+            return
+
+        if path in ["/api/service/stop", "/api/system/shutdown"] and method == "POST":
+            stopped = await display_manager.stop_screen()
+            self.send_json_response(writer, {"stopped": True, "message": "Apagando pantalla y cerrando todos los servicios de Termux..."})
+            async def _kill_daemon():
+                await asyncio.sleep(0.6)
+                prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+                sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
+                if os.path.exists(sv_bin) and os.path.exists(f"{prefix}/var/service/tdm"):
+                    import subprocess
+                    subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
+                termux_wake_unlock = shutil.which("termux-wake-unlock") or f"{prefix}/bin/termux-wake-unlock"
+                if os.path.exists(termux_wake_unlock):
+                    import subprocess
+                    subprocess.run([termux_wake_unlock], capture_output=True)
+                os._exit(0)
+            asyncio.create_task(_kill_daemon())
             return
 
         # 6. Instalador de Componentes
