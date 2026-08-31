@@ -560,7 +560,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v1.1.0</span>
+                <span id="lblHeaderVersion" class="version-badge">v1.0.0</span>
             </div>
         </div>
 
@@ -568,10 +568,6 @@
             <button class="btn-m3 btn-m3-tonal" id="btnHeaderUpdate" onclick="apiCheckUpdate()" title="Buscar actualizaciones de TDM">
                 <span class="material-symbols-rounded">sync</span>
                 <span>Actualizar</span>
-            </button>
-            <button class="btn-m3 btn-m3-filled" onclick="openPairModal()">
-                <span class="material-symbols-rounded">add</span>
-                <span>Vincular</span>
             </button>
             <button class="btn-m3 btn-m3-tonal" id="btnInstallPwa" onclick="triggerPwaInstall()" style="display: none;">
                 <span class="material-symbols-rounded">download</span>
@@ -591,10 +587,10 @@
                 </div>
                 <div>
                     <div style="font-weight: 800; font-size: 0.9rem; color: #fff;">
-                        ¡Nueva versión disponible: <span id="lblUpdateNewVer" style="color: var(--md-sys-color-primary);">v1.2.0</span>!
+                        ¡Nueva versión disponible: <span id="lblUpdateNewVer" style="color: var(--md-sys-color-primary);">v1.0.1</span>!
                     </div>
                     <div style="font-size: 0.76rem; color: var(--md-sys-color-on-surface-variant);">
-                        Tu versión actual es <span id="lblUpdateCurrentVer">v1.1.0</span>. Pulsa actualizar para aplicar las últimas mejoras.
+                        Tu versión actual es <span id="lblUpdateCurrentVer">v1.0.0</span>. Pulsa actualizar para aplicar las últimas mejoras.
                     </div>
                 </div>
             </div>
@@ -607,41 +603,17 @@
             </div>
         </div>
 
-        <!-- ESTADO 1: SIN DISPOSITIVO VINCULADO (VISTA LIMPIA POR DEFECTO) -->
-        <section class="card-surface" id="boxNoDevicePaired" style="display: flex;">
-            <div style="text-align: center; padding: 2.25rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 1.15rem;">
-                <div style="font-size: 2.5rem; background: var(--md-sys-color-surface-container-high); width: 64px; height: 64px; border-radius: var(--md-shape-corner-lg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">📱</div>
-                <div>
-                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff;">Sin Dispositivo Vinculado</h3>
-                    <p style="font-size: 0.84rem; color: var(--md-sys-color-on-surface-variant); max-width: 480px; margin-top: 0.35rem; line-height: 1.45;">
-                        Pega este comando en la aplicación <strong>Termux</strong> de tu teléfono para vincularlo y comenzar a gestionarlo:
-                    </p>
-                </div>
-                <div class="code-box" style="width: 100%; max-width: 600px;">
-                    <code id="txtDashboardPairCmd">curl -sSL https://tdm.oton.cl/go | bash</code>
-                    <button class="btn-m3 btn-m3-tonal" onclick="copyDashboardPairCmd()">
-                        <span class="material-symbols-rounded">content_copy</span>
-                        <span>Copiar</span>
-                    </button>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: #c4eed0; background: var(--md-sys-color-tertiary-container); padding: 0.5rem 0.85rem; border-radius: var(--md-shape-corner-md);">
-                    <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-tertiary); font-size: 1.05rem;">check_circle</span>
-                    <span>Al ejecutar el comando, tu teléfono se conectará automáticamente aquí.</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- ESTADO 2: PANEL DE CONTROL ACTIVO (CUANDO EL TELÉFONO ESTÁ VINCULADO) -->
-        <div id="boxActiveDevicePanel" style="display: none; flex-direction: column; gap: 1.25rem;">
+        <!-- PANEL DE CONTROL ACTIVO (TERMUX LOCAL DIRECTO) -->
+        <div id="boxActiveDevicePanel" style="display: flex; flex-direction: column; gap: 1.25rem;">
             
             <!-- STATUS HERO ISLAND -->
             <section class="status-island">
                 <div class="island-header">
                     <div class="device-info-box">
-                        <span class="status-dot" id="devStatusDot"></span>
+                        <span class="status-dot online" id="devStatusDot"></span>
                         <div>
-                            <div class="device-title" id="txtDevTitle">Teléfono Android</div>
-                            <div class="device-subtitle" id="txtDevSubtitle">Comprobando servicio...</div>
+                            <div class="device-title" id="txtDevTitle">Termux Display Manager</div>
+                            <div class="device-subtitle" id="txtDevSubtitle">🟢 Termux Local • Conectando...</div>
                         </div>
                     </div>
 
@@ -650,10 +622,7 @@
                             <span class="material-symbols-rounded">power_settings_new</span>
                             <span>Apagar</span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="removeDevice()" title="Eliminar / Desvincular Dispositivo" style="color: var(--md-sys-color-error);">
-                            <span class="material-symbols-rounded">delete</span>
-                        </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="refreshStatus()" title="Refrescar">
+                        <button class="btn-m3 btn-m3-tonal" onclick="refreshStatus()" title="Refrescar Estado">
                             <span class="material-symbols-rounded">refresh</span>
                         </button>
                     </div>
@@ -751,40 +720,13 @@
         <!-- LIVE TERMINAL LOGS DRAWER -->
         <section class="logs-sheet" id="logsDrawer">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-primary);">📜 Terminal / Logs en Vivo</span>
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-primary);">📜 Terminal de Instalación / Eventos</span>
                 <button class="btn-m3 btn-m3-tonal" onclick="toggleLogsDrawer()" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Cerrar</button>
             </div>
             <div class="terminal-box" id="liveTerminalContent">Esperando eventos...</div>
         </section>
 
     </main>
-
-    <!-- MODAL VINCULACIÓN -->
-    <div class="modal-overlay" id="pairModal">
-        <div class="modal-card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-weight: 800; font-size: 1.1rem; color: #fff;">📱 Vincular Teléfono</div>
-                <button class="btn-m3 btn-m3-tonal" onclick="closePairModal()" style="padding: 0.3rem 0.6rem;">✕</button>
-            </div>
-
-            <p style="font-size: 0.82rem; color: var(--md-sys-color-on-surface-variant);">
-                Copia y pega este comando en la aplicación <strong>Termux</strong> de tu teléfono:
-            </p>
-
-            <div class="code-box">
-                <code id="txtPairCmd">curl -sSL https://tdm.oton.cl/go | bash</code>
-                <button class="btn-m3 btn-m3-tonal" onclick="copyPairCmd()">
-                    <span class="material-symbols-rounded">content_copy</span>
-                    <span>Copiar</span>
-                </button>
-            </div>
-
-            <div style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.78rem; color: #c4eed0; background: var(--md-sys-color-tertiary-container); padding: 0.65rem 0.85rem; border-radius: var(--md-shape-corner-md);">
-                <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-tertiary);">check_circle</span>
-                <span>Configura el motor TDM, activa Wake-Lock y se vincula en 2do plano.</span>
-            </div>
-        </div>
-    </div>
 
     <!-- WEB VIEWER MODAL (noVNC) -->
     <div class="modal-overlay" id="webViewerModal">
@@ -808,179 +750,82 @@
         let selectedBackend = 'termux-x11';
         let selectedDesktop = 'xfce';
         let isScreenActive = false;
-        let isDeviceAvailable = false;
-        let hubWs = null;
-        let pairToken = localStorage.getItem('tdm_pair_token') || null;
-        let pendingRequests = {};
+        let localWs = null;
         let deferredPrompt = null;
         let healthPollInterval = null;
+        let lastStatusData = null;
 
         // Iniciar
         document.addEventListener('DOMContentLoaded', () => {
-            initPairing();
+            initLocalWs();
             initPwa();
+            refreshStatus();
             
-            // Sondeo periódico de salud cada 4s
+            // Sondeo periódico de estado local cada 4s
             if (healthPollInterval) clearInterval(healthPollInterval);
             healthPollInterval = setInterval(refreshStatus, 4000);
 
-            // Comprobar actualizaciones automáticamente de forma silenciosa
-            setTimeout(() => apiCheckUpdate(true), 1500);
+            // Comprobar versión
+            setTimeout(() => apiCheckUpdate(true), 1200);
         });
 
-        async function initPairing() {
-            if (!pairToken) {
-                try {
-                    const res = await fetch('/api/token/new');
-                    const d = await res.json();
-                    pairToken = d.token;
-                    localStorage.setItem('tdm_pair_token', pairToken);
-                    updateCommandTexts(d.setup_cmd);
-                } catch(e) {
-                    pairToken = 'tdm-' + Math.random().toString(16).substring(2, 8);
-                    const base = `${window.location.protocol}//${window.location.host}`;
-                    updateCommandTexts(`curl -sSL ${base}/go?t=${pairToken} | bash`);
-                }
-            } else {
-                const base = `${window.location.protocol}//${window.location.host}`;
-                updateCommandTexts(`curl -sSL ${base}/go?t=${pairToken} | bash`);
-            }
-            connectHub();
-        }
-
-        function updateCommandTexts(cmd) {
-            const el1 = document.getElementById('txtPairCmd');
-            const el2 = document.getElementById('txtDashboardPairCmd');
-            if (el1) el1.innerText = cmd;
-            if (el2) el2.innerText = cmd;
-        }
-
-        function connectHub() {
-            if (!pairToken) return;
+        function initLocalWs() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${proto}//${window.location.host}/ws/client/${pairToken}`;
+            const wsUrl = `${proto}//${window.location.host}/ws/local`;
             try {
-                if (hubWs) {
-                    try { hubWs.close(); } catch(e){}
+                if (localWs) {
+                    try { localWs.close(); } catch(e){}
                 }
-                hubWs = new WebSocket(wsUrl);
+                localWs = new WebSocket(wsUrl);
 
-                hubWs.onopen = () => {
-                    refreshStatus();
-                };
-
-                hubWs.onmessage = (e) => {
+                localWs.onmessage = (e) => {
                     try {
                         const msg = JSON.parse(e.data);
-                        handleWsMessage(msg);
+                        if (msg.type === 'log' || msg.type === 'exec_log') {
+                            const text = msg.line || msg.data;
+                            if (text) {
+                                const logBox = document.getElementById('liveTerminalContent');
+                                const drawer = document.getElementById('logsDrawer');
+                                drawer.classList.add('open');
+                                logBox.innerText += '\n' + text;
+                                logBox.scrollTop = logBox.scrollHeight;
+                            }
+                        }
                     } catch(err) {}
                 };
 
-                hubWs.onclose = () => {
-                    setDeviceOnlineState(false);
-                    setTimeout(connectHub, 3500);
+                localWs.onclose = () => {
+                    setTimeout(initLocalWs, 4000);
                 };
-            } catch(e) {
-                setDeviceOnlineState(false);
-            }
-        }
-
-        function handleWsMessage(msg) {
-            // Logs en vivo
-            if (msg.type === 'log' || msg.type === 'exec_log') {
-                const text = msg.line || msg.data;
-                if (text) {
-                    const logBox = document.getElementById('liveTerminalContent');
-                    const drawer = document.getElementById('logsDrawer');
-                    drawer.classList.add('open');
-                    logBox.innerText += '\n' + text;
-                    logBox.scrollTop = logBox.scrollHeight;
-                }
-                return;
-            }
-
-            // Respuestas de comandos
-            if (msg.type === 'response' || msg.type === 'error') {
-                if (msg.req_id && pendingRequests[msg.req_id]) {
-                    if (msg.type === 'error') {
-                        pendingRequests[msg.req_id].reject(new Error(msg.error));
-                    } else {
-                        pendingRequests[msg.req_id].resolve(msg.result);
-                    }
-                    delete pendingRequests[msg.req_id];
-                }
-                return;
-            }
-
-            // Desconexión inmediata del agente
-            if (msg.type === 'agent_disconnected' || msg.type === 'session_deleted') {
-                setDeviceOnlineState(false);
-                return;
-            }
-
-            // Estado del agente
-            if (msg.type === 'agent_connected' || (msg.type === 'pairing_status' && msg.agent_connected)) {
-                refreshStatus();
-            }
-        }
-
-        function sendCommand(type, data = {}) {
-            return new Promise((resolve, reject) => {
-                const reqId = 'req-' + Date.now() + '-' + Math.random().toString(16).substring(2, 6);
-                const timer = setTimeout(() => {
-                    delete pendingRequests[reqId];
-                    reject(new Error('Timeout'));
-                }, 3500);
-
-                pendingRequests[reqId] = {
-                    resolve: (res) => { clearTimeout(timer); resolve(res); },
-                    reject: (err) => { clearTimeout(timer); reject(err); }
-                };
-
-                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
-                    hubWs.send(JSON.stringify({ type, req_id: reqId, token: pairToken, data }));
-                } else {
-                    clearTimeout(timer);
-                    reject(new Error('WebSocket desconectado'));
-                }
-            });
+            } catch(e) {}
         }
 
         async function refreshStatus() {
             try {
-                const res = await sendCommand('get_status');
-                if (res && res.installed_desktop) {
-                    setDeviceOnlineState(true, res);
-                } else {
-                    setDeviceOnlineState(false);
-                }
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error('Servidor local offline');
+                const data = await res.json();
+                lastStatusData = data;
+                setDeviceOnlineState(true, data);
             } catch(e) {
                 setDeviceOnlineState(false);
             }
         }
 
         function setDeviceOnlineState(isOnline, data = null) {
-            isDeviceAvailable = isOnline;
-            const boxNoDev = document.getElementById('boxNoDevicePaired');
-            const boxActive = document.getElementById('boxActiveDevicePanel');
-
             const dot = document.getElementById('devStatusDot');
-            const title = document.getElementById('txtDevTitle');
             const sub = document.getElementById('txtDevSubtitle');
             const btnLaunch = document.getElementById('btnMainLaunch');
             const btnStop = document.getElementById('btnHeaderStop');
 
             if (isOnline && data) {
-                boxNoDev.style.display = 'none';
-                boxActive.style.display = 'flex';
-
                 dot.className = 'status-dot online';
                 isScreenActive = data.is_screen_active;
                 const de = data.installed_desktop;
-                const dev = data.device_info || {};
 
-                title.innerText = dev.model || 'Teléfono Android';
-                sub.innerText = `🟢 Disponible • IP: ${data.network?.lan_ip || '192.168.1.x'}`;
+                const lanIp = data.network?.lan_ip || '127.0.0.1';
+                const ramInfo = data.memory?.formatted || '';
+                sub.innerText = `🟢 Termux Local • IP: ${lanIp} ${ramInfo ? '• RAM: ' + ramInfo : ''}`;
 
                 if (de && de.installed && de.id !== 'terminal') {
                     document.getElementById('viewInstalledDe').style.display = 'flex';
@@ -996,10 +841,8 @@
                 btnLaunch.style.opacity = '1';
                 updateLaunchButton(data);
             } else {
-                boxNoDev.style.display = 'flex';
-                boxActive.style.display = 'none';
-
                 dot.className = 'status-dot offline';
+                sub.innerText = '🔴 Termux Core Desconectado';
                 isScreenActive = false;
                 btnStop.style.display = 'none';
                 btnLaunch.disabled = true;
@@ -1040,44 +883,12 @@
             }
         }
 
-        async function removeDevice() {
-            if (!confirm('¿Estás seguro de que deseas eliminar y desinstalar completamente este dispositivo?\n\n• Se cerrará todo el entorno gráfico.\n• Se desinstalará el servicio de Termux.\n• Se eliminará la vinculación y no volverá a aparecer.')) {
-                return;
-            }
-
-            showToast('Desinstalando y eliminando de Termux...', 'delete');
-
-            try {
-                await sendCommand('uninstall');
-            } catch (e) {}
-
-            try {
-                await sendCommand('delete_device');
-            } catch (e) {}
-
-            localStorage.removeItem('tdm_pair_token');
-            pairToken = null;
-
-            if (hubWs) {
-                try { hubWs.close(); } catch(e){}
-                hubWs = null;
-            }
-
-            setDeviceOnlineState(false);
-            showToast('Dispositivo eliminado y desinstalado', 'check_circle');
-
-            // Generar nuevo token limpio
-            setTimeout(() => {
-                initPairing();
-            }, 500);
-        }
-
         function setBackend(b) {
             selectedBackend = b;
             document.querySelectorAll('.segment-btn').forEach(el => el.classList.remove('active'));
             const btn = document.getElementById(`seg-${b}`);
             if (btn) btn.classList.add('active');
-            refreshStatus();
+            if (lastStatusData) updateLaunchButton(lastStatusData);
         }
 
         function toggleDeList() {
@@ -1100,45 +911,60 @@
             document.getElementById('logsDrawer').classList.add('open');
             document.getElementById('liveTerminalContent').innerText = `[TDM] Descargando e instalando ${selectedDesktop}...\n`;
             try {
-                await sendCommand('install_desktop', { desktop: selectedDesktop });
-                showToast('¡Instalación Finalizada!', 'check_circle');
-                toggleDeList();
-                refreshStatus();
+                const res = await fetch('/api/install/desktop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ desktop: selectedDesktop })
+                });
+                const d = await res.json();
+                if (d.success) {
+                    showToast('¡Instalación Finalizada!', 'check_circle');
+                    toggleDeList();
+                    refreshStatus();
+                } else {
+                    showToast(`Error al instalar: ${d.error || ''}`, 'error');
+                }
             } catch(e) {
-                showToast('Error al instalar', 'error');
+                showToast('Error de conexión al instalar', 'error');
             }
         }
 
         async function apiStartScreen() {
-            if (!isDeviceAvailable) {
-                showToast('Dispositivo no disponible', 'cloud_off');
-                return;
-            }
             showToast(`Iniciando ${selectedBackend}...`, 'rocket_launch');
             try {
-                await sendCommand('screen_start', {
-                    backend: selectedBackend,
-                    mode: 'desktop',
-                    resolution: '1080x2400',
-                    dpi: 140,
-                    audio: true,
-                    virgl: true
+                const res = await fetch('/api/screen/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        backend: selectedBackend,
+                        mode: 'desktop',
+                        resolution: '1080x2400',
+                        dpi: 96,
+                        audio: true,
+                        virgl: true
+                    })
                 });
-                showToast('¡Pantalla Iniciada!', 'check_circle');
+                const d = await res.json();
+                if (d.started) {
+                    showToast('¡Pantalla Iniciada!', 'check_circle');
+                } else {
+                    showToast(`Error: ${d.error || 'No se pudo iniciar'}`, 'error');
+                }
                 refreshStatus();
             } catch(e) {
-                showToast('Error al iniciar', 'error');
+                showToast('Error al conectar con servidor', 'error');
             }
         }
 
         async function apiStopScreen() {
             showToast('Apagando pantalla...', 'power_settings_new');
             try {
-                await sendCommand('screen_stop');
+                const res = await fetch('/api/screen/stop', { method: 'POST' });
+                const d = await res.json();
                 showToast('Pantalla Detenida al 100%', 'check_circle');
                 refreshStatus();
             } catch(e) {
-                showToast('Error al detener', 'error');
+                showToast('Error al detener pantalla', 'error');
             }
         }
 
@@ -1153,32 +979,6 @@
         function toggleLogsDrawer() {
             const d = document.getElementById('logsDrawer');
             d.classList.toggle('open');
-        }
-
-        function openLogsModal() {
-            const d = document.getElementById('logsDrawer');
-            d.classList.add('open');
-            d.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function openPairModal() {
-            document.getElementById('pairModal').classList.add('active');
-        }
-
-        function closePairModal() {
-            document.getElementById('pairModal').classList.remove('active');
-        }
-
-        function copyPairCmd() {
-            const txt = document.getElementById('txtPairCmd').innerText;
-            navigator.clipboard.writeText(txt);
-            showToast('¡Comando copiado al portapapeles!', 'content_copy');
-        }
-
-        function copyDashboardPairCmd() {
-            const txt = document.getElementById('txtDashboardPairCmd').innerText;
-            navigator.clipboard.writeText(txt);
-            showToast('¡Comando copiado al portapapeles!', 'content_copy');
         }
 
         function openWebViewer(ip) {
@@ -1209,45 +1009,32 @@
             });
         }
 
-        let updateInfo = null;
+        function triggerPwaInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    const b = document.getElementById('btnInstallPwa');
+                    if (b) b.style.display = 'none';
+                });
+            }
+        }
 
         async function apiCheckUpdate(silent = false) {
             try {
-                let res = null;
-                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
-                    res = await sendCommand('check_update');
-                } else {
-                    const resp = await fetch('/api/update/check');
-                    if (resp.ok) res = await resp.json();
-                }
-
-                if (res) {
-                    updateInfo = res;
-                    const curVer = res.current_version || '1.1.0';
+                const resp = await fetch('/api/version');
+                if (resp.ok) {
+                    const res = await resp.json();
+                    const curVer = res.version || '1.0.0';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const curSpan = document.getElementById('lblUpdateCurrentVer');
                     if (curSpan) curSpan.innerText = `v${curVer}`;
-
-                    if (res.update_available) {
-                        const banner = document.getElementById('bannerUpdateAvailable');
-                        const newSpan = document.getElementById('lblUpdateNewVer');
-                        if (newSpan) newSpan.innerText = `v${res.latest_version}`;
-                        if (banner) banner.style.display = 'flex';
-                        if (!silent) {
-                            showToast(`¡Nueva versión disponible: v${res.latest_version}!`, 'system_update');
-                        }
-                    } else {
-                        const banner = document.getElementById('bannerUpdateAvailable');
-                        if (banner) banner.style.display = 'none';
-                        if (!silent) {
-                            showToast(`TDM está actualizado (v${curVer})`, 'check_circle');
-                        }
+                    if (!silent) {
+                        showToast(`TDM versión v${curVer}`, 'check_circle');
                     }
                 }
-            } catch(e) {
-                if (!silent) showToast('No se pudo verificar actualizaciones', 'info');
-            }
+            } catch(e) {}
         }
 
         function dismissUpdateBanner() {
@@ -1259,42 +1046,20 @@
             showToast('Iniciando actualización...', 'downloading');
             document.getElementById('logsDrawer').classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
-            logBox.innerText = `[TDM] Descargando e instalando actualización de backend...\n`;
-
-            const btn = document.getElementById('btnPerformUpdate');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerText = 'Actualizando...';
-            }
+            logBox.innerText = `[TDM] Aplicando actualización de componentes...\n`;
 
             try {
-                let res = null;
-                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
-                    res = await sendCommand('update');
-                } else {
-                    const resp = await fetch('/api/update', { method: 'POST' });
-                    if (resp.ok) res = await resp.json();
-                    else throw new Error(`HTTP ${resp.status}`);
-                }
-
+                const resp = await fetch('/api/update', { method: 'POST' });
+                const res = await resp.json();
                 if (res && res.success) {
-                    showToast(`¡Actualizado con éxito a v${res.new_version || ''}!`, 'check_circle');
+                    showToast('¡Actualizado con éxito!', 'check_circle');
                     dismissUpdateBanner();
-                    if (res.new_version) {
-                        const badge = document.getElementById('lblHeaderVersion');
-                        if (badge) badge.innerText = `v${res.new_version}`;
-                    }
-                    setTimeout(refreshStatus, 2000);
+                    setTimeout(refreshStatus, 1500);
                 } else {
-                    showToast(`Error al actualizar: ${res?.error || 'Desconocido'}`, 'error');
+                    showToast(`Aviso: ${res?.error || 'Sin cambios'}`, 'info');
                 }
             } catch(e) {
-                showToast(`Error al actualizar: ${e.message}`, 'error');
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-symbols-rounded">download</span><span>Actualizar</span>';
-                }
+                showToast(`Error: ${e.message}`, 'error');
             }
         }
     </script>

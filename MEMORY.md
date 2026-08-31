@@ -1,32 +1,32 @@
 # 🧠 Memoria de Arquitectura y Especificación Técnica — TDM
 
 > **Termux Display Manager (TDM)**
-> Motor unificado de entornos gráficos nativos, servidor WebSockets Hub Relay y PWA para Android/Termux y Linux.
-> **Versión**: `v0.2.0` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
+> Motor unificado de entornos gráficos nativos, servidor REST asíncrono, WebSockets locales y PWA para Android/Termux y Linux.
+> **Versión**: `v1.0.0` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
 
 ---
 
 ## 📑 1. Resumen Ejecutivo y Misión del Proyecto
 
-TDM transforma cualquier dispositivo Android con Termux en una estación de trabajo gráfica fluida (60/120 Hz) o en un servidor de escritorio accesible remotamente vía HTML5, VNC o RDP.
+TDM transforma cualquier dispositivo Android con Termux en una estación de trabajo gráfica fluida (60/120 Hz) o en un servidor de escritorio accesible localmente (o vía LAN/Tailscale) mediante HTML5, VNC o RDP.
 
-El sistema elimina la complejidad de configurar scripts dispersos, gestionar sockets X11 huérfanos o lidiar con procesos zombies que agotan la batería, ofreciendo una experiencia controlable tanto por CLI como desde una Progressive Web App (PWA) minimalista inspirada en Material Design 3.
+El sistema elimina la complejidad de configurar scripts dispersos, gestionar sockets X11 huérfanos o lidiar con procesos zombies que agotan la batería, ofreciendo una experiencia 100% local controlable tanto por CLI como desde una Progressive Web App (PWA) minimalista inspirada en Material Design 3.
 
 ```
 +-------------------------------------------------------------------------------+
 |                             CLIENTES & CONTROL                                |
 |   +------------------------------------+  +-------------------------------+   |
-|   |         PWA / Web Dashboard        |  |          CLI Terminal         |   |
-|   |  (Canvas Único, Material You MD3)  |  | (tdm start, logs, update, ...) |   |
+|   |    PWA / Web Dashboard (Local)     |  |          CLI Terminal         |   |
+|   |  (Canvas Único, Material You MD3)  |  | (tdm start, status, update...) |   |
 |   +-----------------+------------------+  +---------------+---------------+   |
 +---------------------|-------------------------------------|-------------------+
-                      | WebSocket (/ws/client/{token})      | Local IPC
+                      | REST API / WebSocket Local (/ws)    | Local IPC
                       v                                     v
 +-------------------------------------------------------------------------------+
-|                            TDM CORE & HUB ENGINE                              |
+|                           TDM CORE SERVER & ENGINE                            |
 |   +-----------------------------------------------------------------------+   |
-|   |                        Hub Relay & Auth Router                        |   |
-|   |         (Aislamiento Estricto 1:1 de Tokens, Fallback Seguro)         |   |
+|   |                       Async HTTP & WebSocket Server                   |   |
+|   |                  (REST API, Static PWA, Streaming Logs)               |   |
 |   +-----------------------------------+-----------------------------------+   |
 |                                       |
 |                                       v

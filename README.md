@@ -16,35 +16,23 @@
 
 ---
 
-## 🌟 Modos de Operación: Local y Cloud Relay (PWA)
+## 🌟 Arquitectura 100% Local y Autónoma en Termux
 
-### 1. 📱 Modo Local (Directo en el Teléfono)
-El servidor HTTP y WebSocket corre directamente en Termux en el puerto `19050`:
+TDM funciona completamente de manera local y soberana dentro de Termux (sin necesidad de servidores públicos en la nube):
+
+### 1. 📱 Panel Web PWA y API REST Local
+El servidor corre directamente en Termux en el puerto `19050`:
 ```bash
 # Iniciar servidor local
 tdm server --port 19050
+
+# O iniciar como servicio en segundo plano con Wake-Lock
+tdm service start
 ```
-- Accede a `http://localhost:19050` desde Chrome/Brave/Firefox o la app de Android.
-- Pulsa **"Instalar App"** para añadir la PWA a tu pantalla de inicio en modo independiente a pantalla completa.
-
----
-
-### 2. ☁️ Modo Cloud Relay (ej: `https://tdm.oton.cl`)
-Permite controlar Termux desde cualquier navegador remoto (PC, tablet, teléfono) gestionando tu propio dominio:
-
-1. **En tu Servidor / VPS (`tdm.oton.cl`):**
-   ```bash
-   tdm hub --port 19050
-   ```
-2. **En tu Navegador / PWA:**
-   - Entra a `https://tdm.oton.cl`.
-   - Se genera un token de emparejamiento único con el comando de arranque:
-     ```bash
-     curl -sSL https://tdm.oton.cl/setup | bash
-     ```
-3. **En Termux:**
-   - Pegas esa sola línea. Termux se conecta mediante un túnel WebSocket saliente seguro.
-   - Desde la web puedes pulsar **"Instalar XFCE"**, **"Iniciar noVNC"**, **"Ver Pantalla"** o abrir la **Terminal Web Interactiva** para ejecutar órdenes en tiempo real dentro de Termux.
+- **Local:** Accede a `http://localhost:19050` desde Chrome/Brave/Firefox o la app de Android.
+- **Red Local (LAN):** Accede desde cualquier PC o tablet en la misma red Wi-Fi (`http://<IP_LOCAL>:19050`).
+- **Remoto Seguro (Tailscale):** Accede desde cualquier lugar del mundo mediante tu red privada Mesh VPN (`http://<IP_TAILSCALE>:19050`).
+- Pulsa **"PWA / Instalar App"** para añadir TDM a tu pantalla de inicio como aplicación nativa independiente.
 
 ---
 
@@ -56,9 +44,6 @@ tdm start --backend [termux-x11|novnc|rdp|vnc]# Inicia la salida gráfica
 tdm stop                                      # Apaga la pantalla activa y purga procesos
 tdm doctor                                    # Diagnóstico de paquetes y componentes
 tdm server [--port 19050]                     # Inicia servidor HTTP REST y PWA local
-tdm hub [--port 19050]                        # Inicia Hub Central Relay para dominios web
-tdm agent --hub <URL> --token <TOK>           # Agente de conexión remota desde Termux
-tdm logs [-a|-s|-d] [-f]                      # Registros en vivo (agente, servidor, display)
 tdm service [start|stop|status]               # Daemon en segundo plano con wake-lock
 tdm install --desktop [xfce|kde|openbox]      # Instalación modular bajo demanda
 tdm uninstall                                 # Desinstalación selectiva y limpia (SQLite audit)
