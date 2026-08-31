@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TDM • noVNC Web Display</title>
+    <title>TDM • noVNC Web Display (Lite)</title>
 
     <style>
         * {
@@ -34,6 +34,8 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 100;
             flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 6px;
         }
 
         #status {
@@ -57,14 +59,22 @@
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 6px;
-            padding: 4px 10px;
+            padding: 4px 9px;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
         .btn-action:hover {
             background: rgba(255, 255, 255, 0.25);
+        }
+        .btn-action.active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: #fff;
         }
 
         #screen {
@@ -92,10 +102,12 @@
             <span class="status-badge" id="statusDot"></span>
             <span id="statusText">Iniciando visor...</span>
         </div>
-        <div style="display: flex; gap: 6px;">
-            <button class="btn-action" onclick="window.reconnectVnc()">Reconectar</button>
-            <button class="btn-action" onclick="window.toggleScale()">Escalar</button>
-            <button class="btn-action" onclick="window.sendCtrlAltDel()">Ctrl+Alt+Del</button>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-action active" id="btnResize" onclick="window.toggleDynamicResize()">📐 Dimensión Dinámica</button>
+            <button class="btn-action active" id="btnScale" onclick="window.toggleScale()">🔍 Auto-Escalar</button>
+            <button class="btn-action" onclick="window.sendCtrlAltDel()">⌨️ Ctrl+Alt+Del</button>
+            <button class="btn-action" onclick="window.openFullVersion()">🎛️ Versión Completa</button>
+            <button class="btn-action" onclick="window.reconnectVnc()">🔄 Reconectar</button>
         </div>
     </div>
     <div id="screen"></div>
@@ -105,6 +117,8 @@
 
         let rfb = null;
         let desktopName = "Termux Desktop";
+        let isDynamicResize = true;
+        let isAutoScaling = true;
 
         function setStatus(text, state = "connecting") {
             const el = document.getElementById('statusText');
@@ -140,8 +154,24 @@
 
         function toggleScale() {
             if (rfb) {
-                rfb.scaleViewport = !rfb.scaleViewport;
+                isAutoScaling = !isAutoScaling;
+                rfb.scaleViewport = isAutoScaling;
+                const b = document.getElementById('btnScale');
+                if (b) b.className = 'btn-action ' + (isAutoScaling ? 'active' : '');
             }
+        }
+
+        function toggleDynamicResize() {
+            if (rfb) {
+                isDynamicResize = !isDynamicResize;
+                rfb.resizeSession = isDynamicResize;
+                const b = document.getElementById('btnResize');
+                if (b) b.className = 'btn-action ' + (isDynamicResize ? 'active' : '');
+            }
+        }
+
+        function openFullVersion() {
+            window.location.href = 'vnc.html' + window.location.search;
         }
 
         function readQueryVariable(name, defaultValue) {
@@ -184,8 +214,8 @@
                 rfb.addEventListener("desktopname", updateDesktopName);
 
                 rfb.viewOnly = (readQueryVariable('view_only', 'false') === 'true');
-                rfb.scaleViewport = true;
-                rfb.resizeSession = false;
+                rfb.scaleViewport = isAutoScaling;
+                rfb.resizeSession = isDynamicResize;
             } catch (err) {
                 setStatus("Error de inicialización: " + err.message, "offline");
             }
@@ -193,6 +223,8 @@
 
         window.sendCtrlAltDel = sendCtrlAltDel;
         window.toggleScale = toggleScale;
+        window.toggleDynamicResize = toggleDynamicResize;
+        window.openFullVersion = openFullVersion;
         window.reconnectVnc = startConnection;
 
         if (document.readyState === 'loading') {

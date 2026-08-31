@@ -731,17 +731,19 @@
     <!-- WEB VIEWER MODAL (noVNC) -->
     <div class="modal-overlay" id="webViewerModal">
         <div style="background: #000; border-radius: var(--md-shape-corner-xl); width: 95vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--md-sys-color-outline-variant);">
-            <div style="padding: 0.65rem 1rem; background: var(--md-sys-color-surface-container-high); display: flex; justify-content: space-between; align-items: center;">
+            <div style="padding: 0.65rem 1rem; background: var(--md-sys-color-surface-container-high); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-primary); font-size: 1.2rem;">language</span>
-                    <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">noVNC Web Display</span>
+                    <span style="font-size: 0.85rem; font-weight: 700; color: #fff;" id="lblModalViewerTitle">noVNC Web Display</span>
                 </div>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal" style="text-decoration: none; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem;">
-                        <span class="material-symbols-rounded" style="font-size: 1rem;">open_in_new</span>
+                <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                    <button class="btn-m3 btn-m3-tonal" id="btnModalModeLite" onclick="switchViewerMode('lite')" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700;">⚡ Modo Lite</button>
+                    <button class="btn-m3 btn-m3-tonal" id="btnModalModeFull" onclick="switchViewerMode('full')" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700;">🎛️ Completo</button>
+                    <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal" style="text-decoration: none; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem;">
+                        <span class="material-symbols-rounded" style="font-size: 0.95rem;">open_in_new</span>
                         <span>Nueva Pestaña</span>
                     </a>
-                    <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()">Cerrar</button>
+                    <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">Cerrar</button>
                 </div>
             </div>
             <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" src="about:blank"></iframe>
@@ -993,14 +995,39 @@
             d.classList.toggle('open');
         }
 
+        let preferredViewerMode = 'lite'; // 'lite' or 'full'
+
+        function switchViewerMode(mode) {
+            preferredViewerMode = mode;
+            openWebViewer();
+        }
+
         function openWebViewer(ip) {
             const host = ip || window.location.hostname || '127.0.0.1';
             const port = window.location.port || 19050;
-            const url = `http://${host}:${port}/novnc/vnc_lite.html?host=${host}&port=${port}&path=websockify&scale=true`;
+            const isLite = (preferredViewerMode === 'lite');
+            const page = isLite ? 'vnc_lite.html' : 'vnc.html';
+            const extraParams = isLite ? '&scale=true&resize=true' : '&resize=remote&autoconnect=true';
+            const url = `http://${host}:${port}/novnc/${page}?host=${host}&port=${port}&path=websockify${extraParams}`;
+
             const ifr = document.getElementById('novncIframe');
             ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
             if (link) link.href = url;
+
+            const btnLite = document.getElementById('btnModalModeLite');
+            const btnFull = document.getElementById('btnModalModeFull');
+            const title = document.getElementById('lblModalViewerTitle');
+            if (title) title.innerText = isLite ? 'noVNC Display (Lite)' : 'noVNC Display (Completo)';
+            if (btnLite) {
+                btnLite.style.background = isLite ? 'var(--md-sys-color-primary)' : 'rgba(255,255,255,0.1)';
+                btnLite.style.color = isLite ? '#000' : '#fff';
+            }
+            if (btnFull) {
+                btnFull.style.background = !isLite ? 'var(--md-sys-color-primary)' : 'rgba(255,255,255,0.1)';
+                btnFull.style.color = !isLite ? '#000' : '#fff';
+            }
+
             document.getElementById('webViewerModal').classList.add('active');
         }
 
