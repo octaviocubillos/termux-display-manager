@@ -49,14 +49,19 @@ class WebSocketConnection:
         if not sec_key:
             return None
 
+        sec_protocol = headers.get("sec-websocket-protocol")
         accept_key = cls.compute_accept_key(sec_key)
         response_headers = [
             "HTTP/1.1 101 Switching Protocols\r\n",
             "Upgrade: websocket\r\n",
             "Connection: Upgrade\r\n",
             f"Sec-WebSocket-Accept: {accept_key}\r\n",
-            "\r\n",
         ]
+        if sec_protocol:
+            chosen = [p.strip() for p in sec_protocol.split(",") if p.strip()][0]
+            response_headers.append(f"Sec-WebSocket-Protocol: {chosen}\r\n")
+        response_headers.append("\r\n")
+
         writer.write("".join(response_headers).encode("utf-8"))
         await writer.drain()
         return cls(reader, writer, is_client=False)

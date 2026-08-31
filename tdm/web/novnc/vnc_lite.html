@@ -33,13 +33,13 @@
             align-items: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 100;
-            transition: opacity 0.3s ease;
+            flex-shrink: 0;
         }
 
         #status {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
 
         .status-badge {
@@ -57,14 +57,14 @@
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 6px;
-            padding: 4px 8px;
+            padding: 4px 10px;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
         }
         .btn-action:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
         }
 
         #screen {
@@ -84,12 +84,27 @@
             object-fit: contain;
         }
     </style>
+</head>
+
+<body>
+    <div id="top_bar">
+        <div id="status">
+            <span class="status-badge" id="statusDot"></span>
+            <span id="statusText">Iniciando visor...</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn-action" onclick="window.reconnectVnc()">Reconectar</button>
+            <button class="btn-action" onclick="window.toggleScale()">Escalar</button>
+            <button class="btn-action" onclick="window.sendCtrlAltDel()">Ctrl+Alt+Del</button>
+        </div>
+    </div>
+    <div id="screen"></div>
 
     <script type="module">
         import RFB from './core/rfb.js';
 
-        let rfb;
-        let desktopName = "Escritorio Termux";
+        let rfb = null;
+        let desktopName = "Termux Desktop";
 
         function setStatus(text, state = "connecting") {
             const el = document.getElementById('statusText');
@@ -105,16 +120,16 @@
         }
 
         function disconnectedFromServer(e) {
-            setStatus(e.detail.clean ? "Desconectado" : "Conexión cerrada", "offline");
+            setStatus(e.detail.clean ? "Desconectado" : "Conexión cerrada. Pulsa Reconectar.", "offline");
         }
 
         function credentialsAreRequired(e) {
             const password = prompt("Introduce la contraseña de VNC:");
-            if (password) rfb.sendCredentials({ password: password });
+            if (password && rfb) rfb.sendCredentials({ password: password });
         }
 
         function updateDesktopName(e) {
-            desktopName = e.detail.name || "Escritorio Termux";
+            desktopName = e.detail.name || "Termux Desktop";
             setStatus("Conectado: " + desktopName, "online");
         }
 
@@ -129,9 +144,6 @@
             }
         }
 
-        window.sendCtrlAltDel = sendCtrlAltDel;
-        window.toggleScale = toggleScale;
-
         function readQueryVariable(name, defaultValue) {
             const re = new RegExp('.*[?&]' + name + '=([^&#]*)');
             const match = document.location.href.match(re);
@@ -141,47 +153,53 @@
             return defaultValue;
         }
 
-        // Conectar automáticamente al host y puerto de la página
-        const host = readQueryVariable('host', window.location.hostname || '127.0.0.1');
-        let port = readQueryVariable('port', window.location.port || '19050');
-        const password = readQueryVariable('password', undefined);
-        const path = readQueryVariable('path', 'websockify');
+        function startConnection() {
+            const screenElem = document.getElementById('screen');
+            if (!screenElem) return;
 
-        setStatus("Conectando a " + host + ":" + port + "/" + path + "...", "connecting");
+            screenElem.innerHTML = '';
 
-        let proto = (window.location.protocol === "https:") ? "wss" : "ws";
-        let url = proto + "://" + host + (port ? ":" + port : "") + "/" + path;
+            const host = readQueryVariable('host', window.location.hostname || '127.0.0.1');
+            let port = readQueryVariable('port', window.location.port || '19050');
+            const password = readQueryVariable('password', undefined);
+            const path = readQueryVariable('path', 'websockify');
 
-        try {
-            rfb = new RFB(document.getElementById('screen'), url, {
-                credentials: { password: password }
-            });
+            setStatus("Conectando a " + host + ":" + port + "/" + path + "...", "connecting");
 
-            rfb.addEventListener("connect", connectedToServer);
-            rfb.addEventListener("disconnect", disconnectedFromServer);
-            rfb.addEventListener("credentialsrequired", credentialsAreRequired);
-            rfb.addEventListener("desktopname", updateDesktopName);
+            let proto = (window.location.protocol === "https:") ? "wss" : "ws";
+            let url = proto + "://" + host + (port ? ":" + port : "") + "/" + path;
 
-            rfb.viewOnly = (readQueryVariable('view_only', 'false') === 'true');
-            rfb.scaleViewport = true;
-            rfb.resizeSession = false;
-        } catch (err) {
-            setStatus("Error de inicialización: " + err.message, "offline");
+            try {
+                if (rfb) {
+                    try { rfb.disconnect(); } catch(e){}
+                }
+
+                rfb = new RFB(screenElem, url, {
+                    credentials: { password: password }
+                });
+
+                rfb.addEventListener("connect", connectedToServer);
+                rfb.addEventListener("disconnect", disconnectedFromServer);
+                rfb.addEventListener("credentialsrequired", credentialsAreRequired);
+                rfb.addEventListener("desktopname", updateDesktopName);
+
+                rfb.viewOnly = (readQueryVariable('view_only', 'false') === 'true');
+                rfb.scaleViewport = true;
+                rfb.resizeSession = false;
+            } catch (err) {
+                setStatus("Error de inicialización: " + err.message, "offline");
+            }
+        }
+
+        window.sendCtrlAltDel = sendCtrlAltDel;
+        window.toggleScale = toggleScale;
+        window.reconnectVnc = startConnection;
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startConnection);
+        } else {
+            startConnection();
         }
     </script>
-</head>
-
-<body>
-    <div id="top_bar">
-        <div id="status">
-            <span class="status-badge" id="statusDot"></span>
-            <span id="statusText">Iniciando visor...</span>
-        </div>
-        <div style="display: flex; gap: 6px;">
-            <button class="btn-action" onclick="toggleScale()">Escalar</button>
-            <button class="btn-action" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
-        </div>
-    </div>
-    <div id="screen"></div>
 </body>
 </html>
