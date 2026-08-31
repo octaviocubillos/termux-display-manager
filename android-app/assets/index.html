@@ -539,15 +539,17 @@
             color: var(--md-sys-color-on-surface-variant);
         }
 
-        /* MAIN LAUNCH FAB */
+        /* MAIN LAUNCH BUTTON (MINIMALIST & BALANCED) */
         .btn-launch-primary {
             width: 100%;
-            padding: 1.15rem;
-            border-radius: var(--md-shape-corner-xl);
+            height: 48px;
+            min-height: 48px;
+            padding: 0 1.5rem;
+            border-radius: var(--md-shape-corner-full);
             background: linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%);
             color: #062e6f;
             border: none;
-            font-size: 1rem;
+            font-size: 0.92rem;
             font-weight: 800;
             letter-spacing: 0.2px;
             cursor: pointer;
@@ -555,13 +557,14 @@
             align-items: center;
             justify-content: center;
             gap: 0.65rem;
-            box-shadow: 0 4px 18px var(--md-sys-color-primary-glow);
+            box-shadow: 0 3px 14px var(--md-sys-color-primary-glow);
             transition: all 0.2s var(--ease-m3);
+            box-sizing: border-box;
         }
 
         .btn-launch-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 24px var(--md-sys-color-primary-glow);
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px var(--md-sys-color-primary-glow);
         }
 
         .btn-launch-primary:active:not(:disabled) {
@@ -731,7 +734,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.15</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.16</span>
             </div>
         </div>
 
@@ -1217,21 +1220,37 @@
             const ico = document.getElementById('icoMainLaunch');
             const btnStop = document.getElementById('btnHeaderStop');
 
-            if (data.is_screen_active) {
-                const act = data.active_screen;
-                const b = act?.backend || selectedBackend;
-                btnStop.style.display = 'inline-flex';
+            const isScreenOn = !!(data && data.is_screen_active);
+            const act = data ? data.active_screen : null;
+            const currentBackend = act?.backend || null;
 
-                if (b === 'termux-x11') {
-                    lbl.innerText = `Apagar ${act?.desktop_name || 'Entorno'} (Encendido en Termux:X11)`;
-                    ico.innerText = 'power_settings_new';
-                    btn.onclick = apiStopScreen;
-                    btn.style.background = 'linear-gradient(135deg, #ffb4ab 0%, #ba1a1a 100%)';
-                    btn.style.color = '#690005';
+            if (isScreenOn) {
+                btnStop.style.display = 'inline-flex';
+                
+                if (selectedBackend === currentBackend) {
+                    if (selectedBackend === 'novnc') {
+                        lbl.innerText = `Abrir Visor noVNC (${act?.desktop_name || 'Escritorio'})`;
+                        ico.innerText = 'language';
+                        btn.onclick = () => openWebViewer();
+                        btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
+                        btn.style.color = '#062e6f';
+                    } else if (selectedBackend === 'termux-x11') {
+                        lbl.innerText = `Apagar ${act?.desktop_name || 'Entorno'} (Termux:X11 Activo)`;
+                        ico.innerText = 'power_settings_new';
+                        btn.onclick = apiStopScreen;
+                        btn.style.background = 'linear-gradient(135deg, #ffb4ab 0%, #ba1a1a 100%)';
+                        btn.style.color = '#690005';
+                    } else {
+                        lbl.innerText = `Servidor ${selectedBackend.toUpperCase()} Activo (${act?.display || ':0'})`;
+                        ico.innerText = 'check_circle';
+                        btn.onclick = () => showToast(`Servidor ${selectedBackend.toUpperCase()} corriendo en Display ${act?.display || ':0'}`, 'info');
+                        btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
+                        btn.style.color = '#062e6f';
+                    }
                 } else {
-                    lbl.innerText = `Abrir Visor noVNC (${act?.desktop_name || 'Escritorio'})`;
-                    ico.innerText = 'language';
-                    btn.onclick = () => openWebViewer();
+                    lbl.innerText = `Cambiar a ${selectedBackend.toUpperCase()} y Abrir`;
+                    ico.innerText = 'rocket_launch';
+                    btn.onclick = apiStartScreen;
                     btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
                     btn.style.color = '#062e6f';
                 }
@@ -1406,7 +1425,7 @@
             const isLite = (preferredViewerMode === 'lite');
             const page = isLite ? 'vnc_lite.html' : 'vnc.html';
             const extraParams = isLite ? '&scale=true&resize=true&embedded=true' : '&resize=remote&autoconnect=true&embedded=true';
-            const url = `http://${host}:${port}/novnc/${page}?host=${host}&port=${port}&path=websockify${extraParams}`;
+            const url = `/novnc/${page}?host=${host}&port=${port}&path=websockify${extraParams}`;
 
             const ifr = document.getElementById('novncIframe');
             ifr.src = url;
