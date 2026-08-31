@@ -159,8 +159,10 @@ BACKEND_CATALOG: List[Dict[str, Any]] = [
 ]
 
 def get_desktop_entry(desktop_id: str) -> Optional[Dict[str, Any]]:
+    # Normalizar alias comunes
+    normalized_id = "xfce4" if desktop_id == "xfce" else desktop_id
     for d in DESKTOP_CATALOG:
-        if d["id"] == desktop_id:
+        if d["id"] == normalized_id or d["id"] == desktop_id:
             return dict(d)
     return None
 

@@ -27,14 +27,14 @@ El objetivo de **TDM** es proporcionar una solución integral, visual y por lín
 ### RF-2: Conmutación de Servidor / Pantalla
 * Permite seleccionar y cambiar la salida activa:
   1. **⚡ Termux:X11:** Inicia el servidor X11 local y abre la app Android `com.termux.x11`.
-  2. **🌐 noVNC (Web HTML5):** Inicia Xvnc + proxy WebSockets y sirve el visor interactivo en navegador/WebView.
-  3. **📡 xrdp (RDP):** Inicia el servidor RDP en el puerto 3389 para clientes de Microsoft Remote Desktop.
-  4. **🖥️ TigerVNC:** Inicia Xvnc en puerto 5900 para clientes VNC externos (bVNC).
+  2. **🌐 noVNC (Web HTML5):** Inicia Xvnc + proxy WebSockets y sirve el visor interactivo en navegador/WebView (Puerto 19052).
+  3. **📡 xrdp (RDP):** Inicia el servidor RDP en el puerto 19054 para clientes de Microsoft Remote Desktop.
+  4. **🖥️ TigerVNC:** Inicia Xvnc en puerto 19053 para clientes VNC externos (bVNC).
 
 ### RF-3: Ajustes Dinámicos de Pantalla
 * Configuración de resolución (Auto/Móvil, 1080p, 720p, 2K, etc.).
 * Configuración de escala DPI (96, 120, 144, 192 DPI).
-* Habilitación / Deshabilitación de canal de audio PulseAudio TCP 4713.
+* Habilitación / Deshabilitación de canal de audio PulseAudio TCP 19055.
 * Habilitación / Deshabilitación de aceleración gráfica VirGL 3D (GPU virpipe).
 
 ### RF-4: Supervisión Limpia de Procesos
@@ -48,8 +48,8 @@ El objetivo de **TDM** es proporcionar una solución integral, visual y por lín
 
 1. **Dashboard Web / WebView:** Interfaz táctil moderna (Dark Mode) con visor noVNC embebido y puente nativo Android.
 2. **CLI de Terminal (`tdm`):**
-   - `tdm start [--backend termux-x11|novnc|rdp|vnc] [--res 1920x1080]`
+   - `tdm start [--backend termux-x11|novnc|rdp|vnc] [--resolution 1920x1080]`
    - `tdm stop`
    - `tdm status`
    - `tdm doctor`
-   - `tdm web [--port 9050]`
+   - `tdm web [--port 19050]`

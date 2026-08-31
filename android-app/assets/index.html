@@ -2,63 +2,94 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Termux Display Manager (TDM)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Termux Display Manager • TDM</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0b0e14">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TDM">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a8c7fa'><path d='M4 6h16v10H4V6zm-2 0a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-6v2h2a1 1 0 110 2H8a1 1 0 110-2h2v-2H4a2 2 0 01-2-2V6z'/></svg>" type="image/svg+xml">
+
+    <!-- Google Fonts: Inter & Material Symbols Rounded -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-base: #0a0c12;
-            --bg-surface: #121520;
-            --bg-card: rgba(22, 27, 42, 0.75);
-            --bg-card-hover: rgba(32, 40, 62, 0.9);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --border-active: #6366f1;
-            --primary: #6366f1;
-            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-            --accent-green: #10b981;
-            --accent-blue: #38bdf8;
-            --accent-purple: #a855f7;
-            --accent-amber: #f59e0b;
-            --accent-rose: #f43f5e;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --radius-sm: 8px;
-            --radius-md: 14px;
-            --radius-lg: 20px;
-            --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+            --md-sys-color-surface: #0b0e14;
+            --md-sys-color-surface-container-low: #11151e;
+            --md-sys-color-surface-container: #161b26;
+            --md-sys-color-surface-container-high: #1c2230;
+            --md-sys-color-surface-container-highest: #232a3b;
+            
+            --md-sys-color-on-surface: #e2e8f0;
+            --md-sys-color-on-surface-variant: #94a3b8;
+            --md-sys-color-outline: #475569;
+            --md-sys-color-outline-variant: rgba(255, 255, 255, 0.08);
+
+            --md-sys-color-primary: #a8c7fa;
+            --md-sys-color-on-primary: #062e6f;
+            --md-sys-color-primary-container: rgba(168, 199, 250, 0.12);
+            --md-sys-color-primary-glow: rgba(168, 199, 250, 0.25);
+
+            --md-sys-color-tertiary: #6dd58c;
+            --md-sys-color-on-tertiary: #0a3818;
+            --md-sys-color-tertiary-container: rgba(109, 213, 140, 0.12);
+
+            --md-sys-color-error: #ffb4ab;
+            --md-sys-color-on-error: #690005;
+            --md-sys-color-error-container: rgba(255, 180, 171, 0.12);
+
+            --md-shape-corner-xs: 6px;
+            --md-shape-corner-sm: 10px;
+            --md-shape-corner-md: 16px;
+            --md-shape-corner-lg: 22px;
+            --md-shape-corner-xl: 28px;
+            --md-shape-corner-full: 9999px;
+
+            --ease-m3: cubic-bezier(0.2, 0, 0, 1);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-base);
-            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.1) 0%, transparent 35%),
-                radial-gradient(circle at 90% 90%, rgba(217, 70, 239, 0.08) 0%, transparent 40%);
-            background-attachment: fixed;
+            overflow-x: hidden;
         }
 
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+        .material-symbols-rounded.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        /* TOP NAVIGATION */
         header {
-            background: rgba(18, 21, 32, 0.85);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--md-sys-color-outline-variant);
             position: sticky;
             top: 0;
-            z-index: 40;
-            padding: 0.85rem 1.5rem;
+            z-index: 50;
+            padding: 0.75rem 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -67,1192 +98,1092 @@
         .brand-box {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
-        }
-
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: var(--radius-md);
-            background: var(--primary-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 1.1rem;
-            color: #fff;
-            box-shadow: var(--shadow-glow);
-        }
-
-        .brand-text h1 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .native-badge {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-green);
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.2rem 0.5rem;
-            border-radius: 20px;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            text-transform: uppercase;
-        }
-
-        .brand-text p {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .header-tools {
-            display: flex;
-            align-items: center;
             gap: 0.75rem;
-        }
-
-        .system-de-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border-color);
-            padding: 0.4rem 0.85rem;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .btn-header-tool {
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            color: #a5b4fc;
-            padding: 0.45rem 0.95rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.78rem;
-            font-weight: 700;
+            text-decoration: none;
+            color: var(--md-sys-color-on-surface);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s;
         }
 
-        .btn-header-tool:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        /* Layout Container */
-        main {
-            flex: 1;
-            max-width: 920px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 2rem 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.75rem;
-        }
-
-        /* Screen Status Banner */
-        .screen-status-banner {
-            background: linear-gradient(135deg, rgba(30, 38, 60, 0.85) 0%, rgba(18, 22, 34, 0.95) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: var(--radius-lg);
-            padding: 1.35rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(12px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .status-left {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .status-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: var(--radius-md);
-            background: rgba(99, 102, 241, 0.15);
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--md-shape-corner-sm);
+            background: linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%);
+            color: #062e6f;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
-            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 2px 10px var(--md-sys-color-primary-glow);
         }
 
-        .status-info h3 {
+        .brand-title {
             font-size: 1.15rem;
             font-weight: 800;
+            letter-spacing: -0.3px;
         }
 
-        .status-info p {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 0.15rem;
-        }
-
-        .status-actions {
+        .nav-actions {
             display: flex;
             align-items: center;
-            gap: 0.65rem;
+            gap: 0.5rem;
         }
 
-        .btn-primary-sm {
-            background: var(--primary-gradient);
-            color: white;
+        /* BUTTONS */
+        .btn-m3 {
             border: none;
-            padding: 0.55rem 1.15rem;
-            border-radius: var(--radius-sm);
+            padding: 0.5rem 1rem;
+            border-radius: var(--md-shape-corner-full);
             font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 0.4rem;
-            transition: all 0.2s;
-            box-shadow: var(--shadow-glow);
-        }
-
-        .btn-primary-sm:hover {
-            transform: translateY(-2px);
-        }
-
-        .btn-danger-sm {
-            background: rgba(244, 63, 94, 0.12);
-            border: 1px solid rgba(244, 63, 94, 0.3);
-            color: var(--accent-rose);
-            padding: 0.55rem 0.85rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.82rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-danger-sm:hover {
-            background: var(--accent-rose);
-            color: white;
-        }
-
-        /* WIZARD CONTAINER */
-        .wizard-container {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Progressbar */
-        .wizard-progressbar {
-            display: flex;
-            background: rgba(0, 0, 0, 0.3);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0.75rem 1.5rem;
-            gap: 0.5rem;
-        }
-
-        .prog-step {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem;
-            border-radius: var(--radius-sm);
-            opacity: 0.45;
-            transition: all 0.3s ease;
-        }
-
-        .prog-step.active {
-            opacity: 1;
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        .prog-step.completed {
-            opacity: 0.85;
-        }
-
-        .prog-step-num {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 800;
-        }
-
-        .prog-step.active .prog-step-num {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 0 10px var(--primary);
-        }
-
-        .prog-step.completed .prog-step-num {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .prog-step-text {
-            font-size: 0.78rem;
-            font-weight: 700;
-        }
-
-        /* Wizard Content */
-        .wizard-content {
-            padding: 2rem 1.75rem;
-            min-height: 380px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .wizard-step-pane {
-            display: none;
-            flex-direction: column;
-            gap: 1.5rem;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .wizard-step-pane.active {
-            display: flex;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .pane-heading h2 {
-            font-size: 1.35rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .pane-heading p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-
-        /* Grid 2 */
-        .wizard-grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .wizard-card-selectable {
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.35rem;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            gap: 0.65rem;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .wizard-card-selectable:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(99, 102, 241, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .wizard-card-selectable.selected {
-            background: rgba(99, 102, 241, 0.15);
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px var(--primary);
-        }
-
-        .wizard-card-selectable.selected::after {
-            content: '✓';
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 22px;
-            height: 22px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 800;
-        }
-
-        .card-big-icon {
-            font-size: 2.5rem;
-        }
-
-        .card-opt-title {
-            font-size: 1.05rem;
-            font-weight: 800;
-        }
-
-        .card-opt-desc {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        /* Step 2 Backends */
-        .wizard-grid-backends {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .backend-wiz-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.15rem;
-            cursor: pointer;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-            transition: all 0.2s;
-            position: relative;
-        }
-
-        .backend-wiz-card:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(99, 102, 241, 0.4);
-            transform: translateY(-2px);
-        }
-
-        .backend-wiz-card.selected {
-            background: rgba(99, 102, 241, 0.15);
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px var(--primary);
-        }
-
-        .backend-wiz-card.selected::after {
-            content: '✓';
-            position: absolute;
-            top: 0.85rem;
-            right: 0.85rem;
-            width: 20px;
-            height: 20px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 800;
-        }
-
-        .backend-badge-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
-
-        .icon-tx11 { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
-        .icon-web { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-        .icon-rdp { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
-        .icon-vnc { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-
-        .backend-wiz-text h4 {
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        .backend-wiz-text p {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            margin-top: 0.2rem;
-            line-height: 1.35;
-        }
-
-        .install-tag {
-            display: inline-block;
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--accent-amber);
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.15rem 0.45rem;
-            border-radius: 4px;
-            margin-top: 0.35rem;
-        }
-
-        /* Step 3 Controls */
-        .step3-controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-            background: rgba(0, 0, 0, 0.25);
-            padding: 1.25rem;
-            border-radius: var(--radius-md);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-        }
-
-        .form-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-        }
-
-        .form-select {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 0.65rem 0.85rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.85rem;
+            gap: 0.45rem;
+            transition: all 0.2s var(--ease-m3);
+            text-decoration: none;
             outline: none;
         }
 
-        .form-select:focus {
-            border-color: var(--primary);
+        .btn-m3-tonal {
+            background: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-on-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
+        }
+        .btn-m3-tonal:hover {
+            background: var(--md-sys-color-surface-container-highest);
+            transform: translateY(-1px);
         }
 
-        .toggle-box {
+        .btn-m3-filled {
+            background: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            box-shadow: 0 2px 8px var(--md-sys-color-primary-glow);
+        }
+        .btn-m3-filled:hover {
+            background: #c3d9fc;
+            box-shadow: 0 4px 14px var(--md-sys-color-primary-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-m3-error {
+            background: var(--md-sys-color-error-container);
+            color: var(--md-sys-color-error);
+            border: 1px solid rgba(255, 180, 171, 0.25);
+        }
+        .btn-m3-error:hover {
+            background: rgba(255, 180, 171, 0.25);
+        }
+
+        /* MAIN CONTAINER */
+        main {
+            flex: 1;
+            max-width: 880px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem 1.25rem 5rem;
             display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            padding: 0.85rem 1rem;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
+            flex-direction: column;
+            gap: 1.25rem;
         }
 
-        .toggle-box input {
-            accent-color: var(--primary);
-            width: 18px;
-            height: 18px;
-        }
-
-        .toggle-box span {
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-
-        /* Step 4 Summary */
-        .summary-card {
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: var(--radius-md);
+        /* HERO CARD / STATUS ISLAND */
+        .status-island {
+            background: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-xl);
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+
+        .island-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
             gap: 1rem;
         }
 
-        .summary-row {
+        .device-info-box {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-            padding-bottom: 0.6rem;
+            gap: 0.9rem;
         }
 
-        .summary-label {
-            font-size: 0.82rem;
-            color: var(--text-muted);
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #64748b;
+            box-shadow: 0 0 8px rgba(100, 116, 139, 0.4);
+            display: inline-block;
+            transition: all 0.3s ease;
         }
 
-        .summary-value {
-            font-size: 0.9rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text-main);
+        .status-dot.online {
+            background: var(--md-sys-color-tertiary);
+            box-shadow: 0 0 12px rgba(109, 213, 140, 0.6);
         }
 
-        /* Footer */
-        .wizard-footer {
-            background: rgba(0, 0, 0, 0.25);
-            border-top: 1px solid var(--border-color);
-            padding: 1.15rem 1.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .status-dot.offline {
+            background: #ef4444;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
 
-        .btn-nav-prev {
+        .device-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .device-subtitle {
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin-top: 0.15rem;
+        }
+
+        /* SEGMENTED CONTROL / BACKEND SELECTOR */
+        .segmented-bar {
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-lg);
+            padding: 0.35rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.35rem;
+        }
+
+        @media (max-width: 600px) {
+            .segmented-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .segment-btn {
             background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-            padding: 0.65rem 1.25rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-nav-prev:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-        }
-
-        .btn-nav-next {
-            background: var(--primary-gradient);
-            color: white;
             border: none;
-            padding: 0.65rem 1.5rem;
-            border-radius: var(--radius-sm);
-            font-size: 0.85rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: var(--shadow-glow);
-            transition: all 0.2s;
-        }
-
-        .btn-nav-next:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 25px rgba(99, 102, 241, 0.45);
-        }
-
-        /* Web Terminal Drawer */
-        .terminal-drawer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100vw;
-            height: 380px;
-            background: #0d1117;
-            border-top: 2px solid var(--primary);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-            z-index: 80;
-            display: flex;
-            flex-direction: column;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .terminal-drawer.open {
-            transform: translateY(0);
-        }
-
-        .terminal-drawer-header {
-            height: 40px;
-            background: #161b22;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 1rem;
+            padding: 0.65rem 0.5rem;
+            border-radius: var(--md-shape-corner-md);
+            color: var(--md-sys-color-on-surface-variant);
             font-size: 0.8rem;
             font-weight: 700;
-        }
-
-        .terminal-drawer-body {
-            flex: 1;
-            padding: 1rem;
-            background: #090d13;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #58a6ff;
-            overflow-y: auto;
+            cursor: pointer;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
+            align-items: center;
+            gap: 0.3rem;
+            transition: all 0.2s var(--ease-m3);
         }
 
-        .term-input-line {
+        .segment-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .segment-btn.active {
+            background: var(--md-sys-color-surface-container-highest);
+            color: var(--md-sys-color-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* DESKTOP ENVIRONMENT SUMMARY CARD */
+        .card-surface {
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-lg);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .de-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+        }
+
+        .de-info {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-top: auto;
+            gap: 0.85rem;
         }
 
-        .term-input {
-            flex: 1;
-            background: transparent;
-            border: none;
+        .de-icon {
+            font-size: 2rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--md-sys-color-surface-container-high);
+            border-radius: var(--md-shape-corner-md);
+        }
+
+        /* MINIMAL ENVIRONMENT GRID */
+        .de-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.65rem;
+            margin-top: 0.5rem;
+        }
+
+        .de-pill-card {
+            background: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-md);
+            padding: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            transition: all 0.2s var(--ease-m3);
+        }
+
+        .de-pill-card:hover {
+            border-color: var(--md-sys-color-primary);
+            transform: translateY(-1px);
+        }
+
+        .de-pill-card.selected {
+            background: var(--md-sys-color-primary-container);
+            border-color: var(--md-sys-color-primary);
+        }
+
+        .de-pill-card h5 {
+            font-size: 0.88rem;
+            font-weight: 700;
             color: #fff;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            outline: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Real noVNC Embedded Viewer */
-        .viewer-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: #000;
-            z-index: 100;
+        .de-pill-card p {
+            font-size: 0.72rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        /* MAIN LAUNCH FAB */
+        .btn-launch-primary {
+            width: 100%;
+            padding: 1.15rem;
+            border-radius: var(--md-shape-corner-xl);
+            background: linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%);
+            color: #062e6f;
+            border: none;
+            font-size: 1rem;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            box-shadow: 0 4px 18px var(--md-sys-color-primary-glow);
+            transition: all 0.2s var(--ease-m3);
+        }
+
+        .btn-launch-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px var(--md-sys-color-primary-glow);
+        }
+
+        .btn-launch-primary:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn-launch-primary:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* FLOATING TERMINAL DRAWER / LOGS */
+        .logs-sheet {
+            background: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-lg);
+            padding: 1rem;
             display: none;
             flex-direction: column;
+            gap: 0.5rem;
         }
 
-        .viewer-container.active {
+        .logs-sheet.open {
             display: flex;
         }
 
-        .viewer-bar {
-            height: 44px;
-            background: #121520;
-            border-bottom: 1px solid var(--border-color);
+        .terminal-box {
+            background: #06080c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: var(--md-shape-corner-md);
+            padding: 0.85rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.76rem;
+            color: #a8c7fa;
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            line-height: 1.45;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 1.25rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-xl);
+            max-width: 500px;
+            width: 100%;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .code-box {
+            background: #06080c;
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: var(--md-shape-corner-md);
+            padding: 0.85rem 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0 1rem;
+            gap: 0.75rem;
         }
 
-        .novnc-frame {
-            flex: 1;
-            width: 100%;
-            height: calc(100% - 44px);
-            border: none;
-            background: #000;
+        .code-box code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: #6dd58c;
+            word-break: break-all;
         }
 
-        /* Toast */
-        .toast-notify {
+        /* TOASTS */
+        .toast-box {
             position: fixed;
             bottom: 2rem;
-            right: 2rem;
-            background: rgba(18, 21, 32, 0.95);
-            border: 1px solid var(--border-color);
-            border-left: 4px solid var(--primary);
-            backdrop-filter: blur(12px);
-            padding: 0.85rem 1.25rem;
-            border-radius: var(--radius-md);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--md-sys-color-surface-container-highest);
+            color: #fff;
+            border: 1px solid var(--md-sys-color-outline-variant);
+            padding: 0.75rem 1.25rem;
+            border-radius: var(--md-shape-corner-full);
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.65rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s var(--ease-m3);
             z-index: 200;
-            transform: translateY(100px);
+            pointer-events: none;
             opacity: 0;
-            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .toast-notify.show {
-            transform: translateY(0);
+        .toast-box.show {
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
+        /* UPDATE BANNER */
+        .update-banner {
+            background: linear-gradient(135deg, rgba(76, 141, 246, 0.18) 0%, rgba(109, 213, 140, 0.18) 100%);
+            border: 1px solid rgba(76, 141, 246, 0.4);
+            border-radius: var(--md-shape-corner-xl);
+            padding: 0.85rem 1.15rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+            margin-bottom: 0.5rem;
+            animation: fadeInSlide 0.3s ease;
+        }
 
-        @media (max-width: 768px) {
-            main { padding: 1rem; }
-            .wizard-grid-2, .wizard-grid-backends, .step3-controls { grid-template-columns: 1fr; }
-            .screen-status-banner { flex-direction: column; gap: 1rem; align-items: flex-start; }
-            .status-actions { width: 100%; justify-content: flex-start; }
-            .prog-step-text { display: none; }
+        .update-icon-pulse {
+            background: rgba(76, 141, 246, 0.2);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse-update 2s infinite;
+        }
+
+        @keyframes pulse-update {
+            0% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(76, 141, 246, 0.5); }
+            70% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(76, 141, 246, 0); }
+            100% { transform: scale(0.96); box-shadow: 0 0 0 0 rgba(76, 141, 246, 0); }
+        }
+
+        .version-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: var(--md-sys-color-surface-container-high);
+            color: var(--md-sys-color-primary);
+            padding: 0.15rem 0.5rem;
+            border-radius: var(--md-shape-corner-full);
+            margin-left: 0.4rem;
+            border: 1px solid var(--md-sys-color-outline-variant);
         }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
+    <!-- TOP BAR -->
     <header>
-        <div class="brand-box">
-            <div class="brand-icon">TDM</div>
-            <div class="brand-text">
-                <h1>Termux Display Manager</h1>
-                <p>Gestor de Pantallas y Servidores Gráficos</p>
+        <div class="brand-box" onclick="location.reload()">
+            <div class="brand-logo">
+                <span class="material-symbols-rounded filled">desktop_windows</span>
+            </div>
+            <div class="brand-title" style="display: flex; align-items: center;">
+                <span>TDM</span>
+                <span id="lblHeaderVersion" class="version-badge">v1.1.0</span>
             </div>
         </div>
-        <div class="header-tools">
-            <button class="btn-header-tool" onclick="openSetupWizard()" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399;">
-                <span>🧙‍♂️</span> Asistente
+
+        <div class="nav-actions">
+            <button class="btn-m3 btn-m3-tonal" id="btnHeaderUpdate" onclick="apiCheckUpdate()" title="Buscar actualizaciones de TDM">
+                <span class="material-symbols-rounded">sync</span>
+                <span>Actualizar</span>
             </button>
-            <button class="btn-header-tool" onclick="toggleWebTerminal()">
-                <span>💻</span> Consola Web
+            <button class="btn-m3 btn-m3-filled" onclick="openPairModal()">
+                <span class="material-symbols-rounded">add</span>
+                <span>Vincular</span>
             </button>
-            <div class="system-de-badge">
-                <span id="txtHeaderDeIcon">❄️</span>
-                <span id="txtHeaderDeName">KDE Plasma</span>
-            </div>
+            <button class="btn-m3 btn-m3-tonal" id="btnInstallPwa" onclick="triggerPwaInstall()" style="display: none;">
+                <span class="material-symbols-rounded">download</span>
+                <span>PWA</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- MAIN DASHBOARD -->
     <main>
-
-        <!-- Banner de Estado Actual -->
-        <section class="screen-status-banner">
-            <div class="status-left">
-                <div class="status-avatar" id="bnrAvatar">⚡</div>
-                <div class="status-info">
-                    <h3 id="bnrTitle">Pantalla en Termux:X11</h3>
-                    <p id="bnrSub">Display :0 • Móvil • PulseAudio • VirGL</p>
+        
+        <!-- BANNER DE ACTUALIZACIÓN DISPONIBLE (AUTOMÁTICO) -->
+        <div id="bannerUpdateAvailable" class="update-banner" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="update-icon-pulse">
+                    <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-primary); font-size: 1.4rem;">system_update</span>
+                </div>
+                <div>
+                    <div style="font-weight: 800; font-size: 0.9rem; color: #fff;">
+                        ¡Nueva versión disponible: <span id="lblUpdateNewVer" style="color: var(--md-sys-color-primary);">v1.2.0</span>!
+                    </div>
+                    <div style="font-size: 0.76rem; color: var(--md-sys-color-on-surface-variant);">
+                        Tu versión actual es <span id="lblUpdateCurrentVer">v1.1.0</span>. Pulsa actualizar para aplicar las últimas mejoras.
+                    </div>
                 </div>
             </div>
-            <div class="status-actions">
-                <button class="btn-primary-sm" id="btnBnrConnect" onclick="handleCurrentConnect()">
-                    <span id="bnrBtnIcon">📲</span> <span id="bnrBtnText">Abrir Termux:X11</span>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="btn-m3 btn-m3-filled" id="btnPerformUpdate" onclick="apiTriggerUpdate()" style="background: var(--md-sys-color-primary); color: #000; font-weight: 700; padding: 0.45rem 0.9rem;">
+                    <span class="material-symbols-rounded">download</span>
+                    <span>Actualizar</span>
                 </button>
-                <button class="btn-danger-sm" onclick="apiStopScreen()">🛑 Apagar</button>
+                <button class="btn-m3 btn-m3-tonal" onclick="dismissUpdateBanner()" style="padding: 0.4rem 0.6rem;" title="Descartar aviso">✕</button>
+            </div>
+        </div>
+
+        <!-- ESTADO 1: SIN DISPOSITIVO VINCULADO (VISTA LIMPIA POR DEFECTO) -->
+        <section class="card-surface" id="boxNoDevicePaired" style="display: flex;">
+            <div style="text-align: center; padding: 2.25rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 1.15rem;">
+                <div style="font-size: 2.5rem; background: var(--md-sys-color-surface-container-high); width: 64px; height: 64px; border-radius: var(--md-shape-corner-lg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">📱</div>
+                <div>
+                    <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff;">Sin Dispositivo Vinculado</h3>
+                    <p style="font-size: 0.84rem; color: var(--md-sys-color-on-surface-variant); max-width: 480px; margin-top: 0.35rem; line-height: 1.45;">
+                        Pega este comando en la aplicación <strong>Termux</strong> de tu teléfono para vincularlo y comenzar a gestionarlo:
+                    </p>
+                </div>
+                <div class="code-box" style="width: 100%; max-width: 600px;">
+                    <code id="txtDashboardPairCmd">curl -sSL https://tdm.oton.cl/go | bash</code>
+                    <button class="btn-m3 btn-m3-tonal" onclick="copyDashboardPairCmd()">
+                        <span class="material-symbols-rounded">content_copy</span>
+                        <span>Copiar</span>
+                    </button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: #c4eed0; background: var(--md-sys-color-tertiary-container); padding: 0.5rem 0.85rem; border-radius: var(--md-shape-corner-md);">
+                    <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-tertiary); font-size: 1.05rem;">check_circle</span>
+                    <span>Al ejecutar el comando, tu teléfono se conectará automáticamente aquí.</span>
+                </div>
             </div>
         </section>
 
-        <!-- WIZARD INTERACTIVO -->
-        <section class="wizard-container">
+        <!-- ESTADO 2: PANEL DE CONTROL ACTIVO (CUANDO EL TELÉFONO ESTÁ VINCULADO) -->
+        <div id="boxActiveDevicePanel" style="display: none; flex-direction: column; gap: 1.25rem;">
             
-            <!-- Barra de Progreso de Pasos -->
-            <div class="wizard-progressbar">
-                <div class="prog-step active" id="pstep-1">
-                    <span class="prog-step-num">1</span>
-                    <span class="prog-step-text">Modo de Sesión</span>
+            <!-- STATUS HERO ISLAND -->
+            <section class="status-island">
+                <div class="island-header">
+                    <div class="device-info-box">
+                        <span class="status-dot" id="devStatusDot"></span>
+                        <div>
+                            <div class="device-title" id="txtDevTitle">Teléfono Android</div>
+                            <div class="device-subtitle" id="txtDevSubtitle">Comprobando servicio...</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <button class="btn-m3 btn-m3-error" id="btnHeaderStop" onclick="apiStopScreen()" style="display: none;">
+                            <span class="material-symbols-rounded">power_settings_new</span>
+                            <span>Apagar</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal" onclick="removeDevice()" title="Eliminar / Desvincular Dispositivo" style="color: var(--md-sys-color-error);">
+                            <span class="material-symbols-rounded">delete</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal" onclick="refreshStatus()" title="Refrescar">
+                            <span class="material-symbols-rounded">refresh</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="prog-step" id="pstep-2">
-                    <span class="prog-step-num">2</span>
-                    <span class="prog-step-text">Salida / Servidor</span>
+
+                <!-- BACKEND SELECTOR (SEGMENTED TABS) -->
+                <div class="segmented-bar">
+                    <button class="segment-btn active" id="seg-termux-x11" onclick="setBackend('termux-x11')">
+                        <span class="material-symbols-rounded filled">bolt</span>
+                        <span>Termux:X11</span>
+                    </button>
+                    <button class="segment-btn" id="seg-novnc" onclick="setBackend('novnc')">
+                        <span class="material-symbols-rounded">language</span>
+                        <span>Web HTML5</span>
+                    </button>
+                    <button class="segment-btn" id="seg-vnc" onclick="setBackend('vnc')">
+                        <span class="material-symbols-rounded">smartphone</span>
+                        <span>TigerVNC</span>
+                    </button>
+                    <button class="segment-btn" id="seg-rdp" onclick="setBackend('rdp')">
+                        <span class="material-symbols-rounded">desktop_windows</span>
+                        <span>XRDP</span>
+                    </button>
                 </div>
-                <div class="prog-step" id="pstep-3">
-                    <span class="prog-step-num">3</span>
-                    <span class="prog-step-text">Ajustes</span>
+            </section>
+
+            <!-- DESKTOP ENVIRONMENT CANVAS -->
+            <section class="card-surface">
+                <!-- VISTA: ENTORNO DETECTADO -->
+                <div id="viewInstalledDe" class="de-banner">
+                    <div class="de-info">
+                        <div class="de-icon" id="txtDeIcon">🐭</div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; color: #fff;" id="txtDeName">XFCE4 Desktop</div>
+                            <div style="font-size: 0.74rem; color: var(--md-sys-color-on-surface-variant);" id="txtDePath">Instalado y listo para ejecutar</div>
+                        </div>
+                    </div>
+                    <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()">
+                        <span class="material-symbols-rounded">swap_horiz</span>
+                        <span>Cambiar</span>
+                    </button>
                 </div>
-                <div class="prog-step" id="pstep-4">
-                    <span class="prog-step-num">4</span>
-                    <span class="prog-step-text">Lanzamiento</span>
+
+                <!-- VISTA: LISTA DE ENTORNOS DISPONIBLES -->
+                <div id="viewDePicker" style="display: none; flex-direction: column; gap: 0.85rem;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: var(--md-sys-color-primary);">
+                        Elige un entorno de escritorio:
+                    </div>
+                    <div class="de-grid">
+                        <div class="de-pill-card selected" onclick="pickDe('xfce', 'XFCE4', '🐭', this)">
+                            <h5><span>🐭 XFCE4</span> <span style="font-size: 0.65rem; color: #6dd58c;">Recomendado</span></h5>
+                            <p>Ultraligero y fluido a 120 FPS.</p>
+                        </div>
+                        <div class="de-pill-card" onclick="pickDe('kde', 'KDE Plasma', '❄️', this)">
+                            <h5><span>❄️ KDE Plasma</span></h5>
+                            <p>Efectos visuales modernos.</p>
+                        </div>
+                        <div class="de-pill-card" onclick="pickDe('mate', 'MATE', '🧉', this)">
+                            <h5><span>🧉 MATE</span></h5>
+                            <p>Tradicional y confiable.</p>
+                        </div>
+                        <div class="de-pill-card" onclick="pickDe('lxqt', 'LXQt', '🚀', this)">
+                            <h5><span>🚀 LXQt</span></h5>
+                            <p>Ligero con librerías Qt.</p>
+                        </div>
+                        <div class="de-pill-card" onclick="pickDe('i3', 'i3 WM', '🪟', this)">
+                            <h5><span>🪟 i3 WM</span></h5>
+                            <p>Mosaico ultrarrápido.</p>
+                        </div>
+                        <div class="de-pill-card" onclick="pickDe('openbox', 'Openbox', '📦', this)">
+                            <h5><span>📦 Openbox</span></h5>
+                            <p>Mínimo consumo RAM.</p>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.65rem; align-items: center; margin-top: 0.25rem;">
+                        <button class="btn-m3 btn-m3-filled" id="btnInstallDeAction" onclick="apiInstallPickedDesktop()">
+                            <span class="material-symbols-rounded">download</span>
+                            <span>Instalar <span id="lblPickedDe">XFCE4</span></span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()">
+                            <span>Cancelar</span>
+                        </button>
+                    </div>
                 </div>
+            </section>
+
+            <!-- PRIMARY LAUNCH ACTION -->
+            <button class="btn-launch-primary" id="btnMainLaunch" onclick="handlePrimaryAction()">
+                <span class="material-symbols-rounded filled" id="icoMainLaunch">rocket_launch</span>
+                <span id="lblMainLaunch">Lanzar Termux:X11</span>
+            </button>
+        </div>
+
+        <!-- LIVE TERMINAL LOGS DRAWER -->
+        <section class="logs-sheet" id="logsDrawer">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-primary);">📜 Terminal / Logs en Vivo</span>
+                <button class="btn-m3 btn-m3-tonal" onclick="toggleLogsDrawer()" style="padding: 0.2rem 0.5rem; font-size: 0.72rem;">Cerrar</button>
             </div>
-
-            <!-- Área de Contenido de los Pasos -->
-            <div class="wizard-content">
-
-                <!-- PASO 1: Modo de Sesión -->
-                <div class="wizard-step-pane active" id="pane-step-1">
-                    <div class="pane-heading">
-                        <h2><span>🎛️</span> Paso 1: ¿Qué deseas ejecutar en esta pantalla?</h2>
-                        <p>Elige si quieres iniciar el entorno gráfico completo o una terminal ligera dedicada.</p>
-                    </div>
-
-                    <div class="wizard-grid-2">
-                        <!-- Modo 1: Escritorio Completo -->
-                        <div class="wizard-card-selectable selected" id="cardModeDesktop" onclick="wizSelectMode(this, 'desktop')">
-                            <span class="card-big-icon" id="wizDeIcon">❄️</span>
-                            <div class="card-opt-title" id="wizDeTitle">Escritorio Completo</div>
-                            <div class="card-opt-desc">
-                                Carga la interfaz gráfica completa con panel, barra de tareas y gestor de ventanas.
-                            </div>
-                        </div>
-
-                        <!-- Modo 2: Terminal X11 Standalone -->
-                        <div class="wizard-card-selectable" id="cardModeTerminal" onclick="wizSelectMode(this, 'terminal')">
-                            <span class="card-big-icon">💻</span>
-                            <div class="card-opt-title">Terminal X11 Standalone (Ultraligera)</div>
-                            <div class="card-opt-desc">
-                                Lanza una sesión gráfica pura con terminal maximizada. Ideal para NeoVim y desarrollo sin consumo de RAM.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PASO 2: Servidor / Salida de Pantalla -->
-                <div class="wizard-step-pane" id="pane-step-2">
-                    <div class="pane-heading">
-                        <h2><span>🖥️</span> Paso 2: ¿Dónde quieres ver la pantalla?</h2>
-                        <p>Selecciona la tecnología y app de visualización de acuerdo a tu dispositivo.</p>
-                    </div>
-
-                    <div class="wizard-grid-backends" id="wizBackendsContainer">
-                        <!-- Termux:X11 -->
-                        <div class="backend-wiz-card selected" onclick="wizSelectServer(this, 'termux-x11', '⚡ Termux:X11 (App Android)', '⚡')">
-                            <div class="backend-badge-icon icon-tx11">⚡</div>
-                            <div class="backend-wiz-text">
-                                <h4>Termux:X11 (App Nativa)</h4>
-                                <p>Recomendado para la pantalla táctil de tu móvil. Fluidez total a 60/120 Hz.</p>
-                            </div>
-                        </div>
-
-                        <!-- noVNC -->
-                        <div class="backend-wiz-card" onclick="wizSelectServer(this, 'novnc', '🌐 noVNC (Web HTML5)', '🌐')">
-                            <div class="backend-badge-icon icon-web">🌐</div>
-                            <div class="backend-wiz-text">
-                                <h4>noVNC (Visor Web)</h4>
-                                <p>Visor HTML5 integrado en este navegador o WebView sin instalar apps externas.</p>
-                            </div>
-                        </div>
-
-                        <!-- xrdp / RDP -->
-                        <div class="backend-wiz-card" onclick="wizSelectServer(this, 'rdp', '📡 Microsoft Remote Desktop', '📡')">
-                            <div class="backend-badge-icon icon-rdp">📡</div>
-                            <div class="backend-wiz-text">
-                                <h4>Remote Desktop (RDP)</h4>
-                                <p>Conexión por protocolo RDP para PC con Windows, iPad o la app RD Client.</p>
-                            </div>
-                        </div>
-
-                        <!-- TigerVNC -->
-                        <div class="backend-wiz-card" onclick="wizSelectServer(this, 'vnc', '🖥️ TigerVNC Server', '🖥️')">
-                            <div class="backend-badge-icon icon-vnc">🖥️</div>
-                            <div class="backend-wiz-text">
-                                <h4>VNC Server (bVNC)</h4>
-                                <p>Servidor VNC estándar en puerto 5900 para clientes dedicados como bVNC.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PASO 3: Ajustes de Pantalla -->
-                <div class="wizard-step-pane" id="pane-step-3">
-                    <div class="pane-heading">
-                        <h2><span>⚙️</span> Paso 3: Ajustes de Resolución y Rendimiento</h2>
-                        <p>Configura la densidad de píxeles, audio y aceleración gráfica por hardware.</p>
-                    </div>
-
-                    <div class="step3-controls">
-                        <div class="form-group">
-                            <label class="form-label">Resolución de Pantalla</label>
-                            <select class="form-select" id="wizResSelect">
-                                <option value="1080x2400" selected>📱 Auto (Pantalla Móvil)</option>
-                                <option value="1920x1080">💻 1920x1080 (Full HD)</option>
-                                <option value="1366x768">📟 1366x768 (Laptop)</option>
-                                <option value="1280x720">📺 1280x720 (HD)</option>
-                                <option value="2560x1440">🖥️ 2560x1440 (2K QHD)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Escala / Densidad DPI</label>
-                            <select class="form-select" id="wizDpiSelect">
-                                <option value="96" selected>100% (96 DPI Estándar)</option>
-                                <option value="120">125% (120 DPI)</option>
-                                <option value="144">150% (144 DPI)</option>
-                                <option value="192">200% (192 DPI Alta Densidad)</option>
-                            </select>
-                        </div>
-                        <label class="toggle-box">
-                            <input type="checkbox" id="wizAudioChk" checked>
-                            <span>🔊 Audio PulseAudio (TCP 4713)</span>
-                        </label>
-                        <label class="toggle-box">
-                            <input type="checkbox" id="wizVirglChk" checked>
-                            <span>⚡ Aceleración GPU VirGL 3D</span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- PASO 4: Resumen y Lanzamiento -->
-                <div class="wizard-step-pane" id="pane-step-4">
-                    <div class="pane-heading">
-                        <h2><span>🚀</span> Paso 4: Confirmar y Habilitar Pantalla</h2>
-                        <p>Verifica la configuración antes de arrancar el servidor gráfico en Termux.</p>
-                    </div>
-
-                    <div class="summary-card">
-                        <div class="summary-row">
-                            <span class="summary-label">Modo de Sesión</span>
-                            <span class="summary-value" id="sumMode">❄️ Escritorio Completo</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Salida de Pantalla</span>
-                            <span class="summary-value" id="sumBackend">⚡ Termux:X11 (App Nativa)</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Resolución y Escala</span>
-                            <span class="summary-value" id="sumResDpi">1080x2400 @ 96 DPI</span>
-                        </div>
-                        <div class="summary-row">
-                            <span class="summary-label">Audio & Aceleración</span>
-                            <span class="summary-value" id="sumFeatures">PulseAudio: Sí • VirGL 3D: Sí</span>
-                        </div>
-                        <div class="summary-row" style="border: none;">
-                            <span class="summary-label">Acción Posterior</span>
-                            <span class="summary-value" id="sumAction" style="color: var(--accent-blue);">Abrirá Termux:X11 automáticamente</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Botones de Navegación del Wizard -->
-            <div class="wizard-footer">
-                <button class="btn-nav-prev" id="btnWizPrev" onclick="navStep(-1)" style="visibility: hidden;">
-                    ← Anterior
-                </button>
-                <div style="font-size: 0.78rem; color: var(--text-dim);" id="txtStepCounter">Paso 1 de 4</div>
-                <button class="btn-nav-next" id="btnWizNext" onclick="navStep(1)">
-                    Siguiente →
-                </button>
-            </div>
-
+            <div class="terminal-box" id="liveTerminalContent">Esperando eventos...</div>
         </section>
 
     </main>
 
-    <!-- Slide-over Web Terminal Drawer -->
-    <div class="terminal-drawer" id="termDrawer">
-        <div class="terminal-drawer-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span>💻</span>
-                <span>Termux Web Terminal (PTY Session)</span>
+    <!-- MODAL VINCULACIÓN -->
+    <div class="modal-overlay" id="pairModal">
+        <div class="modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 800; font-size: 1.1rem; color: #fff;">📱 Vincular Teléfono</div>
+                <button class="btn-m3 btn-m3-tonal" onclick="closePairModal()" style="padding: 0.3rem 0.6rem;">✕</button>
             </div>
-            <button class="btn-header-tool" style="padding: 0.2rem 0.5rem;" onclick="toggleWebTerminal()">✕ Cerrar</button>
-        </div>
-        <div class="terminal-drawer-body" id="termBody">
-            <div style="color: var(--accent-green);">Connected to TDM Core Daemon!</div>
-            <div>Escribe un comando para interactuar con Termux (ej: <span style="color: var(--accent-amber);">tdm status</span>, <span style="color: var(--accent-amber);">tdm doctor</span>)</div>
-            <div style="margin-top: 0.5rem;" id="termHistory"></div>
-            <div class="term-input-line">
-                <span style="color: var(--accent-blue);">octavio@android:~$</span>
-                <input type="text" class="term-input" id="termInput" placeholder="Escribe un comando..." onkeydown="handleTermKey(event)">
+
+            <p style="font-size: 0.82rem; color: var(--md-sys-color-on-surface-variant);">
+                Copia y pega este comando en la aplicación <strong>Termux</strong> de tu teléfono:
+            </p>
+
+            <div class="code-box">
+                <code id="txtPairCmd">curl -sSL https://tdm.oton.cl/go | bash</code>
+                <button class="btn-m3 btn-m3-tonal" onclick="copyPairCmd()">
+                    <span class="material-symbols-rounded">content_copy</span>
+                    <span>Copiar</span>
+                </button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.65rem; font-size: 0.78rem; color: #c4eed0; background: var(--md-sys-color-tertiary-container); padding: 0.65rem 0.85rem; border-radius: var(--md-shape-corner-md);">
+                <span class="material-symbols-rounded filled" style="color: var(--md-sys-color-tertiary);">check_circle</span>
+                <span>Configura el motor TDM, activa Wake-Lock y se vincula en 2do plano.</span>
             </div>
         </div>
     </div>
 
-    <!-- Fullscreen noVNC Web Viewer Modal -->
-    <div class="viewer-container" id="webViewerModal">
-        <div class="viewer-bar">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <span style="font-weight: 700; color: #38bdf8;" id="txtViewerTitle">Sesión noVNC</span>
-                <span class="native-badge">Conectado :0</span>
+    <!-- WEB VIEWER MODAL (noVNC) -->
+    <div class="modal-overlay" id="webViewerModal">
+        <div style="background: #000; border-radius: var(--md-shape-corner-xl); width: 95vw; height: 90vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--md-sys-color-outline-variant);">
+            <div style="padding: 0.65rem 1rem; background: var(--md-sys-color-surface-container-high); display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">🌐 noVNC Web Display</span>
+                <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()">Cerrar</button>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn-nav-prev" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" onclick="showToast('Teclado', 'Abriendo teclado virtual...')">⌨️ Teclado</button>
-                <button class="btn-nav-prev" style="padding: 0.35rem 0.75rem; font-size: 0.75rem; color: var(--accent-rose);" onclick="closeWebViewer()">✕ Salir</button>
-            </div>
-        </div>
-        <iframe class="novnc-frame" id="novncIframe" src="about:blank"></iframe>
-    </div>
-
-    <!-- Toast Notification -->
-    <div class="toast-notify" id="toastBox">
-        <span id="toastIco" style="font-size: 1.5rem;">🚀</span>
-        <div>
-            <h4 id="toastHdr" style="font-size: 0.85rem; font-weight: 700;">Notificación</h4>
-            <p id="toastTxt" style="font-size: 0.75rem; color: var(--text-muted);">Acción completada</p>
+            <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" src="about:blank"></iframe>
         </div>
     </div>
 
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast-box" id="toastBox">
+        <span class="material-symbols-rounded filled" id="toastIco">info</span>
+        <span id="toastMsg">Mensaje</span>
+    </div>
+
+    <!-- JAVASCRIPT CORE -->
     <script>
-        let currentStep = 1;
-        let wizardMode = 'desktop';
-        let wizardBackend = { id: 'termux-x11', name: '⚡ Termux:X11 (App Android)', icon: '⚡' };
-        let currentSystemStatus = null;
+        let selectedBackend = 'termux-x11';
+        let selectedDesktop = 'xfce';
+        let isScreenActive = false;
+        let isDeviceAvailable = false;
+        let hubWs = null;
+        let pairToken = localStorage.getItem('tdm_pair_token') || null;
+        let pendingRequests = {};
+        let deferredPrompt = null;
+        let healthPollInterval = null;
 
-        // Inicialización y polling
-        async function fetchSystemStatus() {
-            try {
-                const res = await fetch('/api/status');
-                if (!res.ok) return;
-                const data = await res.json();
-                currentSystemStatus = data;
-                updateUiFromStatus(data);
-            } catch (err) {
-                console.error("Error fetching TDM status:", err);
-            }
-        }
-
-        function updateUiFromStatus(data) {
-            const de = data.installed_desktop;
-            const deIcon = de.icon === 'kde' ? '❄️' : (de.icon === 'mate' ? '🧉' : (de.icon === 'xfce' ? '🐭' : '🪟'));
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            initPairing();
+            initPwa();
             
-            document.getElementById('txtHeaderDeIcon').innerText = deIcon;
-            document.getElementById('txtHeaderDeName').innerText = de.name;
-            document.getElementById('wizDeIcon').innerText = deIcon;
-            document.getElementById('wizDeTitle').innerText = `${de.name} (Instalado)`;
+            // Sondeo periódico de salud cada 4s
+            if (healthPollInterval) clearInterval(healthPollInterval);
+            healthPollInterval = setInterval(refreshStatus, 4000);
 
-            // Banner superior
-            if (data.is_screen_active && data.active_screen) {
-                const scr = data.active_screen;
-                const icon = scr.backend === 'termux-x11' ? '⚡' : (scr.backend === 'novnc' ? '🌐' : (scr.backend === 'rdp' ? '📡' : '🖥️'));
-                document.getElementById('bnrAvatar').innerText = icon;
-                document.getElementById('bnrTitle').innerText = `${de.name} en ${scr.backend}`;
-                document.getElementById('bnrSub').innerText = `Display :0 • ${scr.resolution} • Audio: ${scr.audio ? 'Sí' : 'No'} • VirGL: ${scr.virgl ? 'Sí' : 'No'}`;
-                
-                const btnText = document.getElementById('bnrBtnText');
-                const btnIcon = document.getElementById('bnrBtnIcon');
-                if (scr.backend === 'termux-x11') {
-                    btnIcon.innerText = '📲';
-                    btnText.innerText = 'Abrir Termux:X11';
-                } else if (scr.backend === 'novnc') {
-                    btnIcon.innerText = '🌐';
-                    btnText.innerText = 'Abrir noVNC Web';
-                } else if (scr.backend === 'rdp') {
-                    btnIcon.innerText = '📡';
-                    btnText.innerText = 'Abrir RD Client';
-                } else {
-                    btnIcon.innerText = '🖥️';
-                    btnText.innerText = 'Abrir bVNC';
+            // Comprobar actualizaciones automáticamente de forma silenciosa
+            setTimeout(() => apiCheckUpdate(true), 1500);
+        });
+
+        async function initPairing() {
+            if (!pairToken) {
+                try {
+                    const res = await fetch('/api/token/new');
+                    const d = await res.json();
+                    pairToken = d.token;
+                    localStorage.setItem('tdm_pair_token', pairToken);
+                    updateCommandTexts(d.setup_cmd);
+                } catch(e) {
+                    pairToken = 'tdm-' + Math.random().toString(16).substring(2, 8);
+                    const base = `${window.location.protocol}//${window.location.host}`;
+                    updateCommandTexts(`curl -sSL ${base}/go?t=${pairToken} | bash`);
                 }
             } else {
-                document.getElementById('bnrAvatar').innerText = '🛑';
-                document.getElementById('bnrTitle').innerText = 'Pantalla Apagada';
-                document.getElementById('bnrSub').innerText = 'Sin servidor gráfico activo en este momento';
-                document.getElementById('bnrBtnText').innerText = 'Iniciar con Wizard';
-                document.getElementById('bnrBtnIcon').innerText = '🚀';
+                const base = `${window.location.protocol}//${window.location.host}`;
+                updateCommandTexts(`curl -sSL ${base}/go?t=${pairToken} | bash`);
+            }
+            connectHub();
+        }
+
+        function updateCommandTexts(cmd) {
+            const el1 = document.getElementById('txtPairCmd');
+            const el2 = document.getElementById('txtDashboardPairCmd');
+            if (el1) el1.innerText = cmd;
+            if (el2) el2.innerText = cmd;
+        }
+
+        function connectHub() {
+            if (!pairToken) return;
+            const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${proto}//${window.location.host}/ws/client/${pairToken}`;
+            try {
+                if (hubWs) {
+                    try { hubWs.close(); } catch(e){}
+                }
+                hubWs = new WebSocket(wsUrl);
+
+                hubWs.onopen = () => {
+                    refreshStatus();
+                };
+
+                hubWs.onmessage = (e) => {
+                    try {
+                        const msg = JSON.parse(e.data);
+                        handleWsMessage(msg);
+                    } catch(err) {}
+                };
+
+                hubWs.onclose = () => {
+                    setDeviceOnlineState(false);
+                    setTimeout(connectHub, 3500);
+                };
+            } catch(e) {
+                setDeviceOnlineState(false);
             }
         }
 
-        function wizSelectMode(el, mode) {
-            document.querySelectorAll('.wizard-card-selectable').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            wizardMode = mode;
-        }
-
-        function wizSelectServer(el, id, name, icon) {
-            document.querySelectorAll('.backend-wiz-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            wizardBackend = { id, name, icon };
-        }
-
-        function navStep(direction) {
-            const nextStep = currentStep + direction;
-            if (nextStep < 1 || nextStep > 4) {
-                if (nextStep > 4) {
-                    apiStartScreen();
+        function handleWsMessage(msg) {
+            // Logs en vivo
+            if (msg.type === 'log' || msg.type === 'exec_log') {
+                const text = msg.line || msg.data;
+                if (text) {
+                    const logBox = document.getElementById('liveTerminalContent');
+                    const drawer = document.getElementById('logsDrawer');
+                    drawer.classList.add('open');
+                    logBox.innerText += '\n' + text;
+                    logBox.scrollTop = logBox.scrollHeight;
                 }
                 return;
             }
 
-            document.getElementById(`pane-step-${currentStep}`).classList.remove('active');
-            document.getElementById(`pstep-${currentStep}`).classList.remove('active');
-            if (direction > 0) {
-                document.getElementById(`pstep-${currentStep}`).classList.add('completed');
+            // Respuestas de comandos
+            if (msg.type === 'response' || msg.type === 'error') {
+                if (msg.req_id && pendingRequests[msg.req_id]) {
+                    if (msg.type === 'error') {
+                        pendingRequests[msg.req_id].reject(new Error(msg.error));
+                    } else {
+                        pendingRequests[msg.req_id].resolve(msg.result);
+                    }
+                    delete pendingRequests[msg.req_id];
+                }
+                return;
             }
 
-            currentStep = nextStep;
+            // Desconexión inmediata del agente
+            if (msg.type === 'agent_disconnected' || msg.type === 'session_deleted') {
+                setDeviceOnlineState(false);
+                return;
+            }
 
-            document.getElementById(`pane-step-${currentStep}`).classList.add('active');
-            document.getElementById(`pstep-${currentStep}`).classList.add('active');
-
-            document.getElementById('btnWizPrev').style.visibility = currentStep === 1 ? 'hidden' : 'visible';
-            document.getElementById('txtStepCounter').innerText = `Paso ${currentStep} de 4`;
-
-            const nextBtn = document.getElementById('btnWizNext');
-            if (currentStep === 4) {
-                updateSummary();
-                nextBtn.innerHTML = '<span>🚀</span> ¡Iniciar Pantalla Ahora!';
-                nextBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-            } else {
-                nextBtn.innerHTML = 'Siguiente →';
-                nextBtn.style.background = 'var(--primary-gradient)';
+            // Estado del agente
+            if (msg.type === 'agent_connected' || (msg.type === 'pairing_status' && msg.agent_connected)) {
+                refreshStatus();
             }
         }
 
-        function updateSummary() {
-            const res = document.getElementById('wizResSelect').value;
-            const dpi = document.getElementById('wizDpiSelect').value;
-            const audio = document.getElementById('wizAudioChk').checked;
-            const virgl = document.getElementById('wizVirglChk').checked;
+        function sendCommand(type, data = {}) {
+            return new Promise((resolve, reject) => {
+                const reqId = 'req-' + Date.now() + '-' + Math.random().toString(16).substring(2, 6);
+                const timer = setTimeout(() => {
+                    delete pendingRequests[reqId];
+                    reject(new Error('Timeout'));
+                }, 3500);
 
-            const deName = currentSystemStatus ? currentSystemStatus.installed_desktop.name : 'Escritorio Nativo';
+                pendingRequests[reqId] = {
+                    resolve: (res) => { clearTimeout(timer); resolve(res); },
+                    reject: (err) => { clearTimeout(timer); reject(err); }
+                };
 
-            document.getElementById('sumMode').innerText = wizardMode === 'desktop' ? `❄️ ${deName}` : '💻 Terminal X11 Standalone';
-            document.getElementById('sumBackend').innerText = wizardBackend.name;
-            document.getElementById('sumResDpi').innerText = `${res} @ ${dpi} DPI`;
-            document.getElementById('sumFeatures').innerText = `Audio: ${audio ? 'Sí' : 'No'} • VirGL 3D: ${virgl ? 'Sí' : 'No'}`;
+                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+                    hubWs.send(JSON.stringify({ type, req_id: reqId, token: pairToken, data }));
+                } else {
+                    clearTimeout(timer);
+                    reject(new Error('WebSocket desconectado'));
+                }
+            });
+        }
 
-            if (wizardBackend.id === 'termux-x11') {
-                document.getElementById('sumAction').innerText = 'Abrirá la app Termux:X11 automáticamente';
-            } else if (wizardBackend.id === 'novnc') {
-                document.getElementById('sumAction').innerText = 'Abrirá el visor Web HTML5 embebido';
-            } else if (wizardBackend.id === 'rdp') {
-                document.getElementById('sumAction').innerText = 'Listo en rdp://localhost:3389 para RD Client';
+        async function refreshStatus() {
+            try {
+                const res = await sendCommand('get_status');
+                if (res && res.installed_desktop) {
+                    setDeviceOnlineState(true, res);
+                } else {
+                    setDeviceOnlineState(false);
+                }
+            } catch(e) {
+                setDeviceOnlineState(false);
+            }
+        }
+
+        function setDeviceOnlineState(isOnline, data = null) {
+            isDeviceAvailable = isOnline;
+            const boxNoDev = document.getElementById('boxNoDevicePaired');
+            const boxActive = document.getElementById('boxActiveDevicePanel');
+
+            const dot = document.getElementById('devStatusDot');
+            const title = document.getElementById('txtDevTitle');
+            const sub = document.getElementById('txtDevSubtitle');
+            const btnLaunch = document.getElementById('btnMainLaunch');
+            const btnStop = document.getElementById('btnHeaderStop');
+
+            if (isOnline && data) {
+                boxNoDev.style.display = 'none';
+                boxActive.style.display = 'flex';
+
+                dot.className = 'status-dot online';
+                isScreenActive = data.is_screen_active;
+                const de = data.installed_desktop;
+                const dev = data.device_info || {};
+
+                title.innerText = dev.model || 'Teléfono Android';
+                sub.innerText = `🟢 Disponible • IP: ${data.network?.lan_ip || '192.168.1.x'}`;
+
+                if (de && de.installed && de.id !== 'terminal') {
+                    document.getElementById('viewInstalledDe').style.display = 'flex';
+                    document.getElementById('viewDePicker').style.display = 'none';
+                    document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
+                    document.getElementById('txtDePath').innerText = de.executable || 'Listo para ejecutar';
+                } else {
+                    document.getElementById('viewInstalledDe').style.display = 'none';
+                    document.getElementById('viewDePicker').style.display = 'flex';
+                }
+
+                btnLaunch.disabled = false;
+                btnLaunch.style.opacity = '1';
+                updateLaunchButton(data);
             } else {
-                document.getElementById('sumAction').innerText = 'Listo en vnc://localhost:5900 para bVNC';
+                boxNoDev.style.display = 'flex';
+                boxActive.style.display = 'none';
+
+                dot.className = 'status-dot offline';
+                isScreenActive = false;
+                btnStop.style.display = 'none';
+                btnLaunch.disabled = true;
+            }
+        }
+
+        function updateLaunchButton(data) {
+            const btn = document.getElementById('btnMainLaunch');
+            const lbl = document.getElementById('lblMainLaunch');
+            const ico = document.getElementById('icoMainLaunch');
+            const btnStop = document.getElementById('btnHeaderStop');
+
+            if (data.is_screen_active) {
+                const act = data.active_screen;
+                const b = act?.backend || selectedBackend;
+                btnStop.style.display = 'inline-flex';
+
+                if (b === 'termux-x11') {
+                    lbl.innerText = 'Pantalla Activa en Termux:X11 (Apagar)';
+                    ico.innerText = 'power_settings_new';
+                    btn.onclick = apiStopScreen;
+                    btn.style.background = 'linear-gradient(135deg, #ffb4ab 0%, #ba1a1a 100%)';
+                    btn.style.color = '#690005';
+                } else {
+                    lbl.innerText = 'Abrir Pantalla (Visor Web)';
+                    ico.innerText = 'language';
+                    btn.onclick = () => openWebViewer(data.network?.lan_ip || '127.0.0.1');
+                    btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
+                    btn.style.color = '#062e6f';
+                }
+            } else {
+                btnStop.style.display = 'none';
+                lbl.innerText = `Lanzar ${selectedBackend.toUpperCase()}`;
+                ico.innerText = 'rocket_launch';
+                btn.onclick = apiStartScreen;
+                btn.style.background = 'linear-gradient(135deg, #a8c7fa 0%, #4c8df6 100%)';
+                btn.style.color = '#062e6f';
+            }
+        }
+
+        async function removeDevice() {
+            if (!confirm('¿Estás seguro de que deseas eliminar y desinstalar completamente este dispositivo?\n\n• Se cerrará todo el entorno gráfico.\n• Se desinstalará el servicio de Termux.\n• Se eliminará la vinculación y no volverá a aparecer.')) {
+                return;
+            }
+
+            showToast('Desinstalando y eliminando de Termux...', 'delete');
+
+            try {
+                await sendCommand('uninstall');
+            } catch (e) {}
+
+            try {
+                await sendCommand('delete_device');
+            } catch (e) {}
+
+            localStorage.removeItem('tdm_pair_token');
+            pairToken = null;
+
+            if (hubWs) {
+                try { hubWs.close(); } catch(e){}
+                hubWs = null;
+            }
+
+            setDeviceOnlineState(false);
+            showToast('Dispositivo eliminado y desinstalado', 'check_circle');
+
+            // Generar nuevo token limpio
+            setTimeout(() => {
+                initPairing();
+            }, 500);
+        }
+
+        function setBackend(b) {
+            selectedBackend = b;
+            document.querySelectorAll('.segment-btn').forEach(el => el.classList.remove('active'));
+            const btn = document.getElementById(`seg-${b}`);
+            if (btn) btn.classList.add('active');
+            refreshStatus();
+        }
+
+        function toggleDeList() {
+            const picker = document.getElementById('viewDePicker');
+            const installed = document.getElementById('viewInstalledDe');
+            const isVisible = picker.style.display === 'flex';
+            picker.style.display = isVisible ? 'none' : 'flex';
+            installed.style.display = isVisible ? 'flex' : 'none';
+        }
+
+        function pickDe(id, name, icon, el) {
+            selectedDesktop = id;
+            document.querySelectorAll('.de-pill-card').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            document.getElementById('lblPickedDe').innerText = name;
+        }
+
+        async function apiInstallPickedDesktop() {
+            showToast(`Instalando ${selectedDesktop.toUpperCase()}...`, 'download');
+            document.getElementById('logsDrawer').classList.add('open');
+            document.getElementById('liveTerminalContent').innerText = `[TDM] Descargando e instalando ${selectedDesktop}...\n`;
+            try {
+                await sendCommand('install_desktop', { desktop: selectedDesktop });
+                showToast('¡Instalación Finalizada!', 'check_circle');
+                toggleDeList();
+                refreshStatus();
+            } catch(e) {
+                showToast('Error al instalar', 'error');
             }
         }
 
         async function apiStartScreen() {
-            const res = document.getElementById('wizResSelect').value;
-            const dpi = parseInt(document.getElementById('wizDpiSelect').value);
-            const audio = document.getElementById('wizAudioChk').checked;
-            const virgl = document.getElementById('wizVirglChk').checked;
-
-            showToast('Iniciando Servidor', `Arrancando ${wizardBackend.name}...`, wizardBackend.icon);
-
+            if (!isDeviceAvailable) {
+                showToast('Dispositivo no disponible', 'cloud_off');
+                return;
+            }
+            showToast(`Iniciando ${selectedBackend}...`, 'rocket_launch');
             try {
-                const response = await fetch('/api/screen/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        backend: wizardBackend.id,
-                        mode: wizardMode,
-                        resolution: res,
-                        dpi: dpi,
-                        audio: audio,
-                        virgl: virgl
-                    })
+                await sendCommand('screen_start', {
+                    backend: selectedBackend,
+                    mode: 'desktop',
+                    resolution: '1080x2400',
+                    dpi: 140,
+                    audio: true,
+                    virgl: true
                 });
-                const result = await response.json();
-                
-                if (result.status === 'running') {
-                    showToast('¡Pantalla Habilitada!', `Servidor activo en ${wizardBackend.name}`, '🎉');
-                    await fetchSystemStatus();
-
-                    // Regresar al paso 1
-                    navStep(-3);
-
-                    if (wizardBackend.id === 'novnc') {
-                        setTimeout(() => openWebViewer(), 600);
-                    } else if (wizardBackend.id === 'termux-x11') {
-                        showToast('Lanzando Termux:X11', 'Abriendo la app nativa en Android...', '📲');
-                    }
-                } else {
-                    showToast('Error', result.error_message || 'No se pudo iniciar la pantalla', '❌');
-                }
-            } catch (err) {
-                showToast('Error', 'Fallo de conexión con la API TDM', '❌');
+                showToast('¡Pantalla Iniciada!', 'check_circle');
+                refreshStatus();
+            } catch(e) {
+                showToast('Error al iniciar', 'error');
             }
         }
 
         async function apiStopScreen() {
+            showToast('Apagando pantalla...', 'power_settings_new');
             try {
-                await fetch('/api/screen/stop', { method: 'POST' });
-                showToast('Pantalla Detenida', 'Servidor gráfico apagado y memoria liberada', '🛑');
-                await fetchSystemStatus();
-            } catch (err) {
-                showToast('Error', 'No se pudo detener la pantalla', '❌');
+                await sendCommand('screen_stop');
+                showToast('Pantalla Detenida al 100%', 'check_circle');
+                refreshStatus();
+            } catch(e) {
+                showToast('Error al detener', 'error');
             }
         }
 
-        function handleCurrentConnect() {
-            if (!currentSystemStatus || !currentSystemStatus.is_screen_active) {
-                navStep(1);
-                return;
-            }
-            const scr = currentSystemStatus.active_screen;
-            if (scr.backend === 'novnc') {
-                openWebViewer();
-            } else if (scr.backend === 'termux-x11') {
-                showToast('Abriendo Termux:X11', 'Pasando la app Termux:X11 a primer plano', '📲');
-            } else if (scr.backend === 'rdp') {
-                showToast('Abriendo RD Client', 'Conectando a rdp://127.0.0.1:3389', '📡');
+        function handlePrimaryAction() {
+            if (isScreenActive && selectedBackend === 'termux-x11') {
+                apiStopScreen();
             } else {
-                showToast('Abriendo bVNC', 'Conectando a vnc://127.0.0.1:5900', '🖥️');
+                apiStartScreen();
             }
         }
 
-        function openWebViewer() {
-            const iframe = document.getElementById('novncIframe');
-            const host = window.location.hostname || '127.0.0.1';
-            iframe.src = `http://${host}:6080/vnc.html?autoconnect=true&resize=remote`;
+        function toggleLogsDrawer() {
+            const d = document.getElementById('logsDrawer');
+            d.classList.toggle('open');
+        }
+
+        function openLogsModal() {
+            const d = document.getElementById('logsDrawer');
+            d.classList.add('open');
+            d.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openPairModal() {
+            document.getElementById('pairModal').classList.add('active');
+        }
+
+        function closePairModal() {
+            document.getElementById('pairModal').classList.remove('active');
+        }
+
+        function copyPairCmd() {
+            const txt = document.getElementById('txtPairCmd').innerText;
+            navigator.clipboard.writeText(txt);
+            showToast('¡Comando copiado al portapapeles!', 'content_copy');
+        }
+
+        function copyDashboardPairCmd() {
+            const txt = document.getElementById('txtDashboardPairCmd').innerText;
+            navigator.clipboard.writeText(txt);
+            showToast('¡Comando copiado al portapapeles!', 'content_copy');
+        }
+
+        function openWebViewer(ip) {
+            const ifr = document.getElementById('novncIframe');
+            ifr.src = `http://${ip}:19052/vnc.html?autoconnect=true&resize=remote`;
             document.getElementById('webViewerModal').classList.add('active');
         }
 
@@ -1261,66 +1192,111 @@
             document.getElementById('webViewerModal').classList.remove('active');
         }
 
-        function toggleWebTerminal() {
-            const drawer = document.getElementById('termDrawer');
-            drawer.classList.toggle('open');
-            if (drawer.classList.contains('open')) {
-                document.getElementById('termInput').focus();
-            }
-        }
-
-        function openSetupWizard() {
-            if (window.AndroidBridge && window.AndroidBridge.launchSetupWizard) {
-                window.AndroidBridge.launchSetupWizard();
-            } else {
-                window.location.href = '/setup';
-            }
-        }
-
-        function handleTermKey(e) {
-            if (e.key === 'Enter') {
-                const input = document.getElementById('termInput');
-                const val = input.value.trim();
-                if (!val) return;
-                
-                const hist = document.getElementById('termHistory');
-                const line = document.createElement('div');
-                line.innerHTML = `<span style="color: var(--accent-blue);">octavio@android:~$</span> ${val}`;
-                hist.appendChild(line);
-
-                const resp = document.createElement('div');
-                resp.style.color = 'var(--text-muted)';
-                resp.style.marginBottom = '0.5rem';
-
-                if (val === 'tdm status') {
-                    resp.innerHTML = `[TDM Core Status]<br>Installed Desktop: ${currentSystemStatus?.installed_desktop?.name}<br>Display Active: ${currentSystemStatus?.is_screen_active ? 'Yes' : 'No'}`;
-                } else if (val === 'help') {
-                    resp.innerHTML = `Comandos TDM:<br>• tdm start [novnc|termux-x11|rdp|vnc]<br>• tdm stop<br>• tdm doctor`;
-                } else if (val === 'clear') {
-                    hist.innerHTML = '';
-                    input.value = '';
-                    return;
-                } else {
-                    resp.innerHTML = `[Ejecutado]: ${val}`;
-                }
-                hist.appendChild(resp);
-                input.value = '';
-                document.getElementById('termBody').scrollTop = document.getElementById('termBody').scrollHeight;
-            }
-        }
-
-        function showToast(title, msg, ico = '✨') {
+        function showToast(msg, icon = 'info') {
             const t = document.getElementById('toastBox');
-            document.getElementById('toastHdr').innerText = title;
-            document.getElementById('toastTxt').innerText = msg;
-            document.getElementById('toastIco').innerText = ico;
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastIco').innerText = icon;
             t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
+            setTimeout(() => t.classList.remove('show'), 3500);
         }
 
-        // Cargar estado inicial y actualizar cada 4 segundos
-        fetchSystemStatus();
-        setInterval(fetchSystemStatus, 4000);
+        function initPwa() {
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                const b = document.getElementById('btnInstallPwa');
+                if (b) b.style.display = 'inline-flex';
+            });
+        }
+
+        let updateInfo = null;
+
+        async function apiCheckUpdate(silent = false) {
+            try {
+                let res = null;
+                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+                    res = await sendCommand('check_update');
+                } else {
+                    const resp = await fetch('/api/update/check');
+                    if (resp.ok) res = await resp.json();
+                }
+
+                if (res) {
+                    updateInfo = res;
+                    const curVer = res.current_version || '1.1.0';
+                    const badge = document.getElementById('lblHeaderVersion');
+                    if (badge) badge.innerText = `v${curVer}`;
+                    const curSpan = document.getElementById('lblUpdateCurrentVer');
+                    if (curSpan) curSpan.innerText = `v${curVer}`;
+
+                    if (res.update_available) {
+                        const banner = document.getElementById('bannerUpdateAvailable');
+                        const newSpan = document.getElementById('lblUpdateNewVer');
+                        if (newSpan) newSpan.innerText = `v${res.latest_version}`;
+                        if (banner) banner.style.display = 'flex';
+                        if (!silent) {
+                            showToast(`¡Nueva versión disponible: v${res.latest_version}!`, 'system_update');
+                        }
+                    } else {
+                        const banner = document.getElementById('bannerUpdateAvailable');
+                        if (banner) banner.style.display = 'none';
+                        if (!silent) {
+                            showToast(`TDM está actualizado (v${curVer})`, 'check_circle');
+                        }
+                    }
+                }
+            } catch(e) {
+                if (!silent) showToast('No se pudo verificar actualizaciones', 'info');
+            }
+        }
+
+        function dismissUpdateBanner() {
+            const banner = document.getElementById('bannerUpdateAvailable');
+            if (banner) banner.style.display = 'none';
+        }
+
+        async function apiTriggerUpdate() {
+            showToast('Iniciando actualización...', 'downloading');
+            document.getElementById('logsDrawer').classList.add('open');
+            const logBox = document.getElementById('liveTerminalContent');
+            logBox.innerText = `[TDM] Descargando e instalando actualización de backend...\n`;
+
+            const btn = document.getElementById('btnPerformUpdate');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Actualizando...';
+            }
+
+            try {
+                let res = null;
+                if (hubWs && hubWs.readyState === WebSocket.OPEN) {
+                    res = await sendCommand('update');
+                } else {
+                    const resp = await fetch('/api/update', { method: 'POST' });
+                    if (resp.ok) res = await resp.json();
+                    else throw new Error(`HTTP ${resp.status}`);
+                }
+
+                if (res && res.success) {
+                    showToast(`¡Actualizado con éxito a v${res.new_version || ''}!`, 'check_circle');
+                    dismissUpdateBanner();
+                    if (res.new_version) {
+                        const badge = document.getElementById('lblHeaderVersion');
+                        if (badge) badge.innerText = `v${res.new_version}`;
+                    }
+                    setTimeout(refreshStatus, 2000);
+                } else {
+                    showToast(`Error al actualizar: ${res?.error || 'Desconocido'}`, 'error');
+                }
+            } catch(e) {
+                showToast(`Error al actualizar: ${e.message}`, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-rounded">download</span><span>Actualizar</span>';
+                }
+            }
+        }
     </script>
 </body>
 </html>

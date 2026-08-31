@@ -18,11 +18,13 @@ echo "====================================================="
 
 # 1. Detener procesos y servidores activos
 echo "[1/5] Deteniendo servidores de pantalla y procesos activos..."
-pkill -9 -f "tdm.cli.main" || true
-pkill -9 -f "websockify" || true
-pkill -9 -f "Xvnc" || true
-pkill -9 -f "termux-x11" || true
-pkill -9 -f "xrdp" || true
+pkill -f "tdm.agent.client" 2>/dev/null || true
+pkill -f "tdm.cli.main server" 2>/dev/null || true
+pkill -f "websockify" 2>/dev/null || true
+pkill -f "Xvnc" 2>/dev/null || true
+pkill -f "termux-x11" 2>/dev/null || true
+pkill -f "xrdp" 2>/dev/null || true
+termux-wake-unlock 2>/dev/null || true
 
 # 2. Consultar SQLite y desinstalar SOLO los paquetes que TDM instaló
 echo "[2/5] Consultando registro SQLite para desinstalar solo paquetes de TDM..."
@@ -41,7 +43,15 @@ except Exception:
 
     if [ -n "$PKGS_TO_REMOVE" ]; then
         echo "📦 Desinstalando paquetes registrados por TDM: $PKGS_TO_REMOVE"
-        apt-get remove -y $PKGS_TO_REMOVE || true
+        if command -v pkg >/dev/null 2>&1; then
+            pkg uninstall -y $PKGS_TO_REMOVE || true
+        elif command -v apk >/dev/null 2>&1; then
+            apk del $PKGS_TO_REMOVE || true
+        elif command -v apt-get >/dev/null 2>&1; then
+            apt-get remove -y $PKGS_TO_REMOVE || true
+        elif command -v pacman >/dev/null 2>&1; then
+            pacman -R --noconfirm $PKGS_TO_REMOVE || true
+        fi
     else
         echo "ℹ️  No hay paquetes exclusivos de TDM para desinstalar (los existentes eran previos)."
     fi
@@ -49,7 +59,8 @@ fi
 
 # 3. Limpiar sockets temporales X11
 echo "[3/5] Limpiando sockets X11 temporales..."
-rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /tmp/X11-pipe/X* /tmp/dbus-* 2>/dev/null || true
+TMPDIR="${TMPDIR:-$PREFIX/tmp}"
+rm -f "$TMPDIR"/.X*-lock "$TMPDIR"/.X11-unix/X* "$TMPDIR"/X11-pipe/X* "$TMPDIR"/dbus-* /tmp/.X*-lock /tmp/.X11-unix/X* /tmp/X11-pipe/X* /tmp/dbus-* 2>/dev/null || true
 
 # 4. Eliminar ejecutable global tdm y enlaces .pth
 echo "[4/5] Removiendo ejecutable global 'tdm' y paquetes registrados..."

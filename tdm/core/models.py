@@ -19,9 +19,10 @@ class BackendType(str, Enum):
 
 @dataclass
 class DisplayConfig:
-    display_num: int
-    desktop_id: str
-    backend: str
+    display_num: int = 0
+    desktop_id: str = "xfce"
+    backend: str = "termux-x11"
+    mode: str = "desktop"
     resolution: str = "1920x1080"
     dpi: int = 96
     depth: int = 24
@@ -34,13 +35,17 @@ class DisplayConfig:
     password: Optional[str] = None
     env_vars: Dict[str, str] = field(default_factory=dict)
 
+    @property
+    def display_str(self) -> str:
+        return f":{self.display_num}"
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
 @dataclass
 class DisplaySession:
-    id: str  # e.g., "display-1"
-    config: DisplayConfig
+    id: str = "display-0"  # e.g., "display-1"
+    config: DisplayConfig = field(default_factory=DisplayConfig)
     status: DisplayStatus = DisplayStatus.STOPPED
     server_pid: Optional[int] = None
     session_pid: Optional[int] = None

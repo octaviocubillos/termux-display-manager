@@ -374,6 +374,19 @@ async def handle_update(args):
     print("✅ Actualización completada y operativa.")
     print("=====================================================")
 
+async def handle_agy(args):
+    """Gestiona el terminal dinámico multidispositivo con agy y tmux."""
+    script = Path(__file__).resolve().parent.parent.parent / "scripts" / "agy-dynamic-terminal.sh"
+    if not script.exists():
+        print(f"❌ Error: Script {script} no encontrado.")
+        return
+    cmd = [str(script)]
+    if getattr(args, "agy_command", None):
+        cmd.append(args.agy_command)
+    if getattr(args, "extra", None):
+        cmd.extend(args.extra)
+    subprocess.run(cmd)
+
 def main():
     parser = argparse.ArgumentParser(prog="tdm", description="Termux Display Manager CLI")
     subparsers = parser.add_subparsers(dest="command", help="Comando a ejecutar")
@@ -442,6 +455,11 @@ def main():
     service_parser = subparsers.add_parser("service", help="Gestiona los servicios de TDM en segundo plano (daemon y wake-lock)")
     service_parser.add_argument("action", choices=["start", "stop", "status"], default="status", nargs="?", help="Acción a realizar")
 
+    # tdm agy [start|attach|web|qr|status|stop]
+    agy_parser = subparsers.add_parser("agy", help="Terminal dinámico multidispositivo con agy y tmux")
+    agy_parser.add_argument("agy_command", nargs="?", default="", help="Subcomando agy (start, attach, web, qr, status, stop, send)")
+    agy_parser.add_argument("extra", nargs=argparse.REMAINDER, help="Argumentos adicionales")
+
     # tdm uninstall
     subparsers.add_parser("uninstall", help="Desinstala TDM y limpia selectivamente solo lo instalado mediante TDM")
 
@@ -465,6 +483,8 @@ def main():
 
     if args.command == "status":
         asyncio.run(handle_status())
+    elif args.command == "agy":
+        asyncio.run(handle_agy(args))
     elif args.command == "logs":
         asyncio.run(handle_logs(args))
     elif args.command == "update":

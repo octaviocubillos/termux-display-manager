@@ -1,0 +1,21 @@
+FROM termux/termux-docker:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV HOME=/data/data/com.termux/files/home
+ENV PREFIX=/data/data/com.termux/files/usr
+ENV PATH=/data/data/com.termux/files/usr/bin:$PATH
+ENV TMPDIR=/data/data/com.termux/files/usr/tmp
+ENV LANG=en_US.UTF-8
+
+USER system
+
+RUN apt update && \
+    apt install -y openssh python procps curl git nano psmisc x11-repo net-tools
+
+COPY --chown=1000:1000 entrypoint-termux.sh /entrypoint-termux.sh
+
+WORKDIR /data/data/com.termux/files/home
+
+EXPOSE 8022 19050 19051 19052 19053 19054 19055
+
+ENTRYPOINT ["/entrypoint-termux.sh"]

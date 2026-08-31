@@ -20,7 +20,7 @@ import java.net.URL;
 
 public class MainActivity extends Activity {
     private WebView webView;
-    private static final String SERVER_URL = "http://127.0.0.1:9050/";
+    private static final String SERVER_URL = "http://127.0.0.1:19050/";
     private static final String SETUP_WIZARD_URL = "file:///android_asset/setup.html";
     private static final String DASHBOARD_FALLBACK_URL = "file:///android_asset/index.html";
 
@@ -83,7 +83,7 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                if (failingUrl.startsWith("http://127.0.0.1:9050")) {
+                if (failingUrl.startsWith("http://127.0.0.1:19050")) {
                     SharedPreferences prefs = getSharedPreferences("tdm_prefs", MODE_PRIVATE);
                     boolean hasCompletedSetup = prefs.getBoolean("has_completed_setup", false);
                     if (!hasCompletedSetup) {
@@ -111,7 +111,7 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             boolean serverAvailable = false;
             try {
-                URL url = new URL("http://127.0.0.1:9050/api/status");
+                URL url = new URL("http://127.0.0.1:19050/api/status");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(800);
                 conn.setReadTimeout(800);

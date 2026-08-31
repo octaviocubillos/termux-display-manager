@@ -37,7 +37,7 @@ public class TdmBridge {
         if (isServerRunning) return;
         isServerRunning = true;
         new Thread(() -> {
-            try (ServerSocket serverSocket = new ServerSocket(9051, 10, InetAddress.getByName("127.0.0.1"))) {
+            try (ServerSocket serverSocket = new ServerSocket(19051, 10, InetAddress.getByName("127.0.0.1"))) {
                 while (!Thread.currentThread().isInterrupted()) {
                     try {
                         Socket client = serverSocket.accept();
@@ -160,7 +160,7 @@ public class TdmBridge {
                     "pkg install -y python x11-repo dbus xorg-xauth xorg-xsetroot procps || true && " +
                     "(tar -xzf /sdcard/Download/tdm-bundle.tar.gz -C $HOME 2>/dev/null || " +
                     "tar -xzf /sdcard/tdm-bundle.tar.gz -C $HOME 2>/dev/null || " +
-                    "python3 -c \"import urllib.request, tarfile; tarfile.open(fileobj=urllib.request.urlopen('http://127.0.0.1:9051/bundle.tar.gz', timeout=15), mode='r:gz').extractall('$HOME')\") && " +
+                    "python3 -c \"import urllib.request, tarfile; tarfile.open(fileobj=urllib.request.urlopen('http://127.0.0.1:19051/bundle.tar.gz', timeout=15), mode='r:gz').extractall('$HOME')\") && " +
                     "cd $HOME/termux-display-manager && bash install.sh";
 
             boolean success = false;
@@ -201,7 +201,7 @@ public class TdmBridge {
             intent.setClassName("com.termux", "com.termux.app.RunCommandService");
             intent.setAction("com.termux.RUN_COMMAND");
             intent.putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/tdm");
-            intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", new String[]{"server", "--port", "9050"});
+            intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", new String[]{"server", "--port", "19050"});
             intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", true);
             intent.putExtra("com.termux.RUN_COMMAND_IN_BACKGROUND", true);
             intent.putExtra("com.termux.RUN_COMMAND_SESSION_ACTION", "0");

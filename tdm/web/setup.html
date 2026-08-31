@@ -644,7 +644,7 @@
                                 <div class="check-icon-box icon-backend">⚙️</div>
                                 <div>
                                     <h4 style="font-size: 1rem; font-weight: 800;">TDM Daemon Core</h4>
-                                    <p style="font-size: 0.75rem; color: var(--text-muted);">Servidor REST local (Puerto 9050)</p>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted);">Servidor REST local (Puerto 19050)</p>
                                 </div>
                             </div>
                             <div class="check-status-badge status-pending" id="badgeBackendStatus">
@@ -773,7 +773,7 @@
         async function checkBackendStatus() {
             pollCount++;
             try {
-                const res = await fetch('http://127.0.0.1:9050/api/status', { method: 'GET' });
+                const res = await fetch('/api/status', { method: 'GET' });
                 if (res.ok) {
                     isBackendOnline = true;
                     onBackendConnected();
@@ -828,7 +828,7 @@
                 if (next > 4) {
                     // Si seleccionó un escritorio, lanzar instalación bajo demanda si no es terminal
                     if (selectedEnv !== 'terminal') {
-                        fetch('http://127.0.0.1:9050/api/install/desktop', {
+                        fetch('/api/install/desktop', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ desktop: selectedEnv })
@@ -837,7 +837,7 @@
 
                     showToast('Iniciando Panel', 'Cargando Dashboard de TDM...', '🚀');
                     setTimeout(() => {
-                        window.location.href = 'http://127.0.0.1:9050/';
+                        window.location.href = '/';
                     }, 600);
                 }
                 return;

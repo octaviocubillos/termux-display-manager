@@ -40,5 +40,5 @@ Cuando el usuario descarga e instala el **APK de TDM** en su teléfono o tablet,
 ---
 
 ### Paso 4: Inicialización y Prueba de Conexión
-* La app envía una orden de prueba a Termux para iniciar el servicio en `http://127.0.0.1:9050`.
+* La app envía una orden de prueba a Termux para iniciar el servicio en `http://127.0.0.1:19050`.
 * Una vez recibido el `HTTP 200 OK`, el asistente se cierra automáticamente y da paso al **Panel Principal de Pantallas**.

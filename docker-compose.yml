@@ -1,0 +1,21 @@
+services:
+  termux:
+    container_name: termux-local
+    image: termux-local:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.termux
+    volumes:
+      - ./termux-home:/data/data/com.termux/files/home
+      - .:/data/data/com.termux/files/termux-display-manager
+    ports:
+      - "8022:8022"
+      - "19050:19050"
+      - "19051:19051"
+      - "19052:19052"
+      - "19053:19053"
+      - "19054:19054"
+      - "19055:19055"
+    restart: unless-stopped
+    stdin_open: true
+    tty: true

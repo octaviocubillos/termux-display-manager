@@ -15,6 +15,7 @@ import sys
 import urllib.parse
 from typing import Dict, Any, Optional
 
+from tdm.constants import PORT_TDM_SERVER
 from tdm.server.websocket import WebSocketConnection, WebSocketError
 from tdm.core.display_manager import display_manager
 from tdm.core.installer import installer_service
@@ -60,7 +61,7 @@ class TDMAgent:
             "is_termux": os.path.exists("/data/data/com.termux"),
             "lan_ip": lan_ip,
             "tailscale_ip": ts_ip,
-            "port": 9050,
+            "port": PORT_TDM_SERVER,
             "desktops": discover_desktops(),
             "backends": discover_backends(),
             "status": display_manager.get_status()
@@ -75,8 +76,8 @@ class TDMAgent:
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or (443 if is_ssl else 80)
         
-        if not parsed.port and "9050" in self.hub_url:
-            port = 9050
+        if not parsed.port and str(PORT_TDM_SERVER) in self.hub_url:
+            port = PORT_TDM_SERVER
 
         path = f"/ws/agent/{self.token}"
 

@@ -15,6 +15,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from tdm.constants import PORT_TDM_SERVER
 from tdm.server.websocket import WebSocketConnection
 from tdm.server.hub import hub_manager
 from tdm.core.display_manager import display_manager
@@ -25,12 +26,11 @@ from tdm.version import get_version_info
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web"
-PROTOTYPE_DIR = BASE_DIR.parent / "web-prototype"
 
 class AsyncHTTPServer:
     """Servidor HTTP y WebSocket asíncrono para el panel Web / PWA y Hub de TDM."""
 
-    def __init__(self, host: str = "0.0.0.0", port: int = 9050, is_hub: bool = False):
+    def __init__(self, host: str = "0.0.0.0", port: int = PORT_TDM_SERVER, is_hub: bool = False):
         self.is_hub = is_hub
         self.host = host
         self.port = port
@@ -264,55 +264,32 @@ class AsyncHTTPServer:
                 })
             return
 
-        # 4. PWA: Manifest y Service Worker
-        if path in ["/manifest.json", "/manifest.webmanifest"]:
-            manifest_file = WEB_DIR / "manifest.json"
-            if not manifest_file.exists():
-                manifest_file = PROTOTYPE_DIR / "manifest.json"
-            if manifest_file.exists():
-                self.send_file_response(writer, manifest_file, content_type="application/manifest+json")
-                return
-
-        if path in ["/service-worker.js", "/sw.js"]:
-            sw_file = WEB_DIR / "service-worker.js"
-            if not sw_file.exists():
-                sw_file = PROTOTYPE_DIR / "service-worker.js"
-            if sw_file.exists():
-                self.send_file_response(writer, sw_file, content_type="application/javascript")
-                return
-
-        # 5. Iconos PWA
-        if path.startswith("/icons/"):
-            icon_name = path.split("/icons/")[1]
-            icon_file = WEB_DIR / "icons" / icon_name
-            if not icon_file.exists():
-                icon_file = PROTOTYPE_DIR / "icons" / icon_name
-            if icon_file.exists():
-                self.send_file_response(writer, icon_file, content_type="image/png")
-                return
-
-        # 6. Bundle descargable autónomo (/tdm-bundle.tar.gz)
-        if path in ["/tdm-bundle.tar.gz", "/download/tdm-bundle.tar.gz"]:
-            bundle_file = WEB_DIR / "tdm-bundle.tar.gz"
-            if not bundle_file.exists():
-                bundle_file = PROTOTYPE_DIR / "tdm-bundle.tar.gz"
-            if bundle_file.exists():
-                self.send_file_response(writer, bundle_file, content_type="application/gzip")
-                return
-
-        # 7. Endpoint Estado General: /api/status
+        # 4. Endpoints de Estado y Red
         if path == "/api/status" and method == "GET":
             status_data = display_manager.get_status()
             self.send_json_response(writer, status_data)
             return
 
-        # 8. Endpoint de Red: /api/system/network
         if path == "/api/system/network" and method == "GET":
             net_data = network_discovery.get_all_interfaces(self.port)
             self.send_json_response(writer, net_data)
             return
 
-        # 9. Control de Pantalla: /api/screen/start y /api/screen/stop
+        if path == "/api/system/check" and method == "GET":
+            from tdm.discovery.desktops import discover_desktops
+            from tdm.discovery.backends import discover_backends
+            from tdm.core.display_manager import get_memory_info
+            check_data = {
+                "desktops": discover_desktops(),
+                "backends": discover_backends(),
+                "network": network_discovery.get_all_interfaces(self.port),
+                "memory": get_memory_info(),
+                "version": get_version_info()
+            }
+            self.send_json_response(writer, check_data)
+            return
+
+        # 5. Control de Pantalla: /api/screen/start y /api/screen/stop
         if path == "/api/screen/start" and method == "POST":
             try:
                 req_data = json.loads(body_bytes.decode("utf-8") or "{}")
@@ -321,7 +298,7 @@ class AsyncHTTPServer:
                     mode=req_data.get("mode", "desktop"),
                     desktop_id=req_data.get("desktop"),
                     resolution=req_data.get("resolution", "1080x2400"),
-                    dpi=req_data.get("dpi", 140),
+                    dpi=req_data.get("dpi", 96),
                     audio=req_data.get("audio", True),
                     virgl=req_data.get("virgl", True)
                 )
@@ -335,7 +312,7 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"stopped": stopped})
             return
 
-        # 10. Instalador de Componentes: /api/install/desktop y /api/install/server
+        # 6. Instalador de Componentes
         if path == "/api/install/desktop" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")
             target = req_data.get("desktop") or req_data.get("target")
@@ -350,7 +327,23 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"success": success, "target": target, "message": f"Instalación de servidor {target} iniciada"})
             return
 
-        # 11. Endpoints de Versionado y Actualización
+        if path == "/api/install/package" and method == "POST":
+            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+            action = req_data.get("action", "desktop")
+            target = req_data.get("target") or req_data.get("desktop") or req_data.get("server")
+            if action == "desktop":
+                success = await installer_service.install_desktop(target)
+            else:
+                success = await installer_service.install_server(target)
+            self.send_json_response(writer, {"success": success, "target": target, "action": action})
+            return
+
+        if path == "/api/install/minimal" and method == "POST":
+            success = await installer_service.run_script("setup_minimal.sh")
+            self.send_json_response(writer, {"success": success, "message": "Instalación mínima ejecutada"})
+            return
+
+        # 7. Endpoints de Versionado y Actualización
         if path in ["/api/version", "/api/update/check"] and method == "GET":
             from tdm.core.updater import check_for_updates
             upd_info = check_for_updates()
@@ -368,19 +361,35 @@ class AsyncHTTPServer:
                 self.send_json_response(writer, {"success": False, "error": str(e)}, status_code=400)
             return
 
-        # 12. Archivos Estáticos Web (HTML, CSS, JS)
-        if path in ["/", "/index.html"]:
-            index_file = WEB_DIR / "index.html"
-            if not index_file.exists():
-                index_file = PROTOTYPE_DIR / "index.html"
-            if index_file.exists():
-                self.send_file_response(writer, index_file, content_type="text/html")
-                return
+        # 8. Archivos Estáticos Web / PWA (HTML, CSS, JS, Iconos, noVNC)
+        if method in ["GET", "HEAD"]:
+            # Normalizar ruta estática
+            rel_path = path.lstrip("/")
+            if not rel_path or rel_path == "index.html":
+                target_file = WEB_DIR / "index.html"
+            else:
+                target_file = WEB_DIR / rel_path
+
+            # Comprobar si existe dentro de WEB_DIR y evitar path traversal
+            try:
+                resolved_file = target_file.resolve()
+                resolved_web_dir = WEB_DIR.resolve()
+                if resolved_web_dir in resolved_file.parents or resolved_file == resolved_web_dir:
+                    if resolved_file.is_file():
+                        content_type, _ = mimetypes.guess_type(str(resolved_file))
+                        if resolved_file.suffix == ".webmanifest":
+                            content_type = "application/manifest+json"
+                        elif resolved_file.suffix == ".tar.gz":
+                            content_type = "application/gzip"
+                        self.send_file_response(writer, resolved_file, content_type=content_type or "application/octet-stream", send_body=(method == "GET"))
+                        return
+            except Exception:
+                pass
 
         # Fallback 404
-        self.send_json_response(writer, {"error": "Ruta no encontrada", "path": path}, status_code=404)
+        self.send_json_response(writer, {"error": "Ruta no encontrada", "path": path}, status_code=404, send_body=(method != "HEAD"))
 
-    def send_json_response(self, writer: asyncio.StreamWriter, data: Any, status_code: int = 200):
+    def send_json_response(self, writer: asyncio.StreamWriter, data: Any, status_code: int = 200, send_body: bool = True):
         body = json.dumps(data, indent=2).encode("utf-8")
         headers = [
             f"HTTP/1.1 {status_code} OK",
@@ -390,9 +399,12 @@ class AsyncHTTPServer:
             "Connection: close",
             "\r\n"
         ]
-        writer.write("\r\n".join(headers).encode("utf-8") + body)
+        payload = "\r\n".join(headers).encode("utf-8")
+        if send_body:
+            payload += body
+        writer.write(payload)
 
-    def send_text_response(self, writer: asyncio.StreamWriter, text: str, content_type: str = "text/plain", status_code: int = 200):
+    def send_text_response(self, writer: asyncio.StreamWriter, text: str, content_type: str = "text/plain", status_code: int = 200, send_body: bool = True):
         body = text.encode("utf-8")
         headers = [
             f"HTTP/1.1 {status_code} OK",
@@ -402,20 +414,28 @@ class AsyncHTTPServer:
             "Connection: close",
             "\r\n"
         ]
-        writer.write("\r\n".join(headers).encode("utf-8") + body)
+        payload = "\r\n".join(headers).encode("utf-8")
+        if send_body:
+            payload += body
+        writer.write(payload)
 
-    def send_file_response(self, writer: asyncio.StreamWriter, file_path: Path, content_type: str = "text/plain", status_code: int = 200):
+    def send_file_response(self, writer: asyncio.StreamWriter, file_path: Path, content_type: str = "text/plain", status_code: int = 200, send_body: bool = True):
         try:
-            with open(file_path, "rb") as f:
-                body = f.read()
+            file_size = file_path.stat().st_size
             headers = [
                 f"HTTP/1.1 {status_code} OK",
                 f"Content-Type: {content_type}",
-                f"Content-Length: {len(body)}",
+                f"Content-Length: {file_size}",
                 "Access-Control-Allow-Origin: *",
                 "Connection: close",
                 "\r\n"
             ]
-            writer.write("\r\n".join(headers).encode("utf-8") + body)
+            header_payload = "\r\n".join(headers).encode("utf-8")
+            if send_body:
+                with open(file_path, "rb") as f:
+                    body = f.read()
+                writer.write(header_payload + body)
+            else:
+                writer.write(header_payload)
         except Exception:
-            self.send_json_response(writer, {"error": "Error leyendo archivo"}, status_code=500)
+            self.send_json_response(writer, {"error": "Error leyendo archivo"}, status_code=500, send_body=send_body)

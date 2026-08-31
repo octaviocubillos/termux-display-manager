@@ -1,10 +1,11 @@
 import os
 import shutil
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from pathlib import Path
 from tdm.backends.base import BaseDisplayBackend
 from tdm.core.models import DisplayConfig, DisplaySession
 from tdm.runners.env_helper import prepare_environment
+from tdm.config import PREFIX
 from tdm.constants import BACKEND_VNC, PORT_VNC_DEFAULT
 
 class VNCBackend(BaseDisplayBackend):

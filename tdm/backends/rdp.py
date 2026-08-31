@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from pathlib import Path
 from tdm.backends.base import BaseDisplayBackend
 from tdm.core.models import DisplayConfig, DisplaySession

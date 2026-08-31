@@ -1,6 +1,6 @@
 # 📡 Especificación de la API de TDM (REST & WebSockets)
 
-El servidor de TDM corre por defecto en `http://127.0.0.1:9050`.
+El servidor de TDM corre por defecto en `http://127.0.0.1:19050`.
 
 ---
 

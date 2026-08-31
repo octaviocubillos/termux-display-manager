@@ -46,7 +46,8 @@ def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> Lis
 
 def get_desktop_by_id(desktop_id: str, custom_list: Optional[List[Dict[str, Any]]] = None) -> Optional[Dict[str, Any]]:
     desktops = discover_desktops(custom_list)
+    normalized_id = "xfce4" if desktop_id == "xfce" else desktop_id
     for d in desktops:
-        if d["id"] == desktop_id:
+        if d["id"] == normalized_id or d["id"] == desktop_id:
             return d
     return get_desktop_entry(desktop_id)

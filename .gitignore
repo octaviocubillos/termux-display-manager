@@ -40,3 +40,17 @@ run/
 *.swp
 *.swo
 *~
+
+# Build Artifacts & Bundles
+*.tar.gz
+*.apk
+*.keystore
+*.dex
+compiled_res.zip
+unaligned.apk
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Docker Termux Home
+termux-home/

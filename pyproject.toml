@@ -18,3 +18,10 @@ tdm = "tdm.cli.main:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["tdm*"]
+
+[tool.setuptools.package-data]
+tdm = [
+    "web/**/*",
+    "web/*",
+    "scripts/*",
+]

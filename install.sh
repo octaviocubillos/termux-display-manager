@@ -8,7 +8,12 @@
 
 set -e
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
+    DIR="$SCRIPT_DIR"
+else
+    DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
 
@@ -44,7 +49,7 @@ if command -v python3 >/dev/null 2>&1; then
 fi
 
 # 3. Registrar en SQLite los paquetes que TDM va a instalar
-PACKAGES_TO_INSTALL="python x11-repo dbus xorg-xauth xorg-xsetroot procps"
+PACKAGES_TO_INSTALL="python x11-repo dbus xorg-xauth xorg-xsetroot procps tmux"
 if command -v python3 >/dev/null 2>&1 && [ -f "$DIR/tdm/core/manifest.py" ]; then
     PYTHONPATH="$DIR" python3 -c "
 from tdm.core.manifest import manifest_ledger
@@ -73,10 +78,10 @@ chmod +x "$BIN_PATH" || true
 
 echo "====================================================="
 echo "✅ [TDM] Backend instalado con éxito!"
-echo "🚀 Iniciando TDM Daemon en segundo plano (puerto 9050)..."
+echo "🚀 Iniciando TDM Daemon en segundo plano (puerto 19050)..."
 echo "====================================================="
 
 pkill -f "tdm.cli.main" || true
-nohup "$BIN_PATH" server --port 9050 > "$HOME_DIR/.tdm/logs/server.log" 2>&1 &
+nohup "$BIN_PATH" server --port 19050 > "$HOME_DIR/.tdm/logs/server.log" 2>&1 &
 
-echo "🎉 TDM Core activo en http://127.0.0.1:9050"
+echo "🎉 TDM Core activo en http://127.0.0.1:19050"
