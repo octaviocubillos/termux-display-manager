@@ -727,7 +727,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.22</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.23</span>
             </div>
         </div>
 
@@ -781,7 +781,7 @@
                             <span class="material-symbols-rounded">desktop_access_disabled</span>
                             <span>Apagar Pantalla</span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnHeaderStopAll" onclick="apiStopAllService()" title="Apagar pantalla y cerrar todos los procesos de Termux" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnHeaderStopAll" onclick="apiStopAllService()" style="display: none; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Apagar pantalla y cerrar todos los procesos de Termux">
                             <span class="material-symbols-rounded">power_settings_new</span>
                             <span>Apagar Todo</span>
                         </button>
@@ -1255,7 +1255,7 @@
                 const act = data.active_screen || {};
 
                 if (btnStopScreen) btnStopScreen.style.display = data.is_screen_active ? 'inline-flex' : 'none';
-                if (btnStopAll) btnStopAll.style.display = 'inline-flex';
+                if (btnStopAll) btnStopAll.style.display = data.is_screen_active ? 'inline-flex' : 'none';
 
                 // Sincronizar automáticamente la pestaña activa si hay un backend encendido y no se ha cambiado manualmente
                 if (data.is_screen_active && act.backend && !userSelectedBackendManually) {
@@ -1368,6 +1368,7 @@
                 sub.innerText = '🔴 Termux Core Desconectado';
                 isScreenActive = false;
                 if (btnStopScreen) btnStopScreen.style.display = 'none';
+                if (btnStopAll) btnStopAll.style.display = 'none';
                 btnLaunch.disabled = true;
             }
         }

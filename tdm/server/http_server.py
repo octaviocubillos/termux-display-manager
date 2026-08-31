@@ -614,12 +614,34 @@ class AsyncHTTPServer:
                 resolved_web_dir = WEB_DIR.resolve()
                 if resolved_web_dir in resolved_file.parents or resolved_file == resolved_web_dir:
                     if resolved_file.is_file():
-                        content_type, _ = mimetypes.guess_type(str(resolved_file))
-                        if resolved_file.suffix == ".webmanifest":
-                            content_type = "application/manifest+json"
-                        elif resolved_file.suffix == ".tar.gz":
-                            content_type = "application/gzip"
-                        self.send_file_response(writer, resolved_file, content_type=content_type or "application/octet-stream", send_body=(method == "GET"))
+                        ext = resolved_file.suffix.lower()
+                        mime_map = {
+                            ".html": "text/html; charset=utf-8",
+                            ".htm": "text/html; charset=utf-8",
+                            ".js": "application/javascript; charset=utf-8",
+                            ".mjs": "application/javascript; charset=utf-8",
+                            ".css": "text/css; charset=utf-8",
+                            ".json": "application/json; charset=utf-8",
+                            ".webmanifest": "application/manifest+json",
+                            ".svg": "image/svg+xml",
+                            ".png": "image/png",
+                            ".jpg": "image/jpeg",
+                            ".jpeg": "image/jpeg",
+                            ".gif": "image/gif",
+                            ".ico": "image/x-icon",
+                            ".webp": "image/webp",
+                            ".woff2": "font/woff2",
+                            ".woff": "font/woff",
+                            ".ttf": "font/ttf",
+                            ".tar.gz": "application/gzip",
+                            ".wasm": "application/wasm",
+                        }
+                        content_type = mime_map.get(ext)
+                        if not content_type:
+                            guessed, _ = mimetypes.guess_type(str(resolved_file))
+                            content_type = guessed or "application/octet-stream"
+
+                        self.send_file_response(writer, resolved_file, content_type=content_type, send_body=(method == "GET"))
                         return
             except Exception:
                 pass
@@ -665,6 +687,7 @@ class AsyncHTTPServer:
                 f"Content-Type: {content_type}",
                 f"Content-Length: {file_size}",
                 "Access-Control-Allow-Origin: *",
+                "Cache-Control: public, max-age=3600",
                 "Connection: close",
                 "\r\n"
             ]
