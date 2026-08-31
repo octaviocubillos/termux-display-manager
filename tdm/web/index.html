@@ -696,7 +696,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.10</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.11</span>
             </div>
         </div>
 
@@ -911,7 +911,7 @@
                             <span class="material-symbols-rounded">download</span>
                             <span>Instalar <span id="lblPickedDe">XFCE4</span></span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()">
+                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList(false)">
                             <span>Cancelar</span>
                         </button>
                     </div>
@@ -972,6 +972,7 @@
     <script>
         let selectedBackend = 'termux-x11';
         let selectedDesktop = 'xfce';
+        let isDePickerOpen = false;
         let isScreenActive = false;
         let localWs = null;
         let deferredPrompt = null;
@@ -1103,8 +1104,6 @@
                 if (txtDevModelName) txtDevModelName.innerText = dev.os_details || `${dev.brand || 'Android'} ${dev.model || ''}`;
 
                 if (de && de.installed && de.id !== 'terminal') {
-                    document.getElementById('viewInstalledDe').style.display = 'flex';
-                    document.getElementById('viewDePicker').style.display = 'none';
                     document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
                     document.getElementById('txtDePath').innerText = de.executable || 'Listo para ejecutar';
                     const imgLogo = document.getElementById('imgDeLogo');
@@ -1112,6 +1111,10 @@
                         const deId = (de.id === 'xfce4' || de.id === 'xfce') ? 'xfce.gif' : `${de.id}.svg`;
                         imgLogo.src = `assets/logos/${deId}`;
                         imgLogo.alt = de.name || de.id;
+                    }
+                    if (!isDePickerOpen) {
+                        document.getElementById('viewInstalledDe').style.display = 'flex';
+                        document.getElementById('viewDePicker').style.display = 'none';
                     }
                 } else {
                     document.getElementById('viewInstalledDe').style.display = 'none';
@@ -1172,19 +1175,38 @@
             if (lastStatusData) updateLaunchButton(lastStatusData);
         }
 
-        function toggleDeList() {
+        function toggleDeList(forceState) {
             const picker = document.getElementById('viewDePicker');
             const installed = document.getElementById('viewInstalledDe');
-            const isVisible = picker.style.display === 'flex';
-            picker.style.display = isVisible ? 'none' : 'flex';
-            installed.style.display = isVisible ? 'flex' : 'none';
+            if (forceState !== undefined) {
+                isDePickerOpen = forceState;
+            } else {
+                isDePickerOpen = (picker.style.display !== 'flex');
+            }
+            picker.style.display = isDePickerOpen ? 'flex' : 'none';
+            installed.style.display = isDePickerOpen ? 'none' : 'flex';
         }
 
         function pickDe(id, name, icon, el) {
             selectedDesktop = id;
             document.querySelectorAll('.de-pill-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            document.getElementById('lblPickedDe').innerText = name;
+            if (el) el.classList.add('selected');
+            const lbl = document.getElementById('lblPickedDe');
+            if (lbl) lbl.innerText = name;
+            
+            // Actualizar vista previa del logo y nombre del escritorio
+            const deName = document.getElementById('txtDeName');
+            const imgLogo = document.getElementById('imgDeLogo');
+            if (deName) deName.innerText = name + ' Desktop';
+            if (imgLogo) {
+                const deId = (id === 'xfce4' || id === 'xfce') ? 'xfce.gif' : `${id}.svg`;
+                imgLogo.src = `assets/logos/${deId}`;
+                imgLogo.alt = name;
+            }
+
+            // Al seleccionar un entorno, cerrar el desplegable
+            showToast(`Seleccionado: ${name}`, 'check_circle');
+            toggleDeList(false);
         }
 
         async function apiInstallPickedDesktop() {
