@@ -560,7 +560,7 @@
             </div>
             <div class="brand-title" style="display: flex; align-items: center;">
                 <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.5</span>
+                <span id="lblHeaderVersion" class="version-badge">v0.0.6</span>
             </div>
         </div>
 
@@ -711,6 +711,10 @@
                 <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                     <button class="btn-m3 btn-m3-tonal" id="btnModalModeLite" onclick="switchViewerMode('lite')" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700;">⚡ Modo Lite</button>
                     <button class="btn-m3 btn-m3-tonal" id="btnModalModeFull" onclick="switchViewerMode('full')" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; font-weight: 700;">🎛️ Completo</button>
+                    <button class="btn-m3 btn-m3-tonal" id="btnModalFullscreen" onclick="toggleModalFullscreen()" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                        <span class="material-symbols-rounded" style="font-size: 0.95rem;">fullscreen</span>
+                        <span>Pantalla Completa</span>
+                    </button>
                     <a id="lnkOpenNewTab" href="#" target="_blank" class="btn-m3 btn-m3-tonal" style="text-decoration: none; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem;">
                         <span class="material-symbols-rounded" style="font-size: 0.95rem;">open_in_new</span>
                         <span>Nueva Pestaña</span>
@@ -718,7 +722,7 @@
                     <button class="btn-m3 btn-m3-tonal" onclick="closeWebViewer()" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">Cerrar</button>
                 </div>
             </div>
-            <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" src="about:blank"></iframe>
+            <iframe id="novncIframe" style="flex: 1; border: none; width: 100%; height: 100%;" allow="fullscreen" allowfullscreen="true" src="about:blank"></iframe>
         </div>
     </div>
 
@@ -1004,8 +1008,30 @@
         }
 
         function closeWebViewer() {
+            if (document.fullscreenElement) {
+                try { document.exitFullscreen(); } catch(e){}
+            }
             document.getElementById('novncIframe').src = 'about:blank';
             document.getElementById('webViewerModal').classList.remove('active');
+        }
+
+        function toggleModalFullscreen() {
+            const modalBox = document.querySelector('#webViewerModal > div');
+            if (!document.fullscreenElement) {
+                if (modalBox && modalBox.requestFullscreen) {
+                    modalBox.requestFullscreen().catch(() => {});
+                } else if (modalBox && modalBox.webkitRequestFullscreen) {
+                    modalBox.webkitRequestFullscreen();
+                } else if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
         }
 
         function showToast(msg, icon = 'info') {

@@ -103,6 +103,7 @@
             <span id="statusText">Iniciando visor...</span>
         </div>
         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <button class="btn-action" id="btnFullscreen" onclick="window.toggleFullscreen()">⛶ Pantalla Completa</button>
             <button class="btn-action active" id="btnResize" onclick="window.toggleDynamicResize()">📐 Dimensión Dinámica</button>
             <button class="btn-action active" id="btnScale" onclick="window.toggleScale()">🔍 Auto-Escalar</button>
             <button class="btn-action" onclick="window.sendCtrlAltDel()">⌨️ Ctrl+Alt+Del</button>
@@ -221,9 +222,41 @@
             }
         }
 
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                const el = document.documentElement;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen().catch(() => {});
+                } else if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('btnFullscreen');
+            const isFs = !!document.fullscreenElement;
+            if (btn) {
+                btn.innerHTML = isFs ? '🗗 Salir Pantalla Completa' : '⛶ Pantalla Completa';
+                btn.className = 'btn-action ' + (isFs ? 'active' : '');
+            }
+            setTimeout(() => {
+                if (rfb && isDynamicResize) {
+                    try { rfb._requestRemoteResize(); } catch(e){}
+                }
+            }, 250);
+        });
+
         window.sendCtrlAltDel = sendCtrlAltDel;
         window.toggleScale = toggleScale;
         window.toggleDynamicResize = toggleDynamicResize;
+        window.toggleFullscreen = toggleFullscreen;
         window.openFullVersion = openFullVersion;
         window.reconnectVnc = startConnection;
 
