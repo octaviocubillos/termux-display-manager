@@ -38,6 +38,10 @@
             gap: 6px;
         }
 
+        body.is-embedded #top_bar {
+            display: none !important;
+        }
+
         #status {
             display: flex;
             align-items: center;
@@ -128,6 +132,18 @@
             if (dot) {
                 dot.className = "status-badge " + (state === "online" ? "online" : state === "offline" ? "offline" : "");
             }
+            if (window.self !== window.top) {
+                try {
+                    window.parent.postMessage({
+                        type: 'vnc_status',
+                        text: text,
+                        state: state,
+                        desktopName: desktopName,
+                        scale: isAutoScaling,
+                        resize: isDynamicResize
+                    }, '*');
+                } catch(e) {}
+            }
         }
 
         function connectedToServer(e) {
@@ -159,6 +175,11 @@
                 rfb.scaleViewport = isAutoScaling;
                 const b = document.getElementById('btnScale');
                 if (b) b.className = 'btn-action ' + (isAutoScaling ? 'active' : '');
+                if (window.self !== window.top) {
+                    try {
+                        window.parent.postMessage({ type: 'vnc_state_update', scale: isAutoScaling, resize: isDynamicResize }, '*');
+                    } catch(e) {}
+                }
             }
         }
 
@@ -168,6 +189,11 @@
                 rfb.resizeSession = isDynamicResize;
                 const b = document.getElementById('btnResize');
                 if (b) b.className = 'btn-action ' + (isDynamicResize ? 'active' : '');
+                if (window.self !== window.top) {
+                    try {
+                        window.parent.postMessage({ type: 'vnc_state_update', scale: isAutoScaling, resize: isDynamicResize }, '*');
+                    } catch(e) {}
+                }
             }
         }
 
@@ -252,6 +278,22 @@
                 }
             }, 250);
         });
+
+        // Escuchar acciones desde el contenedor padre (TDM Single Top Bar)
+        window.addEventListener('message', (e) => {
+            const data = e.data || {};
+            if (data.type === 'vnc_action') {
+                if (data.action === 'ctrl_alt_del') sendCtrlAltDel();
+                else if (data.action === 'toggle_scale') toggleScale();
+                else if (data.action === 'toggle_resize') toggleDynamicResize();
+                else if (data.action === 'reconnect') startConnection();
+            }
+        });
+
+        // Si está incrustado en iframe, ocultar top_bar interno para dejar solo 1 barra superior
+        if (window.self !== window.top || readQueryVariable('embedded', 'false') === 'true') {
+            document.body.classList.add('is-embedded');
+        }
 
         window.sendCtrlAltDel = sendCtrlAltDel;
         window.toggleScale = toggleScale;
