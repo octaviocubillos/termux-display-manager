@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, List
@@ -23,9 +24,12 @@ class PackageInstaller:
         self.current_task: Optional[str] = None
         self.logs: List[str] = []
         self.listeners: List[Callable[[str], None]] = []
+        self.progress_listeners: List[Callable[[Dict[str, Any]], None]] = []
         self.process: Optional[asyncio.subprocess.Process] = None
 
         self.active_target: Optional[str] = None
+        self.progress_percent: int = 0
+        self.progress_step: str = ""
 
     def subscribe(self, callback: Callable[[str], None]):
         """Suscribe un listener (ej. WebSocket) para recibir logs en tiempo real."""
@@ -36,7 +40,56 @@ class PackageInstaller:
         if callback in self.listeners:
             self.listeners.remove(callback)
 
+    def subscribe_progress(self, callback: Callable[[Dict[str, Any]], None]):
+        """Suscribe un listener para eventos de progreso estructurado (porcentaje y paso)."""
+        if callback not in self.progress_listeners:
+            self.progress_listeners.append(callback)
+
+    def unsubscribe_progress(self, callback: Callable[[Dict[str, Any]], None]):
+        if callback in self.progress_listeners:
+            self.progress_listeners.remove(callback)
+
+    def _broadcast_progress(self, percent: int, step: str):
+        self.progress_percent = max(0, min(100, int(percent)))
+        self.progress_step = step
+        payload = {
+            "percent": self.progress_percent,
+            "step": self.progress_step,
+            "target": self.active_target,
+            "status": self.status
+        }
+        for listener in self.progress_listeners:
+            try:
+                listener(payload)
+            except Exception:
+                pass
+
     def _broadcast_log(self, line: str):
+        # 1. Detectar etiquetas estructuradas de progreso: [TDM_PROGRESS:XX:Mensaje]
+        m = re.search(r'\[TDM_PROGRESS:(\d+):(.*?)\]', line)
+        if m:
+            pct = int(m.group(1))
+            step = m.group(2).strip()
+            self._broadcast_progress(pct, step)
+            return
+
+        # 2. Análisis heurístico de líneas de apt/pkg para avance fino y en tiempo real
+        if "Get:" in line:
+            if self.progress_percent < 50:
+                self._broadcast_progress(50, "Descargando paquetes del repositorio...")
+            elif self.progress_percent < 65:
+                self._broadcast_progress(self.progress_percent + 1, "Descargando dependencias...")
+        elif "Unpacking" in line or "Desempaquetando" in line:
+            if self.progress_percent < 68:
+                self._broadcast_progress(68, "Desempaquetando paquetes...")
+            elif self.progress_percent < 80:
+                self._broadcast_progress(self.progress_percent + 1, "Desempaquetando archivos...")
+        elif "Setting up" in line or "Configurando" in line:
+            if self.progress_percent < 82:
+                self._broadcast_progress(82, "Configurando componentes del sistema...")
+            elif self.progress_percent < 92:
+                self._broadcast_progress(self.progress_percent + 1, "Configurando paquetes...")
+
         self.logs.append(line)
         for listener in self.listeners:
             try:
@@ -62,6 +115,9 @@ class PackageInstaller:
         self.status = InstallerStatus.RUNNING
         self.current_task = script_name + (" " + " ".join(args) if args else "")
         self.logs.clear()
+        self.progress_percent = 5
+        self.progress_step = f"Iniciando {script_name}..."
+        self._broadcast_progress(5, self.progress_step)
         
         self._broadcast_log(f"[*] Iniciando ejecución de {script_name}...")
 
@@ -98,15 +154,18 @@ class PackageInstaller:
             
             if success:
                 self.status = InstallerStatus.COMPLETED
+                self._broadcast_progress(100, "¡Tarea finalizada con éxito!")
                 self._broadcast_log(f"[✓] Tarea {script_name} completada con éxito.")
             else:
                 self.status = InstallerStatus.FAILED
+                self._broadcast_progress(self.progress_percent, f"Finalizó con error ({self.process.returncode})")
                 self._broadcast_log(f"[✗] Tarea {script_name} finalizó con error (código {self.process.returncode}).")
 
             return success
 
         except Exception as e:
             self.status = InstallerStatus.FAILED
+            self._broadcast_progress(self.progress_percent, f"Error: {e}")
             self._broadcast_log(f"[!] Error ejecutando instalador: {e}")
             return False
         finally:
@@ -196,6 +255,8 @@ class PackageInstaller:
             "status": self.status,
             "current_task": self.current_task,
             "active_target": self.active_target,
+            "progress_percent": self.progress_percent,
+            "progress_step": self.progress_step,
             "log_lines_count": len(self.logs),
             "recent_logs": self.logs[-20:] if self.logs else []
         }

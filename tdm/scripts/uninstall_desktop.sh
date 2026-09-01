@@ -41,6 +41,7 @@ if [ "$(id -u)" -ne 0 ] && [ ! -d "/data/data/com.termux" ]; then
 fi
 
 # 1. Detener todas las pantallas y procesos de escritorio activos (manteniendo servicio TDM)
+echo "[TDM_PROGRESS:15:Deteniendo pantallas y procesos activos]"
 echo "[1/4] Deteniendo pantallas y procesos gráficos..."
 for proc in xfce4-session xfwm4 xfdesktop mate-session marco caja plasma-desktop kwin startlxqt lxqt-session openbox i3 i3status termux-x11 Xwayland Xvnc websockify virgl_test_server; do
     pkill -9 -x "$proc" 2>/dev/null || true
@@ -50,6 +51,7 @@ done
 rm -f /tmp/.X*-lock /tmp/.X11-unix/X* "${PREFIX_PATH}/tmp/.X*-lock" "${PREFIX_PATH}/tmp/.X11-unix/X*" 2>/dev/null || true
 
 # 2. Búsqueda y purga dinámica de paquetes
+echo "[TDM_PROGRESS:40:Identificando y purgando paquetes del entorno]"
 echo "[2/4] Identificando paquetes instalados para purga completa..."
 
 case "$PKG_MGR" in
@@ -150,6 +152,7 @@ case "$PKG_MGR" in
 esac
 
 # 4. Limpieza de dependencias huérfanas y caché de paquetes (autoremove & autoclean)
+echo "[TDM_PROGRESS:75:Purgando dependencias huérfanas y liberando almacenamiento]"
 echo "[3/4] Purgando dependencias huérfanas y optimizando almacenamiento..."
 case "$PKG_MGR" in
     pkg|apt)
@@ -170,9 +173,11 @@ case "$PKG_MGR" in
 esac
 
 # 5. Limpiar configuraciones residuales y cachés en HOME
+echo "[TDM_PROGRESS:90:Limpiando configuraciones residuales y cachés]"
 echo "[4/4] Limpiando configuraciones residuales y cachés..."
 rm -rf ~/.cache/sessions ~/.cache/xfce4 ~/.cache/plasma* ~/.cache/lxqt* ~/.config/xfce4 ~/.config/lxqt 2>/dev/null || true
 
+echo "[TDM_PROGRESS:100:¡Desinstalación completada con éxito!]"
 echo "====================================================="
 echo "✅ [TDM] Desinstalación de entorno finalizada con éxito."
 echo "====================================================="

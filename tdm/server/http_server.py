@@ -227,7 +227,11 @@ class AsyncHTTPServer:
         def on_local_log(line):
             asyncio.create_task(ws.send_json({"type": "log", "line": line}))
 
+        def on_local_progress(prog):
+            asyncio.create_task(ws.send_json({"type": "progress", "data": prog}))
+
         installer_service.subscribe(on_local_log)
+        installer_service.subscribe_progress(on_local_progress)
 
         # Enviar estado inicial y confirmación de conexión inmediatamente
         try:
@@ -442,6 +446,7 @@ class AsyncHTTPServer:
         finally:
             stream_task.cancel()
             installer_service.unsubscribe(on_local_log)
+            installer_service.unsubscribe_progress(on_local_progress)
             await ws.close()
 
     async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = 19053):

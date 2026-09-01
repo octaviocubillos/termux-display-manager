@@ -182,6 +182,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     installer_service._broadcast_log(f"🌐 Servidor de origen: {hub_url}")
     installer_service._broadcast_log("=====================================================")
 
+    installer_service._broadcast_progress(15, "Descargando paquete de actualización...")
     installer_service._broadcast_log("⬇️  Descargando paquete de actualización...")
 
     loop = asyncio.get_running_loop()
@@ -212,12 +213,14 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     try:
         data, used_url = await loop.run_in_executor(None, download_bundle)
         size_kb = len(data) // 1024
+        installer_service._broadcast_progress(50, f"Paquete descargado ({size_kb} KB)...")
         installer_service._broadcast_log(f"📦 Paquete descargado con éxito ({size_kb} KB).")
     except Exception as e:
         installer_service._broadcast_log(f"❌ Error al conectar con el servidor: {e}")
         return {"success": False, "error": str(e), "current_version": __version__}
 
     # Descomprimir
+    installer_service._broadcast_progress(70, "Aplicando actualización en el sistema...")
     installer_service._broadcast_log("🛠️  Aplicando actualización en el sistema...")
     target_dir = Path(PREFIX) / "opt" / "termux-display-manager"
     if not os.path.exists(PREFIX) and not os.environ.get("PREFIX"):
@@ -258,6 +261,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
             except Exception: pass
 
     # Actualizar enlace .pth en Python
+    installer_service._broadcast_progress(85, "Configurando enlaces y ejecutables del sistema...")
     try:
         py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
         pth_path = Path(f"{PREFIX}/lib/python{py_ver}/site-packages/tdm.pth")
@@ -289,6 +293,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     except Exception:
         pass
 
+    installer_service._broadcast_progress(100, f"¡Actualizado con éxito a v{new_ver}!")
     installer_service._broadcast_log(f"🎉 ¡TDM Backend actualizado con éxito a v{new_ver}!")
     installer_service._broadcast_log("=====================================================")
     installer_service._broadcast_log("✅ Actualización completada y operativa.")

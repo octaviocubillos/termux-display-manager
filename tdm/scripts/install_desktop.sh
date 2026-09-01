@@ -52,6 +52,7 @@ fi
 echo "====================================================="
 echo "🛠️ [TDM] Gestor de paquetes detectado: ${PKG_MGR:-desconocido}"
 echo "====================================================="
+echo "[TDM_PROGRESS:10:Preparando e identificando paquetes de $DESKTOP]"
 
 PKGS=""
 case "$DESKTOP" in
@@ -116,6 +117,7 @@ rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /data/data/com.termux/files/usr/tmp/.X*-lo
 echo "====================================================="
 echo "🧹 [TDM] Limpiando entornos anteriores para evitar conflictos y liberar espacio..."
 echo "====================================================="
+echo "[TDM_PROGRESS:25:Limpiando entornos previos y liberando espacio]"
 
 case "$PKG_MGR" in
     pkg|apt)
@@ -161,12 +163,15 @@ except Exception:
 " 2>/dev/null || true
 fi
 
+echo "[TDM_PROGRESS:40:Actualizando repositorios e índices de paquetes]"
+
 case "$PKG_MGR" in
     pkg)
         echo "[*] Asegurando repositorio x11-repo en Termux..."
         pkg install -y x11-repo || true
         echo "[*] Actualizando índices de paquetes Termux..."
         pkg update -y || true
+        echo "[TDM_PROGRESS:60:Descargando e instalando componentes de $DESKTOP]"
         echo "[*] Instalando paquetes: $PKGS..."
         pkg install -y $PKGS || {
             echo "[!] Reintentando instalación paquete por paquete..."
@@ -178,6 +183,7 @@ case "$PKG_MGR" in
     apk)
         echo "[*] Actualizando índices de paquetes APK..."
         $SUDO apk update || true
+        echo "[TDM_PROGRESS:60:Descargando e instalando componentes de $DESKTOP]"
         echo "[*] Instalando paquetes: $PKGS..."
         $SUDO apk add $PKGS || {
             echo "[!] Reintentando instalación paquete por paquete..."
@@ -193,6 +199,7 @@ case "$PKG_MGR" in
             $SUDO apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" x11-repo || true
             $SUDO apt-get update -y || true
         fi
+        echo "[TDM_PROGRESS:60:Descargando e instalando componentes de $DESKTOP]"
         echo "[*] Instalando paquetes: $PKGS..."
         $SUDO apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" $PKGS || {
             echo "[!] Reintentando instalación paquete por paquete..."
@@ -203,6 +210,7 @@ case "$PKG_MGR" in
         ;;
     pacman)
         echo "[*] Actualizando e instalando con pacman..."
+        echo "[TDM_PROGRESS:60:Descargando e instalando componentes de $DESKTOP]"
         $SUDO pacman -Sy --noconfirm $PKGS || {
             for p in $PKGS; do
                 $SUDO pacman -S --noconfirm "$p" || true
@@ -211,6 +219,7 @@ case "$PKG_MGR" in
         ;;
     dnf)
         echo "[*] Instalando con dnf..."
+        echo "[TDM_PROGRESS:60:Descargando e instalando componentes de $DESKTOP]"
         $SUDO dnf install -y $PKGS || true
         ;;
     *)
@@ -220,6 +229,7 @@ case "$PKG_MGR" in
 esac
 
 # Optimización y limpieza automática de almacenamiento
+echo "[TDM_PROGRESS:85:Configurando entorno y optimizando almacenamiento]"
 echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
 case "$PKG_MGR" in
     pkg|apt)
@@ -239,6 +249,7 @@ case "$PKG_MGR" in
         ;;
 esac
 
+echo "[TDM_PROGRESS:100:¡Instalación de $DESKTOP completada con éxito!]"
 echo "====================================================="
 echo "✅ [TDM] Instalación de $DESKTOP finalizada correctamente."
 echo "====================================================="

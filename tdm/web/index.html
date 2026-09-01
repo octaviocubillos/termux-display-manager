@@ -1322,14 +1322,17 @@
                 </div>
             </section>
 
-            <!-- WIDGET DE PROGRESO DE INSTALACIÓN ACTIVA Y BOTÓN VER LOG -->
-            <div id="boxInstallingProgress" style="display: none; background: rgba(17, 24, 39, 0.85); border: 1px solid rgba(76, 141, 246, 0.45); border-radius: var(--md-shape-corner-xl); padding: 0.9rem 1.15rem; flex-direction: column; gap: 0.65rem; margin-top: 0.85rem; margin-bottom: 0.85rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); animation: fadeInSlide 0.3s ease;">
+            <!-- WIDGET DE PROGRESO DE INSTALACIÓN REAL -->
+            <div id="boxInstallingProgress" style="display: none; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(76, 141, 246, 0.45); border-radius: var(--md-shape-corner-xl); padding: 0.95rem 1.25rem; flex-direction: column; gap: 0.7rem; margin-top: 0.85rem; margin-bottom: 0.85rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); animation: fadeInSlide 0.3s ease;">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1;">
-                        <div style="width: 22px; height: 22px; border: 3px solid rgba(168, 199, 250, 0.2); border-top-color: var(--md-sys-color-primary); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;"></div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0; flex: 1;">
+                        <div style="width: 24px; height: 24px; border: 3px solid rgba(168, 199, 250, 0.2); border-top-color: var(--md-sys-color-primary); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;"></div>
                         <div style="min-width: 0; flex: 1;">
-                            <div style="font-weight: 700; font-size: 0.88rem; color: #ffffff;" id="txtInstallingDeTitle">Instalando Entorno...</div>
-                            <div style="font-size: 0.73rem; color: var(--md-sys-color-on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;" id="txtInstallingCurrentStep">Descargando paquetes y configurando dependencias...</div>
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                <span style="font-weight: 700; font-size: 0.9rem; color: #ffffff;" id="txtInstallingDeTitle">Instalando Entorno...</span>
+                                <span style="font-weight: 800; font-size: 0.9rem; color: #a8c7fa; font-variant-numeric: tabular-nums;" id="lblInstallPercent">0%</span>
+                            </div>
+                            <div style="font-size: 0.74rem; color: var(--md-sys-color-on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; margin-top: 2px;" id="txtInstallingCurrentStep">Preparando paquetes y dependencias...</div>
                         </div>
                     </div>
                     
@@ -1342,9 +1345,9 @@
                     </div>
                 </div>
 
-                <!-- BARRA DE PROGRESO CON ANIMACIÓN INDETERMINADA -->
-                <div style="width: 100%; height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; position: relative;">
-                    <div id="barInstallProgress" class="progress-bar-animated" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd); border-radius: 9999px;"></div>
+                <!-- BARRA DE PROGRESO REAL CUANTITATIVA (0% a 100%) -->
+                <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; position: relative;">
+                    <div id="barInstallProgress" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%); border-radius: 9999px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);"></div>
                 </div>
             </div>
 
@@ -1631,7 +1634,14 @@
                             }
                         }
 
-                        // 4. Logs del instalador en tiempo real
+                        // 4. Progreso estructurado del instalador en tiempo real (0% a 100%)
+                        else if (msg.type === 'progress' && msg.data) {
+                            const p = msg.data;
+                            const title = p.target ? `Instalando ${p.target.toUpperCase()}...` : null;
+                            setInstallingProgress(p.percent, p.step, title);
+                        }
+
+                        // 5. Logs del instalador en tiempo real
                         else if (msg.type === 'log' || msg.type === 'exec_log') {
                             const text = msg.line || msg.data;
                             if (text) {
@@ -1816,21 +1826,12 @@
 
                 // GESTIÓN DEL WIDGET DE PROGRESO DE INSTALACIÓN Y BOTÓN VER LOG
                 const boxProgress = document.getElementById('boxInstallingProgress');
-                const txtInstallingTitle = document.getElementById('txtInstallingDeTitle');
-                const txtInstallingStep = document.getElementById('txtInstallingCurrentStep');
-
                 if (boxProgress) {
                     boxProgress.style.display = isInstalling ? 'flex' : 'none';
                     if (isInstalling) {
-                        if (txtInstallingTitle && inst.active_target) {
-                            txtInstallingTitle.innerText = `Instalando ${inst.active_target.toUpperCase()}...`;
-                        }
-                        if (txtInstallingStep && inst.recent_logs && inst.recent_logs.length > 0) {
-                            const lastLog = inst.recent_logs[inst.recent_logs.length - 1];
-                            if (lastLog && !lastLog.startsWith('=')) {
-                                txtInstallingStep.innerText = lastLog.replace(/^[\[\*✓✗!\]\s]+/, '').trim();
-                            }
-                        }
+                        const targetTitle = inst.active_target ? `Instalando ${inst.active_target.toUpperCase()}...` : 'Instalando Entorno...';
+                        const targetStep = inst.progress_step || (inst.recent_logs && inst.recent_logs.length > 0 ? inst.recent_logs[inst.recent_logs.length - 1].replace(/^[\[\*✓✗!\]\s]+/, '').trim() : 'Procesando paquetes...');
+                        setInstallingProgress(inst.progress_percent || 15, targetStep, targetTitle);
                     }
                 }
 
@@ -2162,19 +2163,31 @@
             showToast(`Seleccionado: ${name}`, 'check_circle');
         }
 
+        function setInstallingProgress(percent, step, title) {
+            const pct = Math.max(0, Math.min(100, Math.round(percent || 0)));
+            const bar = document.getElementById('barInstallProgress');
+            const lblPct = document.getElementById('lblInstallPercent');
+            const txtStep = document.getElementById('txtInstallingCurrentStep');
+            const txtTitle = document.getElementById('txtInstallingDeTitle');
+
+            if (bar) bar.style.width = `${pct}%`;
+            if (lblPct) lblPct.innerText = `${pct}%`;
+            if (txtStep && step) txtStep.innerText = step;
+            if (txtTitle && title) txtTitle.innerText = title;
+        }
+
         function setInstallerActive(active, targetName = '') {
             window._localInstallingState = active;
 
             // 1. Mostrar/ocultar el widget de progreso de instalación y botón Ver Log
             const boxProgress = document.getElementById('boxInstallingProgress');
-            const txtTitle = document.getElementById('txtInstallingDeTitle');
-            const txtStep = document.getElementById('txtInstallingCurrentStep');
 
             if (boxProgress) {
                 boxProgress.style.display = active ? 'flex' : 'none';
                 if (active) {
-                    if (txtTitle && targetName) txtTitle.innerText = targetName;
-                    if (txtStep) txtStep.innerText = 'Preparando paquetes y dependencias...';
+                    setInstallingProgress(5, 'Preparando paquetes y dependencias...', targetName || 'Instalando Entorno...');
+                } else {
+                    setInstallingProgress(0, 'Listo', '');
                 }
             }
 
