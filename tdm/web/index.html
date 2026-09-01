@@ -354,20 +354,13 @@
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
         }
 
-        /* TELEMETRY GRID & CARDS (2 POR FILA EN DESKTOP) */
+        /* TELEMETRY GRID & CARDS (2 POR FILA EN DESKTOP, 4 MINI-CUADROS EN MÓVIL) */
         .telemetry-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0.75rem;
             width: 100%;
             box-sizing: border-box;
-        }
-
-        @media (max-width: 540px) {
-            .telemetry-grid {
-                grid-template-columns: 1fr;
-                gap: 0.55rem;
-            }
         }
 
         .telemetry-card {
@@ -379,10 +372,60 @@
             flex-direction: column;
             justify-content: space-between;
             gap: 0.35rem;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 0;
             overflow: hidden;
             box-sizing: border-box;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .telemetry-card:active {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 600px) {
+            .telemetry-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            /* MODO 4 MINI-CUADROS COMPACTOS EN MÓVIL (POR DEFECTO) */
+            .telemetry-card {
+                padding: 0.55rem 0.65rem;
+                gap: 0.25rem;
+                min-height: 62px;
+                border-radius: var(--md-shape-corner-md);
+            }
+
+            .telemetry-card:not(.expanded) .telemetry-progress-bg,
+            .telemetry-card:not(.expanded) .telemetry-card-sub {
+                display: none !important;
+            }
+
+            .telemetry-card:not(.expanded) .telemetry-card-value {
+                font-size: 0.88rem;
+                line-height: 1.15;
+            }
+
+            .telemetry-card:not(.expanded) .telemetry-card-header {
+                font-size: 0.68rem;
+            }
+
+            /* MODO EXPANDIDO AL TOCAR EN MÓVIL */
+            .telemetry-card.expanded {
+                grid-column: 1 / -1;
+                padding: 0.75rem 0.85rem;
+                background: var(--md-sys-color-surface-container-high);
+                border-color: var(--md-sys-color-primary);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+                transform: none;
+            }
+
+            .telemetry-card.expanded .telemetry-progress-bg,
+            .telemetry-card.expanded .telemetry-card-sub {
+                display: block !important;
+            }
         }
 
         .telemetry-card-header {
@@ -899,7 +942,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.43</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.44</span>
                             </div>
                             <div class="device-subtitle" style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span class="status-dot online" id="devStatusDot"></span>
@@ -932,7 +975,7 @@
                 <!-- TELEMETRY METRICS GRID (CPU, RAM, DISCO, RED) -->
                 <div class="telemetry-grid">
                     <!-- CPU -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="toggleTelemetryCard(this)" title="Toca para ver detalles completos">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.3rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #a8c7fa;">memory</span>
@@ -948,7 +991,7 @@
                     </div>
 
                     <!-- RAM -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="toggleTelemetryCard(this)" title="Toca para ver detalles completos">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.3rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #c4eed0;">view_in_ar</span>
@@ -964,7 +1007,7 @@
                     </div>
 
                     <!-- STORAGE -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="toggleTelemetryCard(this)" title="Toca para ver detalles completos">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.3rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #fde293;">storage</span>
@@ -980,7 +1023,7 @@
                     </div>
 
                     <!-- NETWORK & PING -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="toggleTelemetryCard(this)" title="Toca para ver detalles completos">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.3rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #ffb4ab;">wifi</span>
@@ -1407,6 +1450,12 @@
                 barPing.style.background = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
                 const quality = Math.max(15, Math.min(100, 100 - Math.round(rtt / 2)));
                 barPing.style.width = `${quality}%`;
+            }
+        }
+
+        function toggleTelemetryCard(el) {
+            if (window.innerWidth <= 600) {
+                el.classList.toggle('expanded');
             }
         }
 
