@@ -792,10 +792,15 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"success": success, "message": "Instalación mínima ejecutada"})
             return
 
-        # 7. Endpoint de Versionado
+        # 7. Endpoint de Versionado y Actualización
         if path == "/api/version" and method == "GET":
             from tdm.version import get_version_info
             self.send_json_response(writer, get_version_info())
+            return
+
+        if path in ["/api/update/check", "/api/update"] and method == "GET":
+            from tdm.core.updater import check_for_updates
+            self.send_json_response(writer, check_for_updates())
             return
 
         if path == "/api/update" and method == "POST":

@@ -922,6 +922,32 @@
             margin-left: 0.4rem;
             border: 1px solid var(--md-sys-color-outline-variant);
         }
+
+        .btn-update-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff !important;
+            border: none;
+            padding: 0.22rem 0.65rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border-radius: var(--md-shape-corner-full);
+            cursor: pointer;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+            transition: all 0.2s ease;
+            animation: pulse-badge 2.2s infinite;
+        }
+        .btn-update-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+        }
+        @keyframes pulse-badge {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
     </style>
 </head>
 <body>
@@ -960,6 +986,10 @@
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
                                 <span id="lblHeaderVersion" class="version-badge">v0.0.54</span>
+                                <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
+                                    <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
+                                    <span id="txtHeaderUpdateVersion">Actualizar</span>
+                                </button>
                             </div>
                             <div class="device-subtitle" style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span class="status-dot online" id="devStatusDot"></span>
@@ -1058,6 +1088,26 @@
                         </div>
                         <div class="telemetry-card-sub" id="txtDevModelName">POCO F3 • Android 13</div>
                     </div>
+                </div>
+
+                <!-- BANNER DE ACTUALIZACIÓN DISPONIBLE (SOLO VISIBLE CUANDO HAY ACTUALIZACIÓN) -->
+                <div id="bannerUpdateNotification" class="update-banner" style="display: none; margin-top: 0.85rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08)); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 14px; padding: 0.75rem 1rem; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 220px; flex: 1;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center; color: #fbbf24; flex-shrink: 0;">
+                            <span class="material-symbols-rounded" style="font-size: 1.35rem;">system_update</span>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: #fbbf24; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                <span>Nueva versión disponible</span>
+                                <span id="txtBannerNewVersionBadge" style="background: #f59e0b; color: #000; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 6px; font-weight: 800;">v0.0.54</span>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--color-on-surface-variant); margin-top: 0.1rem;">Mejoras y correcciones listas para aplicar en el backend.</div>
+                        </div>
+                    </div>
+                    <button class="btn-m3 btn-m3-sm" onclick="apiTriggerUpdate()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; font-weight: 700; border: none; padding: 0.4rem 0.9rem; border-radius: 8px; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);">
+                        <span class="material-symbols-rounded" style="font-size: 1rem;">upgrade</span>
+                        <span>Actualizar Backend</span>
+                    </button>
                 </div>
 
                 <!-- BACKEND SELECTOR (SEGMENTED TABS) -->
@@ -1751,6 +1801,31 @@
                     if (txtPickerTitle) txtPickerTitle.innerText = 'No tienes ningún entorno instalado. Elige uno para comenzar:';
                 }
 
+                // 5. GESTIÓN DE ACTUALIZACIÓN DEL BACKEND (BOTÓN Y BANNER CONDICIONALES)
+                const updateInfo = data.update || {};
+                const updateAvailable = !!updateInfo.update_available;
+                const latestVer = updateInfo.latest_version || '';
+
+                const btnHeaderUpdate = document.getElementById('btnHeaderUpdate');
+                const bannerUpdate = document.getElementById('bannerUpdateNotification');
+                const txtHeaderVer = document.getElementById('txtHeaderUpdateVersion');
+                const txtBannerVer = document.getElementById('txtBannerNewVersionBadge');
+
+                if (updateAvailable) {
+                    const cleanVer = (latestVer.startsWith('v') ? latestVer : 'v' + latestVer);
+                    if (btnHeaderUpdate) {
+                        btnHeaderUpdate.style.display = 'inline-flex';
+                        if (txtHeaderVer) txtHeaderVer.innerText = `Actualizar ${cleanVer}`;
+                    }
+                    if (bannerUpdate) {
+                        bannerUpdate.style.display = 'flex';
+                        if (txtBannerVer) txtBannerVer.innerText = cleanVer;
+                    }
+                } else {
+                    if (btnHeaderUpdate) btnHeaderUpdate.style.display = 'none';
+                    if (bannerUpdate) bannerUpdate.style.display = 'none';
+                }
+
                 updateBackendHelperBox();
                 updateLaunchButton(data);
             } else {
@@ -1759,6 +1834,10 @@
                 isScreenActive = false;
                 if (btnStopScreen) btnStopScreen.style.display = 'none';
                 if (btnStopAll) btnStopAll.style.display = 'none';
+                const btnHeaderUpdate = document.getElementById('btnHeaderUpdate');
+                const bannerUpdate = document.getElementById('bannerUpdateNotification');
+                if (btnHeaderUpdate) btnHeaderUpdate.style.display = 'none';
+                if (bannerUpdate) bannerUpdate.style.display = 'none';
                 btnLaunch.disabled = true;
                 btnLaunch.style.opacity = '0.55';
                 btnLaunch.style.cursor = 'not-allowed';
@@ -2159,6 +2238,47 @@
             } catch(e) {
                 showToast(`Error al desinstalar: ${e.message || e}`, 'error');
             } finally {
+                setInstallerActive(false);
+                await refreshStatus();
+            }
+        }
+
+        async function apiTriggerUpdate() {
+            const updateInfo = (lastStatusData && lastStatusData.update) || {};
+            const newVer = updateInfo.latest_version || 'la última versión';
+            const cleanVer = newVer.startsWith('v') ? newVer : 'v' + newVer;
+
+            if (!confirm(`¿Deseas descargar e instalar ${cleanVer} de TDM ahora?\n\n(Se actualizarán los archivos del sistema y se reiniciará el servicio automáticamente)`)) return;
+
+            setInstallerActive(true, `Actualizando TDM a ${cleanVer}...`);
+            showToast(`Iniciando actualización a ${cleanVer}...`, 'system_update');
+            const drawer = document.getElementById('logsDrawer');
+            if (drawer) drawer.classList.add('open');
+            const logBox = document.getElementById('liveTerminalContent');
+            if (logBox) logBox.innerText = `[TDM Update] Iniciando actualización del backend a ${cleanVer}...\n`;
+
+            try {
+                const res = await fetch('/api/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const d = await res.json();
+                if (!d.success) throw new Error(d.error || 'Error en la actualización');
+
+                showToast(`¡TDM actualizado a ${cleanVer}!`, 'check_circle');
+                if (logBox) {
+                    logBox.innerText += `\n=====================================================\n`;
+                    logBox.innerText += `✅ ¡TDM actualizado con éxito a ${cleanVer}!\n`;
+                    logBox.innerText += `🔄 Recargando la aplicación web en 3 segundos...\n`;
+                    logBox.innerText += `=====================================================\n`;
+                }
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            } catch(e) {
+                showToast(`Error al actualizar: ${e.message || e}`, 'error');
                 setInstallerActive(false);
                 await refreshStatus();
             }

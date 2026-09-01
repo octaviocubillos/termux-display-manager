@@ -28,8 +28,16 @@ def parse_version_str(ver_str: str) -> tuple:
     except Exception:
         return (0, 0, 0)
 
+import time
+import threading
+import re
+
+_last_update_check = 0.0
+_cached_update_result: Optional[Dict[str, Any]] = None
+_checking_lock = threading.Lock()
+
 def check_for_updates(hub_url: Optional[str] = None) -> Dict[str, Any]:
-    """Consulta al servidor Hub si existe una versión más reciente de TDM."""
+    """Consulta al servidor Hub o a GitHub si existe una versión más reciente de TDM."""
     if not hub_url:
         cfg_file = Path(HOME) / ".tdm" / "config" / "agent.json"
         if cfg_file.exists():
@@ -58,12 +66,15 @@ def check_for_updates(hub_url: Optional[str] = None) -> Dict[str, Any]:
         "download_url": f"{hub_url}/tdm-bundle.tar.gz"
     }
 
+    checked_ok = False
+
+    # 1. Consultar endpoint /api/version del Hub
     try:
         req = urllib.request.Request(
             version_url,
             headers={"User-Agent": f"TDM-Updater/{current_ver}"}
         )
-        with urllib.request.urlopen(req, timeout=2.5) as response:
+        with urllib.request.urlopen(req, timeout=3.0) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
                 remote_ver = data.get("version", current_ver)
@@ -80,10 +91,74 @@ def check_for_updates(hub_url: Optional[str] = None) -> Dict[str, Any]:
                 result["update_available"] = is_newer
                 if "download_url" in data:
                     result["download_url"] = data["download_url"]
+                checked_ok = True
     except Exception:
         pass
 
+    # 2. Respaldo directo en GitHub si el Hub no respondió
+    if not checked_ok:
+        try:
+            github_url = "https://raw.githubusercontent.com/octaviocubillos/termux-display-manager/main/tdm/version.py"
+            req = urllib.request.Request(
+                github_url,
+                headers={"User-Agent": f"TDM-Updater/{current_ver}"}
+            )
+            with urllib.request.urlopen(req, timeout=3.5) as response:
+                if response.status == 200:
+                    content = response.read().decode("utf-8")
+                    m_ver = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                    m_code = re.search(r'__version_code__\s*=\s*(\d+)', content)
+                    if m_ver:
+                        remote_ver = m_ver.group(1)
+                        remote_code = int(m_code.group(1)) if m_code else None
+
+                        is_newer = False
+                        if remote_code and current_code:
+                            is_newer = int(remote_code) > int(current_code)
+                        else:
+                            is_newer = parse_version_str(remote_ver) > parse_version_str(current_ver)
+
+                        result["latest_version"] = remote_ver
+                        result["latest_version_code"] = remote_code or current_code
+                        result["update_available"] = is_newer
+        except Exception:
+            pass
+
     return result
+
+def get_cached_update_info(max_age_seconds: int = 60) -> Dict[str, Any]:
+    """Retorna información de actualización cacheada, refrescando en segundo plano de forma no bloqueante."""
+    global _last_update_check, _cached_update_result
+    now = time.time()
+
+    if _cached_update_result is None:
+        _cached_update_result = {
+            "current_version": __version__,
+            "current_version_code": __version_code__,
+            "latest_version": __version__,
+            "latest_version_code": __version_code__,
+            "update_available": False,
+            "hub_url": DEFAULT_HUB_URL,
+            "download_url": f"{DEFAULT_HUB_URL}/tdm-bundle.tar.gz"
+        }
+        threading.Thread(target=_bg_check_update, daemon=True).start()
+    elif (now - _last_update_check) > max_age_seconds:
+        threading.Thread(target=_bg_check_update, daemon=True).start()
+
+    return _cached_update_result
+
+def _bg_check_update():
+    global _last_update_check, _cached_update_result
+    if not _checking_lock.acquire(blocking=False):
+        return
+    try:
+        res = check_for_updates()
+        _cached_update_result = res
+        _last_update_check = time.time()
+    except Exception:
+        pass
+    finally:
+        _checking_lock.release()
 
 async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     """Descarga e instala la última versión de TDM transmitiendo logs en tiempo real."""

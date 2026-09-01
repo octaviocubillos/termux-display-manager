@@ -249,8 +249,10 @@ class DisplayManager:
 
         from tdm.version import get_version_info
         from tdm.core.installer import installer_service
+        from tdm.core.updater import get_cached_update_info
         ver_info = get_version_info()
         installer_info = installer_service.get_status()
+        update_info = get_cached_update_info()
 
         return {
             "installed_desktop": installed_de,
@@ -263,7 +265,8 @@ class DisplayManager:
             "version": ver_info,
             "is_screen_active": is_screen_active,
             "active_screen": session_dict,
-            "installer": installer_info
+            "installer": installer_info,
+            "update": update_info
         }
 
     async def start_screen(
