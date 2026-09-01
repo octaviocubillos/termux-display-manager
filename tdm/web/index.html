@@ -222,6 +222,22 @@
             box-sizing: border-box;
         }
 
+        /* ESTADOS DE INSTALACIÓN Y BOTÓN CANCELAR */
+        .disabled-during-install {
+            opacity: 0.45 !important;
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+            filter: grayscale(0.6) !important;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .rotating-spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
         /* HERO CARD / STATUS ISLAND */
         .status-island {
             background: var(--md-sys-color-surface-container-low);
@@ -943,7 +959,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.49</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.50</span>
                             </div>
                             <div class="device-subtitle" style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span class="status-dot online" id="devStatusDot"></span>
@@ -1251,12 +1267,21 @@
 
         <!-- LIVE TERMINAL LOGS DRAWER -->
         <section class="logs-sheet" id="logsDrawer">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.8rem; font-weight: 700; color: var(--md-sys-color-primary);">📜 Terminal de Instalación / Eventos</span>
-                <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer()">
-                    <span class="material-symbols-rounded">close</span>
-                    <span>Cerrar</span>
-                </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <span class="material-symbols-rounded" style="font-size: 1.15rem; color: var(--md-sys-color-primary);" id="icoInstallerStatus">terminal</span>
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #fff;" id="lblInstallerTitle">Terminal de Instalación / Eventos</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                    <button class="btn-m3 btn-m3-error btn-m3-sm" id="btnCancelInstall" onclick="apiCancelInstallation()" style="display: none;" title="Cancelar instalación activa y revertir cambios">
+                        <span class="material-symbols-rounded">cancel</span>
+                        <span id="txtCancelInstallLabel">Cancelar y Revertir</span>
+                    </button>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer()">
+                        <span class="material-symbols-rounded">close</span>
+                        <span>Cerrar</span>
+                    </button>
+                </div>
             </div>
             <div class="terminal-box" id="liveTerminalContent">Esperando eventos...</div>
         </section>
@@ -1522,10 +1547,15 @@
                             if (text) {
                                 const logBox = document.getElementById('liveTerminalContent');
                                 const drawer = document.getElementById('logsDrawer');
-                                if (drawer) drawer.classList.add('open');
+                                if (drawer && !drawer.classList.contains('open')) drawer.classList.add('open');
                                 if (logBox) {
                                     logBox.innerText += '\n' + text;
                                     logBox.scrollTop = logBox.scrollHeight;
+                                }
+                                if (text.includes('[*] Iniciando ejecución')) {
+                                    setInstallerActive(true, 'Instalación en progreso');
+                                } else if (text.includes('[✓]') || text.includes('[✗]') || text.includes('revertido al 100%')) {
+                                    setInstallerActive(false);
                                 }
                             }
                         }
@@ -1957,20 +1987,97 @@
             showToast(`Seleccionado: ${name}`, 'check_circle');
         }
 
+        function setInstallerActive(active, targetName = '') {
+            window._localInstallingState = active;
+
+            // 1. Desactivar o activar botones de acción para prevenir condiciones de carrera
+            const targets = [
+                document.getElementById('btnMainLaunch'),
+                document.getElementById('btnInstallDeAction'),
+                document.getElementById('btnSettingsUninstallDe'),
+                document.getElementById('btnSettingsPurgeAll'),
+                ...document.querySelectorAll('.de-card'),
+                ...document.querySelectorAll('.backend-chip')
+            ];
+
+            targets.forEach(el => {
+                if (!el) return;
+                if (active) {
+                    el.classList.add('disabled-during-install');
+                    if ('disabled' in el) el.disabled = true;
+                } else {
+                    el.classList.remove('disabled-during-install');
+                    if ('disabled' in el) el.disabled = false;
+                }
+            });
+
+            // 2. Controlar visualmente el Drawer y el botón de Cancelar y Revertir
+            const btnCancel = document.getElementById('btnCancelInstall');
+            const txtCancel = document.getElementById('txtCancelInstallLabel');
+            const icoStatus = document.getElementById('icoInstallerStatus');
+            const lblTitle = document.getElementById('lblInstallerTitle');
+
+            if (active) {
+                if (btnCancel) {
+                    btnCancel.style.display = 'inline-flex';
+                    btnCancel.disabled = false;
+                }
+                if (txtCancel) txtCancel.innerText = 'Cancelar y Revertir';
+                if (icoStatus) {
+                    icoStatus.innerText = 'sync';
+                    icoStatus.classList.add('rotating-spinner');
+                }
+                if (lblTitle && targetName) {
+                    lblTitle.innerText = `${targetName}...`;
+                }
+            } else {
+                if (btnCancel) btnCancel.style.display = 'none';
+                if (icoStatus) {
+                    icoStatus.innerText = 'terminal';
+                    icoStatus.classList.remove('rotating-spinner');
+                }
+                if (lblTitle) lblTitle.innerText = 'Terminal de Instalación / Eventos';
+            }
+
+            if (lastStatusData) updateLaunchButton(lastStatusData);
+        }
+
+        async function apiCancelInstallation() {
+            const btnCancel = document.getElementById('btnCancelInstall');
+            const txtCancel = document.getElementById('txtCancelInstallLabel');
+            if (btnCancel) btnCancel.disabled = true;
+            if (txtCancel) txtCancel.innerText = 'Cancelando y revirtiendo...';
+            showToast('Cancelando instalación y revirtiendo paquetes...', 'cancel');
+
+            const logBox = document.getElementById('liveTerminalContent');
+            if (logBox) logBox.innerText += '\n[TDM] Enviando orden de cancelación y reversión...\n';
+
+            try {
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('cancel_install');
+                } else {
+                    const res = await fetch('/api/install/cancel', { method: 'POST' });
+                    await res.json();
+                }
+                showToast('Instalación cancelada y revertida con éxito.', 'check_circle');
+            } catch(e) {
+                showToast(`Error al cancelar: ${e.message || e}`, 'error');
+            } finally {
+                setInstallerActive(false);
+                await refreshStatus();
+            }
+        }
+
         async function apiInstallPickedDesktop() {
             if (!selectedDesktop) return;
-            window._localInstallingState = true;
-            const btnInst = document.getElementById('btnInstallDeAction');
-            if (btnInst) {
-                btnInst.disabled = true;
-                btnInst.style.opacity = '0.6';
-            }
-            if (lastStatusData) updateLaunchButton(lastStatusData);
+            setInstallerActive(true, `Instalando ${selectedDesktop.toUpperCase()}`);
 
             showToast(`Instalando ${selectedDesktop.toUpperCase()}...`, 'download');
             const drawer = document.getElementById('logsDrawer');
             if (drawer) drawer.classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
+            if (logBox) logBox.innerText = `[TDM] Iniciando instalación de ${selectedDesktop.toUpperCase()}...\n`;
+
             try {
                 // Antes de cambiar de entorno, apagar sesiones y pantallas activas manteniendo TDM
                 try {
@@ -1997,11 +2104,7 @@
             } catch(e) {
                 showToast(`Error al instalar: ${e.message || e}`, 'error');
             } finally {
-                window._localInstallingState = false;
-                if (btnInst) {
-                    btnInst.disabled = false;
-                    btnInst.style.opacity = '1';
-                }
+                setInstallerActive(false);
                 await refreshStatus();
             }
         }
@@ -2010,9 +2113,7 @@
             const deName = document.getElementById('txtDeName')?.innerText || 'el entorno de escritorio';
             if (!confirm(`¿Estás seguro de que deseas desinstalar completamente ${deName} y liberar memoria interna?\n\n(Se cerrarán sesiones activas y se purgarán todos los paquetes de escritorio)`)) return;
 
-            window._localInstallingState = true;
-            if (lastStatusData) updateLaunchButton(lastStatusData);
-
+            setInstallerActive(true, `Desinstalando ${deName}`);
             showToast(`Desinstalando ${deName}...`, 'delete');
             const drawer = document.getElementById('logsDrawer');
             if (drawer) drawer.classList.add('open');
@@ -2036,7 +2137,7 @@
             } catch(e) {
                 showToast(`Error al desinstalar: ${e.message || e}`, 'error');
             } finally {
-                window._localInstallingState = false;
+                setInstallerActive(false);
                 await refreshStatus();
             }
         }

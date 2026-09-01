@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="Termux Display Manager (TDM) - Motor unificado de entornos gráficos nativos, servidor de escritorio remoto y gestor de pantallas para Android y Linux.">
+    <title>Termux Display Manager (TDM) • Unified Linux Desktop Engine</title>
+
+    <!-- Google Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(51, 65, 85, 0.8);
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.35);
+            --secondary: #818cf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-amber: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.25);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 80%, rgba(74, 222, 128, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* NAVIGATION BAR */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: rgba(9, 13, 22, 0.75);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-logo-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #041026;
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .btn-nav-action {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: #fff;
+            padding: 0.45rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+            color: #fff;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding: 4.5rem 0 3.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .version-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.85rem;
+            border-radius: var(--radius-full);
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--primary);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.2px;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: var(--text-muted);
+            max-width: 720px;
+            margin: 0 auto 2.25rem;
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 3.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: #fff;
+            padding: 0.75rem 1.6rem;
+            border-radius: var(--radius-full);
+            font-size: 1rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(56, 189, 248, 0.6);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.4rem;
+            border-radius: var(--radius-full);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* HERO PREVIEW TERMINAL */
+        .preview-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(56, 189, 248, 0.08);
+            backdrop-filter: blur(20px);
+            max-width: 860px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 0.4rem;
+        }
+
+        .window-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .terminal-code {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .terminal-code .comment { color: #64748b; }
+        .terminal-code .cmd { color: var(--primary); font-weight: 600; }
+        .terminal-code .param { color: #fde293; }
+        .terminal-code .success { color: var(--accent-green); font-weight: 600; }
+
+        /* SECTION TITLES */
+        .section {
+            padding: 5rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 680px;
+            margin: 0 auto 3.5rem;
+        }
+
+        .section-tag {
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .section-title {
+            font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.8px;
+            margin-bottom: 0.85rem;
+            color: #fff;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* BENTO GRID / FEATURES */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .bento-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(12px);
+        }
+
+        .bento-card:hover {
+            transform: translateY(-3px);
+            background: var(--bg-card-hover);
+            border-color: var(--border-glow);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .bento-card.span-2 {
+            grid-column: span 2;
+        }
+
+        .bento-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.2rem;
+            font-size: 1.4rem;
+        }
+
+        .icon-blue { background: rgba(56, 189, 248, 0.15); color: var(--primary); }
+        .icon-green { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+        .icon-purple { background: rgba(192, 132, 252, 0.15); color: var(--accent-purple); }
+        .icon-amber { background: rgba(251, 191, 36, 0.15); color: var(--accent-amber); }
+
+        .bento-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.2px;
+        }
+
+        .bento-text {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.55;
+        }
+
+        /* BACKENDS SHOWCASE */
+        .backends-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .backend-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.3rem;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .backend-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .backend-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .backend-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.35rem;
+        }
+
+        .backend-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.15rem 0.55rem;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+        }
+
+        .badge-fast { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+        .badge-web { background: rgba(56, 189, 248, 0.15); color: var(--primary); }
+
+        /* DESKTOP ENVIRONMENTS */
+        .desktop-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .de-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border-color);
+            padding: 0.45rem 0.9rem;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .de-pill:hover {
+            border-color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        /* CODE INSTALL BOX */
+        .code-box {
+            background: #040813;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            position: relative;
+            margin: 1.5rem auto;
+            max-width: 680px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .code-box code {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            color: var(--primary);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .btn-copy:hover {
+            background: var(--primary);
+            color: #041026;
+            border-color: var(--primary);
+        }
+
+        /* CLI COMMANDS TABLE */
+        .cli-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .cli-table th, .cli-table td {
+            padding: 0.85rem 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.88rem;
+        }
+
+        .cli-table th {
+            background: rgba(15, 23, 42, 0.9);
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .cli-table td code {
+            font-family: var(--font-mono);
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: rgba(9, 13, 22, 0.8);
+        }
+
+        .footer-links {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+            .bento-card.span-2 {
+                grid-column: span 1;
+            }
+            .backends-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding: 3rem 0 2rem;
+            }
+            .nav-links {
+                display: none;
+            }
+            .backends-grid {
+                grid-template-columns: 1fr;
+            }
+            .cli-table th, .cli-table td {
+                padding: 0.65rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVIGATION BAR -->
+    <nav>
+        <div class="nav-brand">
+            <div class="nav-logo-badge">
+                <span class="material-symbols-rounded" style="font-size: 1.25rem;">desktop_windows</span>
+            </div>
+            <span>Termux Display Manager</span>
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="#features">Características</a></li>
+            <li><a href="#backends">Backends</a></li>
+            <li><a href="#desktops">Entornos</a></li>
+            <li><a href="#install">Instalación</a></li>
+            <li><a href="#cli">Comandos CLI</a></li>
+        </ul>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <a href="https://github.com/octaviocubillos/termux-display-manager" target="_blank" rel="noopener" class="btn-nav-action">
+                <span class="material-symbols-rounded" style="font-size: 1.1rem;">code</span>
+                <span>GitHub Repo</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="hero container">
+        <div class="version-pill">
+            <span class="material-symbols-rounded" style="font-size: 0.95rem;">verified</span>
+            <span>Versión v0.0.50 • Zero-Dependencies Pure Python</span>
+        </div>
+
+        <h1 class="hero-title">
+            Tu Android como estación de trabajo <span>Linux y Servidor Gráfico</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Termux Display Manager (TDM) es el motor unificado de entornos de escritorio, servidor de acceso web sin cliente y terminal gráfico multidispositivo para Android y Linux.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#install" class="btn-primary">
+                <span class="material-symbols-rounded">download</span>
+                <span>Instalación Rápida</span>
+            </a>
+            <a href="#features" class="btn-secondary">
+                <span class="material-symbols-rounded">explore</span>
+                <span>Explorar Características</span>
+            </a>
+            <a href="https://github.com/octaviocubillos/termux-display-manager" target="_blank" rel="noopener" class="btn-secondary">
+                <span class="material-symbols-rounded">code</span>
+                <span>Ver en GitHub</span>
+            </a>
+        </div>
+
+        <!-- TERMINAL PREVIEW CARD -->
+        <div class="preview-card">
+            <div class="preview-header">
+                <div class="window-dots">
+                    <div class="window-dot dot-red"></div>
+                    <div class="window-dot dot-yellow"></div>
+                    <div class="window-dot dot-green"></div>
+                </div>
+                <div style="font-size: 0.75rem; color: #64748b; font-family: var(--font-mono);">tdm daemon • port 19050</div>
+            </div>
+            <div class="terminal-code">
+                <p><span class="comment"># Iniciar entorno gráfico nativo en Termux</span></p>
+                <p><span class="cmd">tdm</span> start <span class="param">--desktop xfce4 --backend termux-x11</span></p>
+                <p class="success">🚀 [TDM] Display :0 activo en Termux:X11 (VirGL 3D Habilitado)</p>
+                <p class="success">🌐 [TDM Web] Dashboard y WebSockets listos en http://localhost:19050</p>
+                <p><span class="comment"># Consultar telemetría y estado en tiempo real</span></p>
+                <p><span class="cmd">tdm</span> status</p>
+                <p style="color: #94a3b8;">🎨 Entorno: XFCE4 | CPU: 14% | RAM: 1840/7680 MB | Salida: noVNC + Termux:X11</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- FEATURES BENTO GRID -->
+    <section class="section container" id="features">
+        <div class="section-header">
+            <span class="section-tag">Capacidades del Núcleo</span>
+            <h2 class="section-title">Diseñado para Máximo Rendimiento y Simplicidad</h2>
+            <p class="section-desc">Todo lo que necesitas para ejecutar escritorios completos en Android sin root y con cero dependencias externas de Python.</p>
+        </div>
+
+        <div class="bento-grid">
+            <!-- 1. Multi-Backend -->
+            <div class="bento-card span-2">
+                <div>
+                    <div class="bento-icon icon-blue">
+                        <span class="material-symbols-rounded">layers</span>
+                    </div>
+                    <h3 class="bento-title">Motor de Pantallas Multi-Backend</h3>
+                    <p class="bento-text">
+                        Alterna fluidamente entre <strong>Termux:X11</strong> (renderizado nativo con aceleración por hardware VirGL), <strong>Web HTML5 (noVNC)</strong> en cualquier navegador moderno, <strong>VNC Móvil</strong> y <strong>XRDP / Microsoft Remote Desktop</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 2. Terminal Web xterm.js -->
+            <div class="bento-card">
+                <div>
+                    <div class="bento-icon icon-green">
+                        <span class="material-symbols-rounded">terminal</span>
+                    </div>
+                    <h3 class="bento-title">Consola Web xterm.js</h3>
+                    <p class="bento-text">
+                        Accede a un terminal interactivo de Termux con soporte completo de colores ANSI, tmux y redimensionamiento dinámico desde tu navegador.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 3. Desinstalador Selectivo SQLite -->
+            <div class="bento-card">
+                <div>
+                    <div class="bento-icon icon-purple">
+                        <span class="material-symbols-rounded">cleaning_services</span>
+                    </div>
+                    <h3 class="bento-title">Desinstalación Limpia Auditada</h3>
+                    <p class="bento-text">
+                        Registro SQLite de paquetes en tiempo real. Elimina entornos completos y dependencias huérfanas sin tocar tus archivos personales ni paquetes previos.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4. Telemetría y Salud en Vivo -->
+            <div class="bento-card">
+                <div>
+                    <div class="bento-icon icon-amber">
+                        <span class="material-symbols-rounded">monitoring</span>
+                    </div>
+                    <h3 class="bento-title">Telemetría en Tiempo Real</h3>
+                    <p class="bento-text">
+                        Monitoreo continuo de uso de CPU, temperatura del SoC, consumo de memoria RAM, espacio en disco y latencia RTT vía WebSockets RFC 6455.
+                    </p>
+                </div>
+            </div>
+
+            <!-- 5. Sistema y PWA -->
+            <div class="bento-card">
+                <div>
+                    <div class="bento-icon icon-blue">
+                        <span class="material-symbols-rounded">install_mobile</span>
+                    </div>
+                    <h3 class="bento-title">PWA & Integración del Sistema</h3>
+                    <p class="bento-text">
+                        Instalación a nivel de sistema en <code>$PREFIX/opt/termux-display-manager</code> y ejecutable como App PWA en pantalla completa sin barras de navegador.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BACKENDS SECTION -->
+    <section class="section container" id="backends">
+        <div class="section-header">
+            <span class="section-tag">Backends Gráficos</span>
+            <h2 class="section-title">Elige Cómo y Dónde Visualizar Tu Escritorio</h2>
+            <p class="section-desc">Flexibilidad total para trabajar localmente en el móvil o remotamente desde tu PC o laptop.</p>
+        </div>
+
+        <div class="backends-grid">
+            <div class="backend-card">
+                <div class="backend-icon" style="color: #38bdf8;">⚡</div>
+                <div class="backend-name">Termux:X11</div>
+                <div class="backend-desc">La más alta tasa de FPS y menor latencia local en Android con soporte VirGL.</div>
+                <span class="badge-tag badge-fast">Nativo Android</span>
+            </div>
+
+            <div class="backend-card">
+                <div class="backend-icon" style="color: #818cf8;">🌐</div>
+                <div class="backend-name">Web HTML5 (noVNC)</div>
+                <div class="backend-desc">Acceso instantáneo desde Chrome, Firefox o Safari sin instalar nada en tu PC.</div>
+                <span class="badge-tag badge-web">Sin Clientes</span>
+            </div>
+
+            <div class="backend-card">
+                <div class="backend-icon" style="color: #4ade80;">📱</div>
+                <div class="backend-name">Mobile VNC</div>
+                <div class="backend-desc">Compatible con visores universales como bVNC, AVNC, RealVNC y TigerVNC.</div>
+                <span class="badge-tag">Puerto 19053</span>
+            </div>
+
+            <div class="backend-card">
+                <div class="backend-icon" style="color: #c084fc;">🖥️</div>
+                <div class="backend-name">Remote RDP</div>
+                <div class="backend-desc">Protocolo Remote Desktop nativo para Windows, macOS y clientes FreeRDP.</div>
+                <span class="badge-tag">Puerto 19054</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- DESKTOPS SECTION -->
+    <section class="section container" id="desktops">
+        <div class="section-header">
+            <span class="section-tag">Entornos Soportados</span>
+            <h2 class="section-title">Instalación y Desinstalación en 1-Clic</h2>
+            <p class="section-desc">Selecciona tu gestor de ventanas o entorno de escritorio favorito con configuración automática.</p>
+        </div>
+
+        <div class="desktop-pills">
+            <div class="de-pill"><span>XFCE4 (Recomendado)</span></div>
+            <div class="de-pill"><span>LXQt Desktop</span></div>
+            <div class="de-pill"><span>Openbox Window Manager</span></div>
+            <div class="de-pill"><span>MATE Desktop</span></div>
+            <div class="de-pill"><span>i3 Tiling WM</span></div>
+            <div class="de-pill"><span>BSPWM Window Manager</span></div>
+        </div>
+    </section>
+
+    <!-- INSTALLATION GUIDE -->
+    <section class="section container" id="install">
+        <div class="section-header">
+            <span class="section-tag">Puesta en Marcha</span>
+            <h2 class="section-title">Instalación en Segundos</h2>
+            <p class="section-desc">Copia y pega este comando en tu consola Termux para desplegar el servidor y gestor TDM.</p>
+        </div>
+
+        <div class="code-box">
+            <code>curl -sSL https://raw.githubusercontent.com/octaviocubillos/termux-display-manager/main/install.sh | bash</code>
+            <button class="btn-copy" onclick="copyInstallCmd(this, 'curl -sSL https://raw.githubusercontent.com/octaviocubillos/termux-display-manager/main/install.sh | bash')">
+                <span class="material-symbols-rounded" style="font-size: 1rem;">content_copy</span>
+                <span>Copiar</span>
+            </button>
+        </div>
+
+        <p style="text-align: center; color: #64748b; font-size: 0.85rem; margin-top: 1rem;">
+            💡 Requiere Termux en Android 8.0 o superior. No requiere permisos root.
+        </p>
+    </section>
+
+    <!-- CLI TABLE REFERENCE -->
+    <section class="section container" id="cli">
+        <div class="section-header">
+            <span class="section-tag">Comandos de Consola</span>
+            <h2 class="section-title">Lanzador Global <code>tdm</code></h2>
+            <p class="section-desc">Controla tus pantallas y servicios directamente desde la línea de comandos.</p>
+        </div>
+
+        <table class="cli-table">
+            <thead>
+                <tr>
+                    <th>Comando</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>tdm start</code></td>
+                    <td>Inicia la pantalla gráfica con el backend y entorno configurado por defecto.</td>
+                </tr>
+                <tr>
+                    <td><code>tdm stop</code></td>
+                    <td>Apaga el display y procesos gráficos de forma limpia liberando memoria.</td>
+                </tr>
+                <tr>
+                    <td><code>tdm status</code></td>
+                    <td>Muestra el estado en tiempo real, backend activo y URLs de acceso local y LAN.</td>
+                </tr>
+                <tr>
+                    <td><code>tdm service restart</code></td>
+                    <td>Reinicia el demonio HTTP/WebSocket en segundo plano bajo <code>termux-services</code>.</td>
+                </tr>
+                <tr>
+                    <td><code>tdm install &lt;entorno&gt;</code></td>
+                    <td>Descarga y configura un entorno (<code>xfce4</code>, <code>lxqt</code>, <code>openbox</code>, etc.).</td>
+                </tr>
+                <tr>
+                    <td><code>tdm uninstall</code></td>
+                    <td>Desinstalación selectiva auditada que limpia solo paquetes registrados por TDM.</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/octaviocubillos/termux-display-manager" target="_blank" rel="noopener">GitHub</a>
+                <a href="#features">Características</a>
+                <a href="#backends">Backends</a>
+                <a href="#cli">CLI Reference</a>
+            </div>
+            <p>© 2026 Termux Display Manager (TDM) • Licencia MIT • Zero-Dependencies Pure Python</p>
+        </div>
+    </footer>
+
+    <script>
+        function copyInstallCmd(btn, text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<span class="material-symbols-rounded" style="font-size: 1rem;">check</span><span>¡Copiado!</span>';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            }).catch(() => {
+                prompt("Copia el comando:", text);
+            });
+        }
+    </script>
+</body>
+</html>

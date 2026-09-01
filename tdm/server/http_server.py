@@ -409,7 +409,29 @@ class AsyncHTTPServer:
                             "error": str(e)
                         })
 
-                # 8. Obtener Versión
+                # 8. Cancelar / Abortar Instalación y Revertir
+                elif req_type in ["cancel_install", "install_cancel", "abort_install"]:
+                    try:
+                        res = await installer_service.cancel_and_revert()
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "cancel_install",
+                            "id": req_id,
+                            "success": True,
+                            "data": res
+                        })
+                        st = display_manager.get_status()
+                        await ws.send_json({"type": "status_update", "data": st})
+                    except Exception as e:
+                        await ws.send_json({
+                            "type": "action_result",
+                            "action": "cancel_install",
+                            "id": req_id,
+                            "success": False,
+                            "error": str(e)
+                        })
+
+                # 9. Obtener Versión
                 elif req_type in ["get_version", "version"]:
                     await ws.send_json({
                         "type": "version_response",
@@ -744,6 +766,11 @@ class AsyncHTTPServer:
             else:
                 success = await installer_service.install_server(target)
             self.send_json_response(writer, {"success": success, "target": target, "action": action})
+            return
+
+        if path in ["/api/install/cancel", "/api/install/abort"] and method == "POST":
+            res = await installer_service.cancel_and_revert()
+            self.send_json_response(writer, {"success": True, **res})
             return
 
         if path == "/api/install/minimal" and method == "POST":

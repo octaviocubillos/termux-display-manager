@@ -25,6 +25,8 @@ class PackageInstaller:
         self.listeners: List[Callable[[str], None]] = []
         self.process: Optional[asyncio.subprocess.Process] = None
 
+        self.active_target: Optional[str] = None
+
     def subscribe(self, callback: Callable[[str], None]):
         """Suscribe un listener (ej. WebSocket) para recibir logs en tiempo real."""
         if callback not in self.listeners:
@@ -107,6 +109,59 @@ class PackageInstaller:
         finally:
             self.process = None
 
+    async def cancel_and_revert(self) -> Dict[str, Any]:
+        """Cancela el proceso activo de instalación, mata procesos bloqueados y purga paquetes parciales."""
+        self._broadcast_log("\n⚠️ [TDM] Cancelación solicitada por el usuario.")
+        self._broadcast_log("[*] Deteniendo subprocesos de instalación...")
+        
+        # 1. Matar el proceso principal y subprocesos hijos
+        if self.process:
+            try:
+                self.process.terminate()
+                await asyncio.sleep(0.5)
+                if self.process.returncode is None:
+                    self.process.kill()
+            except Exception:
+                pass
+            self.process = None
+
+        # 2. Matar cualquier proceso apt/dpkg/pkg bloqueado y configurar dpkg
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        try:
+            import subprocess
+            subprocess.run("pkill -9 -f 'apt-get|dpkg|pkg' 2>/dev/null || true", shell=True)
+            subprocess.run("dpkg --configure -a 2>/dev/null || true", shell=True)
+        except Exception:
+            pass
+
+        # 3. Si se estaba instalando un entorno específico, revertir y purgarlo
+        target = self.active_target
+        if target:
+            self._broadcast_log(f"[*] Revirtiendo instalación y limpiando paquetes de {target}...")
+            uninstall_script = SCRIPTS_DIR / "uninstall_desktop.sh"
+            if uninstall_script.exists():
+                try:
+                    bash_bin = shutil.which("bash") or f"{prefix}/bin/bash"
+                    proc = await asyncio.create_subprocess_exec(
+                        bash_bin, str(uninstall_script), target,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.STDOUT
+                    )
+                    while True:
+                        line = await proc.stdout.readline()
+                        if not line:
+                            break
+                        self._broadcast_log(line.decode(errors="replace").rstrip())
+                    await proc.wait()
+                except Exception as e:
+                    self._broadcast_log(f"[!] Error revirtiendo: {e}")
+
+        self.status = InstallerStatus.IDLE
+        self.current_task = None
+        self.active_target = None
+        self._broadcast_log("[✓] Instalación cancelada y estado revertido al 100%.\n")
+        return {"cancelled": True, "reverted": True}
+
     async def install_desktop(self, desktop: str) -> bool:
         # Antes de cambiar de entorno, apagar todas las pantallas y procesos gráficos manteniendo TDM activo
         try:
@@ -115,6 +170,7 @@ class PackageInstaller:
             await display_manager.stop_screen()
         except Exception as e:
             self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
+        self.active_target = desktop
         return await self.run_script("install_desktop.sh", [desktop])
 
     async def uninstall_desktop(self, desktop: Optional[str] = None) -> bool:
@@ -125,15 +181,18 @@ class PackageInstaller:
         except Exception as e:
             self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
         target = desktop if desktop else "all"
+        self.active_target = target
         return await self.run_script("uninstall_desktop.sh", [target])
 
     async def install_server(self, server: str) -> bool:
+        self.active_target = server
         return await self.run_script("install_server.sh", [server])
 
     def get_status(self) -> Dict[str, Any]:
         return {
             "status": self.status,
             "current_task": self.current_task,
+            "active_target": self.active_target,
             "log_lines_count": len(self.logs),
             "recent_logs": self.logs[-20:] if self.logs else []
         }

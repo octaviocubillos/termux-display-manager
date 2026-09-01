@@ -43,6 +43,7 @@ mkdir -p "$SYSTEM_DIR" "$PREFIX/bin" "$HOME_DIR/.tdm/run" "$HOME_DIR/.tdm/logs" 
 # Copiar archivos del proyecto al directorio del sistema
 if [ "$DIR" != "$SYSTEM_DIR" ]; then
     cp -rf "$DIR"/* "$SYSTEM_DIR"/ 2>/dev/null || true
+    rm -rf "$SYSTEM_DIR/landing" "$SYSTEM_DIR/.git" "$SYSTEM_DIR/dist" 2>/dev/null || true
 fi
 
 # 3. Registrar en SQLite los paquetes que TDM va a instalar
