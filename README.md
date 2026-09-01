@@ -56,12 +56,7 @@ tdm agy [start|web|attach|qr|status|stop]     # Terminal dinámico persistente a
 
 ```
 termux-display-manager/
-├── agy-terminal.sh            # Lanzador directo de terminal dinámico agy multidispositivo
-├── android-app/               # Aplicación nativa Android (WebView + Puente Termux)
-├── android-sdk/               # SDK stub para compilación autónoma de APK
 ├── docs/                      # Documentación técnica y guías de arquitectura
-│   ├── AGY_DYNAMIC_TERMINAL.md# Terminal dinámico multidispositivo (PC, celular, tablet)
-│   ├── ANDROID_INTEGRATION.md # Integración con Android y Setup Wizard
 │   ├── ARCHITECTURE.md        # Diagramas de capas y ciclo de vida
 │   ├── DESKTOP_ENVIRONMENTS.md# Entornos de escritorio soportados
 │   ├── MODULAR_INSTALLATION.md# Sistema de instalación bajo demanda
@@ -69,13 +64,13 @@ termux-display-manager/
 │   ├── SCREENS_AND_BACKENDS.md# Backends gráficos y resoluciones
 │   └── TAILSCALE_AND_SECURITY.md # Conectividad segura LAN y Tailscale Mesh
 ├── plans/                     # Especificaciones de API y arquitectura
-├── scripts/                   # Scripts de instalación, compilación y administración
-│   ├── build_apk.sh           # Generador y compilador de APK offline
+├── scripts/                   # Scripts de instalación y administración
 │   ├── install.sh             # Instalador bootstrap del backend
 │   ├── install_desktop.sh     # Instalador modular de entornos de escritorio
 │   ├── install_server.sh      # Instalador de servidores de pantalla
 │   ├── setup_dependencies.sh  # Instalación de paquetes base
 │   ├── stop_x11.sh            # Purga de procesos y apagado total
+│   ├── uninstall_desktop.sh   # Desinstalador limpio de entornos de escritorio
 │   └── uninstall.sh           # Desinstalación limpia auditada
 ├── tdm/                       # Paquete Python del núcleo de TDM (Zero-Dependencies)
 │   ├── agent/                 # Agente WebSocket cliente para Termux
@@ -86,7 +81,7 @@ termux-display-manager/
 │   ├── runners/               # Generador de scripts de sesión y variables D-Bus
 │   ├── scripts/               # Scripts empaquetados para ejecución en runtime
 │   ├── server/                # Servidor HTTP REST, WebSocket RFC 6455 y Hub Relay
-│   └── web/                   # PWA (HTML5, CSS, JS, manifest.json, service-worker, noVNC)
+│   └── web/                   # PWA (HTML5, CSS, JS, manifest.json, sw.js, noVNC, terminal xterm.js)
 ├── tests/                     # Suite de pruebas automatizadas
 ├── install.sh                 # Acceso directo al instalador bootstrap
 ├── uninstall.sh               # Acceso directo al desinstalador limpio

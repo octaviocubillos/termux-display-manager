@@ -41,13 +41,10 @@ run/
 *.swo
 *~
 
-# Build Artifacts & Bundles
+# Build Artifacts & Tests
 *.tar.gz
-*.apk
-*.keystore
-*.dex
-compiled_res.zip
-unaligned.apk
+dist/
+build/
 .pytest_cache/
 .coverage
 htmlcov/

@@ -26,11 +26,11 @@
 
 ---
 
-### 🟣 Fase 3: App Android (✅ Completado)
-- [x] Crear el proyecto Android en `android-app/` con `WebView` y soporte para temas oscuros.
-- [x] Implementar puente nativo `TdmBridge` para comunicación entre PWA y Android OS.
-- [x] Integrar auto-lanzamiento de Termux:X11 y clientes RDP/VNC mediante Intents.
-- [x] Script de compilación y firma de APK 100% offline ([scripts/build_apk.sh](file:///workspace/termux-display-manager/scripts/build_apk.sh)).
+### 🟣 Fase 3: PWA y Web Terminal PTY (✅ Completado)
+- [x] PWA completa offline instalable en móvil y escritorio con `sw.js` y `manifest.json`.
+- [x] Consola Web interactiva PTY bash/zsh nativa con `xterm.js` y barra de teclas móviles.
+- [x] Visor Web noVNC integrado con redimensión y controles táctiles.
+- [x] Panel de telemetría en tiempo real (CPU, RAM, Disco, Red LAN/WAN).
 
 ---
 
