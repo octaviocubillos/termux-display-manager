@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="Control de cambios, notas de lanzamiento y registro histórico de actualizaciones de Termux Display Manager (TDM).">
+    <title>Control de Cambios • Termux Display Manager (TDM)</title>
+
+    <!-- Google Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(51, 65, 85, 0.8);
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.35);
+            --secondary: #818cf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+            --accent-amber: #fbbf24;
+            --accent-red: #f87171;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.25);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: "JetBrains Mono", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 80%, rgba(74, 222, 128, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* NAVIGATION */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: rgba(9, 13, 22, 0.75);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: -0.3px;
+        }
+
+        .nav-logo-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #041026;
+            box-shadow: 0 0 16px var(--primary-glow);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        .btn-nav-action {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            color: #fff;
+            padding: 0.45rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+            color: #fff;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* HEADER */
+        .changelog-header {
+            padding: 3.5rem 0 2rem;
+            text-align: center;
+        }
+
+        .header-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--primary);
+            padding: 0.35rem 0.9rem;
+            border-radius: var(--radius-full);
+            font-size: 0.82rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #ffffff 30%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-desc {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        /* QUICK STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            text-align: center;
+            backdrop-filter: blur(12px);
+        }
+
+        .stat-val {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+            font-family: var(--font-mono);
+        }
+
+        .stat-lbl {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* TIMELINE */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 7px;
+            top: 15px;
+            bottom: 15px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--primary) 0%, rgba(56, 189, 248, 0.1) 100%);
+        }
+
+        .release-block {
+            position: relative;
+            margin-bottom: 2.5rem;
+        }
+
+        .release-dot {
+            position: absolute;
+            left: -2rem;
+            top: 1.25rem;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--bg-base);
+            border: 3px solid var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+            z-index: 2;
+        }
+
+        .release-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            backdrop-filter: blur(12px);
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .release-card:hover {
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+        }
+
+        .release-card.latest {
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 8px 30px rgba(56, 189, 248, 0.12);
+        }
+
+        .release-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .version-badge-group {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .version-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #ffffff;
+            font-family: var(--font-mono);
+        }
+
+        .badge {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: var(--radius-full);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-latest {
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(74, 222, 128, 0.4);
+        }
+
+        .badge-date {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            font-family: var(--font-mono);
+        }
+
+        .change-category {
+            margin-top: 1.25rem;
+        }
+
+        .category-title {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-title.feat { color: var(--primary); }
+        .category-title.fix { color: var(--accent-amber); }
+        .category-title.perf { color: var(--accent-green); }
+        .category-title.pwa { color: var(--accent-purple); }
+
+        .change-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .change-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            font-size: 0.92rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .change-bullet {
+            color: var(--primary);
+            font-size: 1.1rem;
+            line-height: 1.3;
+            flex-shrink: 0;
+        }
+
+        .change-item code {
+            font-family: var(--font-mono);
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.82rem;
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: 2.5rem 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            background: rgba(9, 13, 22, 0.8);
+        }
+
+        .footer-links {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 650px) {
+            .timeline {
+                padding-left: 1.5rem;
+            }
+            .release-dot {
+                left: -1.5rem;
+                width: 14px;
+                height: 14px;
+            }
+            .page-title {
+                font-size: 2rem;
+            }
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVIGATION -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <div class="nav-logo-badge">
+                <span class="material-symbols-rounded" style="font-size: 1.25rem;">desktop_windows</span>
+            </div>
+            <span>Termux Display Manager</span>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/">Inicio</a></li>
+            <li><a href="/#features">Características</a></li>
+            <li><a href="/#backends">Backends</a></li>
+            <li><a href="/#install">Instalación</a></li>
+            <li><a href="/changelog/" class="active">Control de Cambios</a></li>
+        </ul>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <a href="https://github.com/octaviocubillos/termux-display-manager" target="_blank" rel="noopener" class="btn-nav-action">
+                <span class="material-symbols-rounded" style="font-size: 1.1rem;">code</span>
+                <span>GitHub Repo</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- HEADER -->
+    <header class="changelog-header container">
+        <div class="header-tag">
+            <span class="material-symbols-rounded" style="font-size: 1rem;">history</span>
+            <span>Historial de Desarrollo y Versiones</span>
+        </div>
+        <h1 class="page-title">Control de Cambios</h1>
+        <p class="page-desc">
+            Registro detallado de nuevas características, correcciones de errores, mejoras de rendimiento y optimizaciones en Termux Display Manager (TDM).
+        </p>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val">v0.0.55</div>
+                <div class="stat-lbl">Versión Actual</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">6</div>
+                <div class="stat-lbl">Entornos Soportados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">0</div>
+                <div class="stat-lbl">Dependencias Externas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">100%</div>
+                <div class="stat-lbl">Nativo en Termux</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- TIMELINE -->
+    <main class="container">
+        <div class="timeline">
+
+            <!-- v0.0.55 -->
+            <article class="release-block">
+                <div class="release-dot"></div>
+                <div class="release-card latest">
+                    <div class="release-head">
+                        <div class="version-badge-group">
+                            <span class="version-title">v0.0.55</span>
+                            <span class="badge badge-latest">Última Versión</span>
+                            <span class="badge badge-date">Septiembre 2026</span>
+                        </div>
+                        <a href="https://github.com/octaviocubillos/termux-display-manager/commit/1636d89" target="_blank" rel="noopener" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <span class="material-symbols-rounded" style="font-size: 0.95rem;">commit</span>
+                            <span>1636d89</span>
+                        </a>
+                    </div>
+
+                    <!-- Correcciones -->
+                    <div class="change-category">
+                        <div class="category-title fix">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">build_circle</span>
+                            <span>Correcciones Críticas y Estabilidad</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Arranque y Configuración de i3 WM:</strong> Generación automática de <code>~/.config/i3/config</code> y autoinicio de terminal interactivo para evitar que i3 se congele o aborte por falta de teclado físico en Termux:X11 o NoVNC.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Purga y Detección de Desinstalación:</strong> <code>display_manager.get_installed_desktop()</code> ahora devuelve <code>installed: False</code> cuando no hay entornos instalados, eliminando estados fantasma al recargar la página.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Limpieza Total de Binarios y Dpkg:</strong> En <code>uninstall_desktop.sh</code> se implementó purga forzada <code>dpkg -P --force-all</code> y eliminación exhaustiva de ejecutables residuales en <code>$PREFIX/bin/</code>.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Sincronización Visual en Instalación:</strong> Se oculta el banner del escritorio anterior durante la instalación para evitar contradicciones visuales (ej. mostrar XFCE arriba mientras abajo se instala i3).</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- UI / UX -->
+                    <div class="change-category">
+                        <div class="category-title pwa">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">palette</span>
+                            <span>Interfaz Web y PWA</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Consola Silenciosa por Defecto:</strong> El cajón de logs ya no se abre automáticamente al instalar, desinstalar o actualizar. Solo se abre bajo demanda al pulsar el botón <code>Ver Log</code>.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Selector de Entornos Dinámico:</strong> Tarjetas con atributos <code>data-de-id</code> que sincronizan el foco y la selección en tiempo real.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </article>
+
+            <!-- v0.0.54 -->
+            <article class="release-block">
+                <div class="release-dot"></div>
+                <div class="release-card">
+                    <div class="release-head">
+                        <div class="version-badge-group">
+                            <span class="version-title">v0.0.54</span>
+                            <span class="badge badge-date">Septiembre 2026</span>
+                        </div>
+                        <a href="https://github.com/octaviocubillos/termux-display-manager/commit/6c07f1c" target="_blank" rel="noopener" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: none; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 0.3rem;">
+                            <span class="material-symbols-rounded" style="font-size: 0.95rem;">commit</span>
+                            <span>6c07f1c</span>
+                        </a>
+                    </div>
+
+                    <!-- Nuevas Funciones -->
+                    <div class="change-category">
+                        <div class="category-title feat">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">add_circle</span>
+                            <span>Nuevas Funcionalidades</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Barra de Progreso Real Cuantitativa (0% al 100%):</strong> Telemetría paso a paso estructurada con marcadores <code>[TDM_PROGRESS:XX:Paso]</code> en scripts y cálculo dinámico en tiempo real vía WebSockets y REST.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Desinstalador CLI de Entornos:</strong> Soporte de desinstalación de escritorios directamente desde la terminal con <code>tdm uninstall --desktop &lt;nombre|all&gt;</code>.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Auto-Optimización de Almacenamiento:</strong> Invocación automática de <code>autoremove --purge</code> y <code>autoclean</code> tras cualquier instalación o desinstalación.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- PWA y Caché -->
+                    <div class="change-category">
+                        <div class="category-title pwa">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">cached</span>
+                            <span>PWA y Políticas de Caché</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Estrategia Network-First en Service Worker:</strong> Garantiza que la PWA siempre descargue la última versión de la aplicación desde Termux sin quedarse atrapada en versiones viejas.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Cabeceras HTTP Estrictas:</strong> Directivas <code>Cache-Control: no-cache, no-store, must-revalidate</code> en el servidor HTTP Python nativo para respuestas JSON y archivos HTML/JS.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </article>
+
+            <!-- v0.0.53 -->
+            <article class="release-block">
+                <div class="release-dot"></div>
+                <div class="release-card">
+                    <div class="release-head">
+                        <div class="version-badge-group">
+                            <span class="version-title">v0.0.53</span>
+                            <span class="badge badge-date">Agosto 2026</span>
+                        </div>
+                    </div>
+
+                    <div class="change-category">
+                        <div class="category-title feat">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">autorenew</span>
+                            <span>Actualizador Inteligente</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Botón de Actualización Condicional:</strong> Botón en la barra superior del panel web que solo aparece cuando se detecta una nueva versión en el servidor o repositorio.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Directorio de Trabajo Robusto:</strong> Corrección de fallos en ejecución de scripts cuando el directorio padre se elimina o se altera durante el empaquetado.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </article>
+
+            <!-- v0.0.50 -->
+            <article class="release-block">
+                <div class="release-dot"></div>
+                <div class="release-card">
+                    <div class="release-head">
+                        <div class="version-badge-group">
+                            <span class="version-title">v0.0.50</span>
+                            <span class="badge badge-date">Agosto 2026</span>
+                        </div>
+                    </div>
+
+                    <div class="change-category">
+                        <div class="category-title feat">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">rocket_launch</span>
+                            <span>Lanzamiento de Arquitectura Unificada</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Servidor Asíncrono Zero-Dependency:</strong> Servidor HTTP y WebSocket puro en Python basado en <code>asyncio</code> sin frameworks externos.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Integración NoVNC & WebSockets RFC 6455:</strong> Puente directo para acceder al escritorio desde cualquier navegador web sin instalar clientes.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Catálogo Maestro de Escritorios:</strong> Soporte inicial para XFCE4, KDE Plasma, MATE, LXQt, Openbox e i3 Window Manager.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="/">Inicio</a>
+                <a href="/#features">Características</a>
+                <a href="/#backends">Backends Gráficos</a>
+                <a href="/#install">Instalador</a>
+                <a href="/changelog/">Control de Cambios</a>
+                <a href="https://github.com/octaviocubillos/termux-display-manager" target="_blank" rel="noopener">GitHub</a>
+            </div>
+            <p>© 2026 Termux Display Manager (TDM). Licencia MIT. Código abierto para la comunidad Android & Linux.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
