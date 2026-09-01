@@ -999,7 +999,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.59</span>
+                                <span id="lblHeaderVersion" class="version-badge" onclick="apiTriggerUpdate()" style="cursor: pointer;" title="Toca para verificar o forzar actualización de TDM">v0.0.59</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -1023,6 +1023,9 @@
                         </button>
                         <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" id="btnInstallPwa" onclick="triggerPwaInstall()" style="display: none;" title="Instalar como App PWA">
                             <span class="material-symbols-rounded">download</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="apiTriggerUpdate()" title="Actualizar o Reinstalar TDM Backend" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-color: rgba(245, 158, 11, 0.28);">
+                            <span class="material-symbols-rounded">system_update_alt</span>
                         </button>
                         <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="openWebTerminal()" title="Abrir Consola Terminal de Termux" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border-color: rgba(34, 197, 94, 0.25);">
                             <span class="material-symbols-rounded">terminal</span>
@@ -1356,6 +1359,25 @@
                 <span class="material-symbols-rounded filled" id="icoMainLaunch">rocket_launch</span>
                 <span id="lblMainLaunch">Lanzar Termux:X11</span>
             </button>
+
+            <!-- PANEL DE ACTUALIZACIÓN Y MANTENIMIENTO DEL SISTEMA TDM -->
+            <div class="m3-card" style="margin-top: 0.95rem; border-radius: 14px; padding: 0.85rem 1.15rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); display: flex; align-items: center; justify-content: center; color: #f59e0b; flex-shrink: 0;">
+                        <span class="material-symbols-rounded" style="font-size: 1.25rem;">system_update_alt</span>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.84rem; color: #fff;">Actualización del Sistema TDM</div>
+                        <div style="font-size: 0.72rem; color: #94a3b8;">Versión: <span class="version-badge" style="display: inline-block; padding: 0.1rem 0.4rem; font-size: 0.7rem;" id="lblFooterVersionBadge">v0.0.59</span> • Origen: <span style="color: #60a5fa;">tdm.oton.cl</span></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.45rem; align-items: center;">
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiTriggerUpdate()" style="border-color: rgba(245, 158, 11, 0.4); color: #f59e0b; background: rgba(245, 158, 11, 0.08); font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+                        <span class="material-symbols-rounded" style="font-size: 1rem;">sync</span>
+                        <span>Actualizar TDM</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- LIVE TERMINAL LOGS DRAWER -->
@@ -1628,6 +1650,8 @@
                             if (msg.version?.version) {
                                 const badge = document.getElementById('lblHeaderVersion');
                                 if (badge) badge.innerText = `v${msg.version.version}`;
+                                const fBadge = document.getElementById('lblFooterVersionBadge');
+                                if (fBadge) fBadge.innerText = `v${msg.version.version}`;
                             }
                             measureWsPing();
                         }
@@ -2769,9 +2793,11 @@
                 const resp = await fetch('/api/version');
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.5';
+                    const curVer = res.version || '0.0.59';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
+                    const fBadge = document.getElementById('lblFooterVersionBadge');
+                    if (fBadge) fBadge.innerText = `v${curVer}`;
                 }
             } catch(e) {}
         }
