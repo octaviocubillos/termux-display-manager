@@ -56,28 +56,28 @@ def find_binary(cand: str) -> Optional[str]:
         f"{prefix}/bin",
         f"{prefix}/bin/applets",
         "/data/data/com.termux/files/usr/bin",
+        "/data/data/com.termux/files/usr/bin/applets",
+        "/system/bin",
+        "/system/xbin",
         "/usr/local/bin",
         "/usr/bin",
         "/bin",
-        "/system/bin",
-        "/system/xbin",
     ]
     env_p = os.environ.get("PATH", "")
     if env_p:
         search_dirs = env_p.split(":") + search_dirs
 
+    # 1. Comprobación directa de existencia en directorios prioritarios de Termux y sistema
+    for d in search_dirs:
+        full_p = os.path.join(d, cand)
+        if os.path.exists(full_p) and not os.path.isdir(full_p):
+            return full_p
+
+    # 2. shutil.which con PATH combinado
     combined_path = ":".join(dict.fromkeys(p for p in search_dirs if p))
-    
-    # 1. shutil.which con PATH ampliado
     found = shutil.which(cand, path=combined_path)
     if found:
         return found
-        
-    # 2. Comprobación directa de archivo ejecutable
-    for d in search_dirs:
-        full_p = os.path.join(d, cand)
-        if os.path.isfile(full_p) and os.access(full_p, os.X_OK):
-            return full_p
             
     return None
 

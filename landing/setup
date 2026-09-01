@@ -12,7 +12,7 @@ SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 TDM_HOST="${TDM_HOST:-https://tdm.oton.cl}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.55)"
+echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.56)"
 echo "🌐 Origen: $TDM_HOST"
 echo "====================================================="
 
