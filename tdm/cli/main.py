@@ -85,6 +85,26 @@ async def handle_stop():
     await display_manager.stop_screen()
     print("✅ Pantalla detenida y sockets X11 liberados.")
 
+def handle_permissions():
+    print("=====================================================")
+    print("📱 [TDM] Permisos de Android para Termux y Termux:X11")
+    print("=====================================================")
+    if not os.path.exists("/data/data/com.termux"):
+        print("ℹ️  No se detectó un entorno Android/Termux nativo.")
+        return
+
+    print("ℹ️  Para que la app gráfica Termux:X11 se abra automáticamente al iniciar,")
+    print("   Android requiere el permiso 'Mostrar sobre otras aplicaciones'.")
+    print("🚀 Abriendo pantalla de configuración de permisos en tu dispositivo...")
+
+    subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    res = subprocess.run(["pm", "list", "packages"], capture_output=True, text=True)
+    if "com.termux.x11" in res.stdout:
+        subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux.x11"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    print("\n✅ Pantalla de permisos solicitada en tu móvil.")
+    print("💡 En MIUI / HyperOS (Xiaomi / Poco): Ve a Ajustes > Apps > Administrar Apps > Termux > Otros Permisos y activa 'Mostrar ventanas emergentes en segundo plano'.")
+
 async def handle_doctor():
     print("🔍 [TDM] Comprobando componentes del sistema...")
     desktops = discover_desktops()
@@ -430,6 +450,9 @@ def main():
     uninstall_parser.add_argument("--desktop", "-d", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox", "all"], help="Desinstala un entorno de escritorio específico (o 'all' para todos)")
     uninstall_parser.add_argument("--purge", action="store_true", default=True, help="Purga paquetes al desinstalar TDM")
 
+    # tdm permissions / perms
+    subparsers.add_parser("permissions", aliases=["perms"], help="Solicita en pantalla los permisos de Android para abrir X11 automáticamente")
+
     # tdm version
     subparsers.add_parser("version", help="Muestra la versión de TDM y esquema de manifest")
 
@@ -450,6 +473,8 @@ def main():
 
     if args.command == "status":
         asyncio.run(handle_status())
+    elif args.command == "permissions" or args.command == "perms":
+        handle_permissions()
     elif args.command == "agy":
         asyncio.run(handle_agy(args))
     elif args.command == "logs":

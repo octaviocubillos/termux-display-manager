@@ -174,6 +174,25 @@ if [ "$SERVER" = "novnc" ]; then
     fi
 fi
 
+if [ "$SERVER" = "termux-x11" ] || [ "$SERVER" = "x11" ]; then
+    if [ -d "/data/data/com.termux" ]; then
+        echo "====================================================="
+        echo "📱 [Permisos de Android] Configuración de inicio automático de X11"
+        echo "====================================================="
+        echo "ℹ️  Para que la app gráfica Termux:X11 se abra automáticamente al iniciar,"
+        echo "   Android necesita el permiso 'Mostrar sobre otras aplicaciones'."
+        echo "🚀 Abriendo pantalla de permisos de Android en tu móvil..."
+        am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux" 2>/dev/null || \
+        am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:com.termux" 2>/dev/null || \
+        termux-am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux" 2>/dev/null || true
+
+        if pm list packages 2>/dev/null | grep -q "com.termux.x11"; then
+            am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux.x11" 2>/dev/null || true
+        fi
+        echo "💡 Activa 'Permitir' en la pantalla de ajustes de tu teléfono."
+    fi
+fi
+
 echo "====================================================="
 echo "✅ [TDM] Instalación del servidor '$SERVER' finalizada."
 echo "====================================================="

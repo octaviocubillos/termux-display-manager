@@ -769,6 +769,23 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"success": success, "target": target, "message": f"Desinstalación de {target} finalizada"})
             return
 
+        # 7. Permisos de Android para Termux:X11
+        if path in ["/api/system/permissions", "/api/permissions"] and method in ["POST", "GET"]:
+            success = False
+            msg = ""
+            if os.path.exists("/data/data/com.termux"):
+                import subprocess
+                subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                res = subprocess.run(["pm", "list", "packages"], capture_output=True, text=True)
+                if "com.termux.x11" in res.stdout:
+                    subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux.x11"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                success = True
+                msg = "Pantalla de configuración de permisos de Android abierta en tu móvil."
+            else:
+                msg = "No estás en un entorno nativo de Android/Termux."
+            self.send_json_response(writer, {"success": success, "message": msg})
+            return
+
         if path == "/api/install/server" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")
             target = req_data.get("server") or req_data.get("target")

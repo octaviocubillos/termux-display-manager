@@ -2302,6 +2302,21 @@
             }
         }
 
+        async function apiRequestAndroidPermissions() {
+            try {
+                showToast('Solicitando permisos de Android en tu móvil...', 'smartphone');
+                const res = await fetch('/api/system/permissions', { method: 'POST' });
+                const d = await res.json();
+                if (d.success) {
+                    showToast(d.message || 'Pantalla de permisos abierta en tu móvil', 'check_circle');
+                } else {
+                    showToast(d.message || 'No se pudo abrir la pantalla de permisos', 'warning');
+                }
+            } catch (e) {
+                showToast('Error al solicitar permisos: ' + (e.message || e), 'error');
+            }
+        }
+
         async function apiInstallPickedDesktop() {
             if (!selectedDesktop) return;
             setInstallerActive(true, `Instalando ${selectedDesktop.toUpperCase()}`);

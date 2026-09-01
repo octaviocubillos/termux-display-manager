@@ -140,8 +140,27 @@ if [ -f "$BIN_PATH" ]; then
     }
 fi
 
+# Solicitar permisos de Android para inicio automático de Termux:X11
+if [ -d "/data/data/com.termux" ]; then
+    echo "====================================================="
+    echo "📱 [Permisos de Android] Configuración de inicio automático de X11"
+    echo "====================================================="
+    echo "ℹ️  Para que la app gráfica Termux:X11 se abra automáticamente al iniciar,"
+    echo "   Android requiere el permiso 'Mostrar sobre otras aplicaciones'."
+    echo "🚀 Abriendo pantalla de permisos de Android en tu móvil..."
+    
+    am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux" 2>/dev/null || \
+    am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:com.termux" 2>/dev/null || \
+    termux-am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux" 2>/dev/null || true
+
+    if pm list packages 2>/dev/null | grep -q "com.termux.x11"; then
+        am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux.x11" 2>/dev/null || true
+    fi
+    echo "💡 Activa 'Permitir' en la pantalla de ajustes de tu teléfono."
+fi
+
 echo "====================================================="
 echo "✅ [TDM] Instalación completada con éxito!"
 echo "🌐 Dashboard Web y Control: http://localhost:19050"
-echo "👉 Comandos disponibles: tdm start, tdm stop, tdm status"
+echo "👉 Comandos disponibles: tdm start, tdm stop, tdm permissions"
 echo "====================================================="
