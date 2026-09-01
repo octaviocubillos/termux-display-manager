@@ -62,11 +62,40 @@ class DisplayManager:
 
     def get_installed_desktop(self) -> Dict[str, Any]:
         """Detecta y devuelve el entorno de escritorio nativo instalado en el sistema."""
-        desktops = discover_desktops()
-        # Buscar el primer escritorio completo instalado
+        import tdm.discovery.desktops as dd
+        desktops = dd.discover_desktops()
         for d in desktops:
             if d.get("installed") and d.get("id") != "terminal":
                 return d
+
+        # Failsafe directo: Comprobar existencia física de ejecutables en $PREFIX/bin
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        failsafe_candidates = [
+            ("i3", "i3 Window Manager", [f"{prefix}/bin/i3", "/data/data/com.termux/files/usr/bin/i3"]),
+            ("xfce4", "XFCE4", [f"{prefix}/bin/xfce4-session", f"{prefix}/bin/startxfce4", "/data/data/com.termux/files/usr/bin/xfce4-session", "/data/data/com.termux/files/usr/bin/startxfce4"]),
+            ("kde", "KDE Plasma", [f"{prefix}/bin/startplasma-x11", f"{prefix}/bin/plasma-session"]),
+            ("mate", "MATE Desktop", [f"{prefix}/bin/mate-session"]),
+            ("lxqt", "LXQt", [f"{prefix}/bin/startlxqt", f"{prefix}/bin/lxqt-session"]),
+            ("openbox", "Openbox", [f"{prefix}/bin/openbox", f"{prefix}/bin/openbox-session"]),
+        ]
+        for de_id, de_name, cand_paths in failsafe_candidates:
+            for p in cand_paths:
+                if os.path.exists(p) and not os.path.isdir(p):
+                    from tdm.core.registry import get_desktop_entry
+                    entry = get_desktop_entry(de_id) or {
+                        "id": de_id,
+                        "name": de_name,
+                        "type": "de",
+                        "description": f"Entorno {de_name} instalado.",
+                        "exec_candidates": [os.path.basename(p)],
+                        "packages": [de_id],
+                        "icon": de_id,
+                        "env_vars": {}
+                    }
+                    entry = dict(entry)
+                    entry["installed"] = True
+                    entry["executable"] = p
+                    return entry
                 
         # Si no hay ningún entorno instalado
         return {

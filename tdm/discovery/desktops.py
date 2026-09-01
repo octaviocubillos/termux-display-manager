@@ -7,6 +7,7 @@ def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> Lis
     """Descubre qué entornos de escritorio del catálogo están instalados en el sistema."""
     discovered: List[Dict[str, Any]] = []
     
+    prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
     for de in DESKTOP_CATALOG:
         entry = dict(de)
         entry["installed"] = False
@@ -14,6 +15,12 @@ def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> Lis
         
         for cand in de["exec_candidates"]:
             path = find_binary(cand)
+            if not path:
+                for candidate_dir in [f"{prefix}/bin", "/data/data/com.termux/files/usr/bin", "/usr/bin", "/bin"]:
+                    direct_p = os.path.join(candidate_dir, cand)
+                    if os.path.exists(direct_p) and not os.path.isdir(direct_p):
+                        path = direct_p
+                        break
             if path:
                 entry["installed"] = True
                 entry["executable"] = path
