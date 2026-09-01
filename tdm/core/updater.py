@@ -142,8 +142,16 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
 
     try:
         def extract_tar():
-            with tarfile.open(tmp_path, "r:gz") as tar:
-                tar.extractall(path=target_dir)
+            import subprocess
+            try:
+                subprocess.run(["tar", "-xzf", tmp_path, "-C", str(target_dir)], check=True)
+            except Exception:
+                try:
+                    import tarfile
+                    with tarfile.open(tmp_path, "r:gz") as tar:
+                        tar.extractall(path=target_dir)
+                except Exception as e:
+                    raise RuntimeError(f"Error extrayendo tar.gz: {e}")
         await loop.run_in_executor(None, extract_tar)
         installer_service._broadcast_log("✓ Archivos del núcleo TDM actualizados correctamente.")
     except Exception as e:
