@@ -1211,11 +1211,11 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.45rem; align-items: center;">
-                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList()" title="Cambiar a otro entorno">
+                        <button class="btn-m3 btn-m3-tonal" id="btnChangeDe" onclick="toggleDeList()" title="Cambiar a otro entorno">
                             <span class="material-symbols-rounded">swap_horiz</span>
                             <span>Cambiar</span>
                         </button>
-                        <button class="btn-m3 btn-m3-error" onclick="apiUninstallCurrentDesktop()" title="Desinstalar entorno completo y liberar espacio" style="padding: 0.45rem 0.75rem; font-size: 0.76rem;">
+                        <button class="btn-m3 btn-m3-error" id="btnUninstallDe" onclick="apiUninstallCurrentDesktop()" title="Desinstalar entorno completo y liberar espacio" style="padding: 0.45rem 0.75rem; font-size: 0.76rem;">
                             <span class="material-symbols-rounded" style="font-size: 1rem;">delete</span>
                             <span>Desinstalar</span>
                         </button>
@@ -1335,14 +1335,9 @@
                     
                     <div style="display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0;">
                         <!-- BOTÓN PARA VER EL LOG -->
-                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer(true)" style="background: rgba(168, 199, 250, 0.15); border: 1px solid rgba(168, 199, 250, 0.35); color: #a8c7fa; font-weight: 700; padding: 0.35rem 0.8rem; gap: 0.35rem; display: inline-flex; align-items: center; border-radius: 8px; cursor: pointer;" title="Ver consola de comandos y registro en tiempo real">
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer(true)" style="background: rgba(168, 199, 250, 0.15); border: 1px solid rgba(168, 199, 250, 0.35); color: #a8c7fa; font-weight: 700; padding: 0.35rem 0.85rem; gap: 0.4rem; display: inline-flex; align-items: center; border-radius: 8px; cursor: pointer;" title="Ver consola de comandos y registro en tiempo real">
                             <span class="material-symbols-rounded" style="font-size: 1.05rem;">terminal</span>
                             <span>Ver Log</span>
-                        </button>
-                        <!-- BOTÓN CANCELAR -->
-                        <button class="btn-m3 btn-m3-error btn-m3-sm" onclick="apiCancelInstallation()" style="padding: 0.35rem 0.65rem; display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer;" title="Cancelar instalación y revertir">
-                            <span class="material-symbols-rounded" style="font-size: 0.95rem;">cancel</span>
-                            <span>Cancelar</span>
                         </button>
                     </div>
                 </div>
@@ -1842,8 +1837,16 @@
                 const segBar = document.getElementById('boxBackendSelector');
                 const btnCancelDe = document.getElementById('btnCancelDePicker');
                 const txtPickerTitle = document.getElementById('txtDePickerTitle');
+                const btnChangeDe = document.getElementById('btnChangeDe');
+                const btnUninstallDe = document.getElementById('btnUninstallDe');
+                const btnInstallAction = document.getElementById('btnInstallDeAction');
 
-                if (isDeInstalled || isScreenOn) {
+                if (isInstalling) {
+                    if (btnChangeDe) btnChangeDe.style.display = 'none';
+                    if (btnUninstallDe) btnUninstallDe.style.display = 'none';
+                    if (btnCancelDe) btnCancelDe.style.display = 'none';
+                    if (btnInstallAction) btnInstallAction.style.display = 'none';
+                } else if (isDeInstalled || isScreenOn) {
                     const deTitle = (de?.name || de?.id?.toUpperCase() || 'Entorno') + ' Desktop';
                     document.getElementById('txtDeName').innerText = deTitle;
                     document.getElementById('txtDePath').innerText = de?.executable || 'Listo para ejecutar';
@@ -1857,14 +1860,18 @@
                         document.getElementById('viewInstalledDe').style.display = 'flex';
                         document.getElementById('viewDePicker').style.display = 'none';
                     }
+                    if (btnChangeDe) btnChangeDe.style.display = 'inline-flex';
+                    if (btnUninstallDe) btnUninstallDe.style.display = 'inline-flex';
                     if (segBar) segBar.style.display = 'flex';
                     if (btnCancelDe) btnCancelDe.style.display = 'inline-flex';
+                    if (btnInstallAction) btnInstallAction.style.display = 'inline-flex';
                     if (txtPickerTitle) txtPickerTitle.innerText = 'Elige un entorno de escritorio:';
                 } else {
                     document.getElementById('viewInstalledDe').style.display = 'none';
                     document.getElementById('viewDePicker').style.display = 'flex';
                     if (segBar) segBar.style.display = 'none';
                     if (btnCancelDe) btnCancelDe.style.display = 'none';
+                    if (btnInstallAction) btnInstallAction.style.display = 'inline-flex';
                     if (txtPickerTitle) txtPickerTitle.innerText = 'No tienes ningún entorno instalado. Elige uno para comenzar:';
                 }
 
@@ -2192,7 +2199,20 @@
                 }
             });
 
-            // 3. Controlar visualmente el Drawer y el botón de Cancelar y Revertir
+            // 3. Controlar visibilidad de botones Cambiar y Cancelar
+            const btnChangeDe = document.getElementById('btnChangeDe');
+            const btnUninstallDe = document.getElementById('btnUninstallDe');
+            const btnCancelDe = document.getElementById('btnCancelDePicker');
+            const btnInstallAction = document.getElementById('btnInstallDeAction');
+
+            if (active) {
+                if (btnChangeDe) btnChangeDe.style.display = 'none';
+                if (btnUninstallDe) btnUninstallDe.style.display = 'none';
+                if (btnCancelDe) btnCancelDe.style.display = 'none';
+                if (btnInstallAction) btnInstallAction.style.display = 'none';
+            }
+
+            // 4. Controlar visualmente el Drawer y el icono de estado
             const btnCancel = document.getElementById('btnCancelInstall');
             const txtCancel = document.getElementById('txtCancelInstallLabel');
             const icoStatus = document.getElementById('icoInstallerStatus');
@@ -2220,7 +2240,10 @@
                 if (lblTitle) lblTitle.innerText = 'Terminal de Instalación / Eventos';
             }
 
-            if (lastStatusData) updateLaunchButton(lastStatusData);
+            if (lastStatusData) {
+                updateLaunchButton(lastStatusData);
+                setDeviceOnlineState(true, lastStatusData);
+            }
         }
 
         async function apiCancelInstallation() {
