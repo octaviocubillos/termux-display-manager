@@ -68,12 +68,12 @@ class DisplayManager:
             if d.get("installed") and d.get("id") != "terminal":
                 return d
                 
-        # Fallback a modo terminal si no hay DE completo
+        # Si no hay ningún entorno instalado
         return {
-            "id": "terminal",
-            "name": "Modo Terminal X11",
-            "installed": True,
-            "executable": "xterm"
+            "id": None,
+            "name": "Ninguno",
+            "installed": False,
+            "executable": None
         }
 
     def detect_running_graphical_session(self) -> Optional[Dict[str, Any]]:

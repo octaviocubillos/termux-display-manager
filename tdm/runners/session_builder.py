@@ -88,6 +88,17 @@ def build_session_script(display_num: int, desktop_id: str, custom_command: Opti
         lines.append("# Ejecutar LXQt")
         lines.append("exec startlxqt")
     elif desktop_id == "i3":
+        lines.append("# Configurar i3 Window Manager")
+        lines.append("mkdir -p \"$HOME/.config/i3\"")
+        lines.append("if [ ! -f \"$HOME/.config/i3/config\" ]; then")
+        lines.append("    if [ -f \"$PREFIX/etc/i3/config\" ]; then")
+        lines.append("        cp \"$PREFIX/etc/i3/config\" \"$HOME/.config/i3/config\" 2>/dev/null || true")
+        lines.append("    elif [ -f \"/etc/i3/config\" ]; then")
+        lines.append("        cp \"/etc/i3/config\" \"$HOME/.config/i3/config\" 2>/dev/null || true")
+        lines.append("    fi")
+        lines.append("fi")
+        lines.append("# Autoiniciar terminal inicial para interacción inmediata")
+        lines.append("(sleep 1 && (xterm -geometry 90x30 || qterminal || xfce4-terminal || xterm)) &")
         lines.append("# Ejecutar i3 Window Manager")
         lines.append("exec i3")
     elif desktop_id == "openbox":

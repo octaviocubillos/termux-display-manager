@@ -249,6 +249,18 @@ case "$PKG_MGR" in
         ;;
 esac
 
+# Configuraciones específicas por entorno
+if [ "$DESKTOP" = "i3" ]; then
+    mkdir -p "$HOME/.config/i3"
+    if [ ! -f "$HOME/.config/i3/config" ]; then
+        if [ -f "$PREFIX/etc/i3/config" ]; then
+            cp "$PREFIX/etc/i3/config" "$HOME/.config/i3/config" 2>/dev/null || true
+        elif [ -f "/etc/i3/config" ]; then
+            cp "/etc/i3/config" "$HOME/.config/i3/config" 2>/dev/null || true
+        fi
+    fi
+fi
+
 echo "[TDM_PROGRESS:100:¡Instalación de $DESKTOP completada con éxito!]"
 echo "====================================================="
 echo "✅ [TDM] Instalación de $DESKTOP finalizada correctamente."

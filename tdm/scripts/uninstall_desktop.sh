@@ -93,9 +93,12 @@ case "$PKG_MGR" in
             echo "$PKGS_TO_REMOVE"
             for p in $PKGS_TO_REMOVE; do
                 if command -v pkg >/dev/null 2>&1; then
-                    pkg uninstall -y "$p" >/dev/null 2>&1 || apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                    pkg uninstall -y "$p" >/dev/null 2>&1 || true
+                    apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                    dpkg -P --force-all "$p" >/dev/null 2>&1 || true
                 else
                     $SUDO apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                    $SUDO dpkg -P --force-all "$p" >/dev/null 2>&1 || true
                 fi
             done
         else
@@ -104,13 +107,27 @@ case "$PKG_MGR" in
 
         # Limpiar binarios residuales por seguridad para que la detección sea 100% inmediata
         case "$TARGET" in
-            xfce|xfce4) rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/xfwm4" 2>/dev/null || true ;;
-            kde) rm -f "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/plasma-session" "$PREFIX_PATH/bin/kwin" 2>/dev/null || true ;;
-            mate) rm -f "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/marco" 2>/dev/null || true ;;
-            lxqt) rm -f "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/lxqt-session" 2>/dev/null || true ;;
-            i3) rm -f "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/i3status" 2>/dev/null || true ;;
-            openbox) rm -f "$PREFIX_PATH/bin/openbox" "$PREFIX_PATH/bin/openbox-session" 2>/dev/null || true ;;
-            all|*) rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/openbox" 2>/dev/null || true ;;
+            xfce|xfce4)
+                rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/xfwm4" "$PREFIX_PATH/bin/xfdesktop" "$PREFIX_PATH/bin/xfdesktop4" "$PREFIX_PATH/bin/thunar" "$PREFIX_PATH/bin/xfce4-panel" 2>/dev/null || true
+                ;;
+            kde)
+                rm -f "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/plasma-session" "$PREFIX_PATH/bin/startplasma-wayland" "$PREFIX_PATH/bin/plasmashell" "$PREFIX_PATH/bin/kwin" "$PREFIX_PATH/bin/kwin_x11" 2>/dev/null || true
+                ;;
+            mate)
+                rm -f "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/marco" "$PREFIX_PATH/bin/caja" "$PREFIX_PATH/bin/mate-panel" 2>/dev/null || true
+                ;;
+            lxqt)
+                rm -f "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/lxqt-session" "$PREFIX_PATH/bin/pcmanfm-qt" 2>/dev/null || true
+                ;;
+            i3)
+                rm -f "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/i3-with-shmlog" "$PREFIX_PATH/bin/i3status" "$PREFIX_PATH/bin/dmenu" 2>/dev/null || true
+                ;;
+            openbox)
+                rm -f "$PREFIX_PATH/bin/openbox" "$PREFIX_PATH/bin/openbox-session" "$PREFIX_PATH/bin/tint2" 2>/dev/null || true
+                ;;
+            all|*)
+                rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/xfwm4" "$PREFIX_PATH/bin/xfdesktop" "$PREFIX_PATH/bin/thunar" "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/plasma-session" "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/lxqt-session" "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/openbox" 2>/dev/null || true
+                ;;
         esac
         ;;
 

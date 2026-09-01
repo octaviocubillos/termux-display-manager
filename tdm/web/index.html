@@ -1228,7 +1228,7 @@
                         Elige un entorno de escritorio:
                     </div>
                     <div class="de-grid">
-                        <div class="de-pill-card selected" onclick="pickDe('xfce', 'XFCE4', 'assets/logos/xfce.svg', this)">
+                        <div class="de-pill-card" data-de-id="xfce" onclick="pickDe('xfce', 'XFCE4', 'assets/logos/xfce.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/xfce.svg" alt="XFCE" style="height: 18px; width: 18px;">
@@ -1242,7 +1242,7 @@
                                 <span>Espacio req: <strong style="color: #e2e8f0;">~1.2 GB</strong></span>
                             </div>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('kde', 'KDE Plasma', 'assets/logos/kde.svg', this)">
+                        <div class="de-pill-card" data-de-id="kde" onclick="pickDe('kde', 'KDE Plasma', 'assets/logos/kde.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/kde.svg" alt="KDE" style="height: 18px; width: 18px;">
@@ -1255,7 +1255,7 @@
                                 <span>Espacio req: <strong style="color: #e2e8f0;">~2.8 GB</strong></span>
                             </div>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('mate', 'MATE', 'assets/logos/mate.svg', this)">
+                        <div class="de-pill-card" data-de-id="mate" onclick="pickDe('mate', 'MATE', 'assets/logos/mate.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/mate.svg" alt="MATE" style="height: 18px; width: 18px;">
@@ -1268,7 +1268,7 @@
                                 <span>Espacio req: <strong style="color: #e2e8f0;">~1.6 GB</strong></span>
                             </div>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('lxqt', 'LXQt', 'assets/logos/lxqt.svg', this)">
+                        <div class="de-pill-card" data-de-id="lxqt" onclick="pickDe('lxqt', 'LXQt', 'assets/logos/lxqt.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/lxqt.svg" alt="LXQt" style="height: 18px; width: 18px;">
@@ -1281,7 +1281,7 @@
                                 <span>Espacio req: <strong style="color: #e2e8f0;">~1.1 GB</strong></span>
                             </div>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('i3', 'i3 WM', 'assets/logos/i3.svg', this)">
+                        <div class="de-pill-card" data-de-id="i3" onclick="pickDe('i3', 'i3 WM', 'assets/logos/i3.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/i3.svg" alt="i3" style="height: 18px; width: 18px;">
@@ -1294,7 +1294,7 @@
                                 <span>Espacio req: <strong style="color: #e2e8f0;">~350 MB</strong></span>
                             </div>
                         </div>
-                        <div class="de-pill-card" onclick="pickDe('openbox', 'Openbox', 'assets/logos/openbox.svg', this)">
+                        <div class="de-pill-card" data-de-id="openbox" onclick="pickDe('openbox', 'Openbox', 'assets/logos/openbox.svg', this)">
                             <h5>
                                 <span style="display: flex; align-items: center; gap: 0.4rem;">
                                     <img src="assets/logos/openbox.svg" alt="Openbox" style="height: 18px; width: 18px;">
@@ -1843,6 +1843,8 @@
                 const btnInstallAction = document.getElementById('btnInstallDeAction');
 
                 if (isInstalling) {
+                    document.getElementById('viewInstalledDe').style.display = 'none';
+                    document.getElementById('viewDePicker').style.display = 'none';
                     if (btnChangeDe) btnChangeDe.style.display = 'none';
                     if (btnUninstallDe) btnUninstallDe.style.display = 'none';
                     if (btnCancelDe) btnCancelDe.style.display = 'none';
@@ -1860,6 +1862,9 @@
                     if (!isDePickerOpen) {
                         document.getElementById('viewInstalledDe').style.display = 'flex';
                         document.getElementById('viewDePicker').style.display = 'none';
+                    } else {
+                        document.getElementById('viewInstalledDe').style.display = 'none';
+                        document.getElementById('viewDePicker').style.display = 'flex';
                     }
                     if (btnChangeDe) btnChangeDe.style.display = 'inline-flex';
                     if (btnUninstallDe) btnUninstallDe.style.display = 'inline-flex';
@@ -2368,8 +2373,6 @@
 
             setInstallerActive(true, `Actualizando TDM a ${cleanVer}...`);
             showToast(`Iniciando actualización a ${cleanVer}...`, 'system_update');
-            const drawer = document.getElementById('logsDrawer');
-            if (drawer) drawer.classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
             if (logBox) logBox.innerText = `[TDM Update] Iniciando actualización del backend a ${cleanVer}...\n`;
 
