@@ -754,6 +754,19 @@ class AsyncHTTPServer:
             })
             return
 
+        if path in ["/api/service/restart", "/api/system/restart"] and method == "POST":
+            self.send_json_response(writer, {
+                "success": True,
+                "message": "Reiniciando demonio TDM en segundo plano..."
+            })
+            await writer.drain()
+            try:
+                loop = asyncio.get_event_loop()
+                loop.call_later(0.5, lambda: os.execv(sys.executable, [sys.executable] + sys.argv))
+            except Exception:
+                pass
+            return
+
         # 6. Instalador de Componentes
         if path == "/api/install/desktop" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")

@@ -307,6 +307,12 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     except Exception:
         pass
 
+    try:
+        loop = asyncio.get_event_loop()
+        loop.call_later(1.5, lambda: os.execv(sys.executable, [sys.executable] + sys.argv))
+    except Exception:
+        pass
+
     installer_service._broadcast_progress(100, f"¡Actualizado con éxito a v{new_ver}!")
     installer_service._broadcast_log(f"🎉 ¡TDM Backend actualizado con éxito a v{new_ver}!")
     installer_service._broadcast_log("=====================================================")
