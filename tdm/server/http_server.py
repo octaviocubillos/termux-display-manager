@@ -496,14 +496,22 @@ class AsyncHTTPServer:
 
     async def handle_terminal_pty_ws(self, ws: WebSocketConnection):
         """Puente interactivo WebSocket <-> Termux PTY (Terminal bash interactivo con xterm.js)."""
-        import pty
         import termios
         import struct
         import fcntl
         import os
         import subprocess
 
-        master_fd, slave_fd = pty.openpty()
+        try:
+            master_fd, slave_fd = os.openpty()
+        except (AttributeError, OSError):
+            try:
+                import pty
+                master_fd, slave_fd = pty.openpty()
+            except Exception as e:
+                print(f"[!] Error abriendo pseudo-terminal (pty): {e}")
+                await ws.close()
+                return
 
         prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
         home = os.environ.get("HOME", "/data/data/com.termux/files/home")

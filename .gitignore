@@ -52,4 +52,4 @@ htmlcov/
 # Local Docker Termux Home & Core dumps
 termux-home/
 core.*
-core
+/core

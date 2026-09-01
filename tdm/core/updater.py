@@ -131,7 +131,9 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
 
     # Descomprimir
     installer_service._broadcast_log("🛠️  Aplicando actualización en el sistema...")
-    target_dir = Path(HOME) / "termux-display-manager"
+    target_dir = Path(PREFIX) / "opt" / "termux-display-manager"
+    if not target_dir.parent.exists():
+        target_dir = Path(HOME) / "termux-display-manager"
     target_dir.mkdir(parents=True, exist_ok=True)
 
     with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
