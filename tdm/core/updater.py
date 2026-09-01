@@ -308,8 +308,21 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
         pass
 
     try:
+        def _do_restart():
+            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+            python_bin = sys.executable or f"{prefix}/bin/python3"
+            opt_dir = f"{prefix}/opt/termux-display-manager"
+            env = dict(os.environ)
+            env["PYTHONPATH"] = f"{opt_dir}:" + env.get("PYTHONPATH", "")
+            env["PATH"] = f"{prefix}/bin:{prefix}/bin/applets:" + env.get("PATH", "")
+            args = [python_bin, "-m", "tdm.cli.main", "server", "--port", "19050"]
+            try:
+                os.execve(python_bin, args, env)
+            except Exception:
+                pass
+
         loop = asyncio.get_event_loop()
-        loop.call_later(1.5, lambda: os.execv(sys.executable, [sys.executable] + sys.argv))
+        loop.call_later(1.5, _do_restart)
     except Exception:
         pass
 
