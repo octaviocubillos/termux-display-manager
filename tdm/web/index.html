@@ -959,7 +959,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.52</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.53</span>
                             </div>
                             <div class="device-subtitle" style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span class="status-dot online" id="devStatusDot"></span>
@@ -1061,7 +1061,7 @@
                 </div>
 
                 <!-- BACKEND SELECTOR (SEGMENTED TABS) -->
-                <div class="segmented-bar">
+                <div class="segmented-bar" id="boxBackendSelector" style="display: none;">
                     <button class="segment-btn active" id="seg-termux-x11" onclick="setBackend('termux-x11')">
                         <span class="material-symbols-rounded filled">bolt</span>
                         <span>Termux:X11</span>
@@ -1160,7 +1160,7 @@
 
                 <!-- VISTA: LISTA DE ENTORNOS DISPONIBLES -->
                 <div id="viewDePicker" style="display: none; flex-direction: column; gap: 0.85rem;">
-                    <div style="font-size: 0.82rem; font-weight: 700; color: var(--md-sys-color-primary);">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: var(--md-sys-color-primary);" id="txtDePickerTitle">
                         Elige un entorno de escritorio:
                     </div>
                     <div class="de-grid">
@@ -1250,7 +1250,7 @@
                             <span class="material-symbols-rounded">download</span>
                             <span>Instalar <span id="lblPickedDe">XFCE4</span></span>
                         </button>
-                        <button class="btn-m3 btn-m3-tonal" onclick="toggleDeList(false)" style="flex: 1 1 140px;">
+                        <button class="btn-m3 btn-m3-tonal" id="btnCancelDePicker" onclick="toggleDeList(false)" style="flex: 1 1 140px;">
                             <span class="material-symbols-rounded">close</span>
                             <span>Cancelar</span>
                         </button>
@@ -1259,7 +1259,7 @@
             </section>
 
             <!-- PRIMARY LAUNCH ACTION -->
-            <button class="btn-launch-primary" id="btnMainLaunch" onclick="handlePrimaryAction()">
+            <button class="btn-launch-primary" id="btnMainLaunch" onclick="handlePrimaryAction()" style="display: none;">
                 <span class="material-symbols-rounded filled" id="icoMainLaunch">rocket_launch</span>
                 <span id="lblMainLaunch">Lanzar Termux:X11</span>
             </button>
@@ -1720,12 +1720,18 @@
                 const inst = data.installer || {};
                 const isInstalling = (inst.status === 'running' || window._localInstallingState === true);
                 const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
+                const isScreenOn = !!(data && data.is_screen_active);
 
-                if (isDeInstalled) {
-                    document.getElementById('txtDeName').innerText = (de.name || de.id.toUpperCase()) + ' Desktop';
-                    document.getElementById('txtDePath').innerText = de.executable || 'Listo para ejecutar';
+                const segBar = document.getElementById('boxBackendSelector');
+                const btnCancelDe = document.getElementById('btnCancelDePicker');
+                const txtPickerTitle = document.getElementById('txtDePickerTitle');
+
+                if (isDeInstalled || isScreenOn) {
+                    const deTitle = (de?.name || de?.id?.toUpperCase() || 'Entorno') + ' Desktop';
+                    document.getElementById('txtDeName').innerText = deTitle;
+                    document.getElementById('txtDePath').innerText = de?.executable || 'Listo para ejecutar';
                     const imgLogo = document.getElementById('imgDeLogo');
-                    if (imgLogo) {
+                    if (imgLogo && de) {
                         const deId = (de.id === 'xfce4' || de.id === 'xfce') ? 'xfce' : de.id;
                         imgLogo.src = `assets/logos/${deId}.svg`;
                         imgLogo.alt = de.name || de.id;
@@ -1734,9 +1740,15 @@
                         document.getElementById('viewInstalledDe').style.display = 'flex';
                         document.getElementById('viewDePicker').style.display = 'none';
                     }
+                    if (segBar) segBar.style.display = 'flex';
+                    if (btnCancelDe) btnCancelDe.style.display = 'inline-flex';
+                    if (txtPickerTitle) txtPickerTitle.innerText = 'Elige un entorno de escritorio:';
                 } else {
                     document.getElementById('viewInstalledDe').style.display = 'none';
                     document.getElementById('viewDePicker').style.display = 'flex';
+                    if (segBar) segBar.style.display = 'none';
+                    if (btnCancelDe) btnCancelDe.style.display = 'none';
+                    if (txtPickerTitle) txtPickerTitle.innerText = 'No tienes ningún entorno instalado. Elige uno para comenzar:';
                 }
 
                 updateBackendHelperBox();
@@ -1773,6 +1785,7 @@
 
             // CASO 1: SE ESTÁ INSTALANDO UN ENTORNO
             if (isInstalling) {
+                btn.style.display = 'flex';
                 btn.disabled = true;
                 btn.style.opacity = '0.55';
                 btn.style.cursor = 'not-allowed';
@@ -1784,20 +1797,14 @@
                 return;
             }
 
-            // CASO 2: NO HAY NINGÚN ENTORNO INSTALADO Y LA PANTALLA NO ESTÁ ENCENDIDA
+            // CASO 2: NO HAY NINGÚN ENTORNO INSTALADO Y LA PANTALLA NO ESTÁ ENCENDIDA -> OCULTAR BOTÓN DE LANZAMIENTO
             if (!isDeInstalled && !isScreenOn) {
-                btn.disabled = true;
-                btn.style.opacity = '0.55';
-                btn.style.cursor = 'not-allowed';
-                btn.style.background = 'var(--md-sys-color-surface-container-high)';
-                btn.style.color = 'var(--md-sys-color-on-surface-variant)';
-                lbl.innerText = 'Instala un entorno para iniciar';
-                ico.innerText = 'download_for_offline';
-                btn.onclick = () => toggleDeList(true);
+                btn.style.display = 'none';
                 return;
             }
 
-            // CASO 3: ENTORNO INSTALADO / PANTALLA OPERATIVA (BOTÓN ACTIVO)
+            // CASO 3: ENTORNO INSTALADO / PANTALLA OPERATIVA (BOTÓN ACTIVO Y VISIBLE)
+            btn.style.display = 'flex';
             btn.disabled = false;
             btn.style.opacity = '1';
             btn.style.cursor = 'pointer';
@@ -1862,7 +1869,11 @@
             const box = document.getElementById('boxWebAccessAccordion');
             if (!box) return;
 
-            if (selectedBackend !== 'novnc') {
+            const de = lastStatusData?.installed_desktop;
+            const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
+            const isScreenOn = !!(lastStatusData && lastStatusData.is_screen_active);
+
+            if ((!isDeInstalled && !isScreenOn) || selectedBackend !== 'novnc') {
                 box.style.display = 'none';
                 return;
             }
@@ -1957,13 +1968,24 @@
         function toggleDeList(forceState) {
             const picker = document.getElementById('viewDePicker');
             const installed = document.getElementById('viewInstalledDe');
+            const de = lastStatusData?.installed_desktop;
+            const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
+            const isScreenOn = !!(lastStatusData && lastStatusData.is_screen_active);
+
+            if (!isDeInstalled && !isScreenOn) {
+                isDePickerOpen = true;
+                if (picker) picker.style.display = 'flex';
+                if (installed) installed.style.display = 'none';
+                return;
+            }
+
             if (forceState !== undefined) {
                 isDePickerOpen = forceState;
             } else {
-                isDePickerOpen = (picker.style.display !== 'flex');
+                isDePickerOpen = (picker && picker.style.display !== 'flex');
             }
-            picker.style.display = isDePickerOpen ? 'flex' : 'none';
-            installed.style.display = isDePickerOpen ? 'none' : 'flex';
+            if (picker) picker.style.display = isDePickerOpen ? 'flex' : 'none';
+            if (installed) installed.style.display = isDePickerOpen ? 'none' : 'flex';
         }
 
         function pickDe(id, name, icon, el) {
