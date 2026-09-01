@@ -948,6 +948,20 @@
             70% { transform: scale(1.03); box-shadow: 0 0 0 7px rgba(245, 158, 11, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
+
+        @keyframes indeterminate-progress {
+            0% { transform: translateX(-100%); width: 35%; }
+            50% { transform: translateX(100%); width: 60%; }
+            100% { transform: translateX(300%); width: 35%; }
+        }
+
+        .progress-bar-animated {
+            animation: indeterminate-progress 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1308,6 +1322,37 @@
                 </div>
             </section>
 
+            <!-- WIDGET DE PROGRESO DE INSTALACIÓN ACTIVA Y BOTÓN VER LOG -->
+            <div id="boxInstallingProgress" style="display: none; background: rgba(17, 24, 39, 0.85); border: 1px solid rgba(76, 141, 246, 0.45); border-radius: var(--md-shape-corner-xl); padding: 0.9rem 1.15rem; flex-direction: column; gap: 0.65rem; margin-top: 0.85rem; margin-bottom: 0.85rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); animation: fadeInSlide 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0; flex: 1;">
+                        <div style="width: 22px; height: 22px; border: 3px solid rgba(168, 199, 250, 0.2); border-top-color: var(--md-sys-color-primary); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0;"></div>
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-weight: 700; font-size: 0.88rem; color: #ffffff;" id="txtInstallingDeTitle">Instalando Entorno...</div>
+                            <div style="font-size: 0.73rem; color: var(--md-sys-color-on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px;" id="txtInstallingCurrentStep">Descargando paquetes y configurando dependencias...</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0;">
+                        <!-- BOTÓN PARA VER EL LOG -->
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleLogsDrawer(true)" style="background: rgba(168, 199, 250, 0.15); border: 1px solid rgba(168, 199, 250, 0.35); color: #a8c7fa; font-weight: 700; padding: 0.35rem 0.8rem; gap: 0.35rem; display: inline-flex; align-items: center; border-radius: 8px; cursor: pointer;" title="Ver consola de comandos y registro en tiempo real">
+                            <span class="material-symbols-rounded" style="font-size: 1.05rem;">terminal</span>
+                            <span>Ver Log</span>
+                        </button>
+                        <!-- BOTÓN CANCELAR -->
+                        <button class="btn-m3 btn-m3-error btn-m3-sm" onclick="apiCancelInstallation()" style="padding: 0.35rem 0.65rem; display: inline-flex; align-items: center; gap: 0.3rem; border-radius: 8px; font-size: 0.75rem; cursor: pointer;" title="Cancelar instalación y revertir">
+                            <span class="material-symbols-rounded" style="font-size: 0.95rem;">cancel</span>
+                            <span>Cancelar</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BARRA DE PROGRESO CON ANIMACIÓN INDETERMINADA -->
+                <div style="width: 100%; height: 7px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; position: relative;">
+                    <div id="barInstallProgress" class="progress-bar-animated" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd); border-radius: 9999px;"></div>
+                </div>
+            </div>
+
             <!-- PRIMARY LAUNCH ACTION -->
             <button class="btn-launch-primary" id="btnMainLaunch" onclick="handlePrimaryAction()" style="display: none;">
                 <span class="material-symbols-rounded filled" id="icoMainLaunch">rocket_launch</span>
@@ -1596,11 +1641,13 @@
                             const text = msg.line || msg.data;
                             if (text) {
                                 const logBox = document.getElementById('liveTerminalContent');
-                                const drawer = document.getElementById('logsDrawer');
-                                if (drawer && !drawer.classList.contains('open')) drawer.classList.add('open');
                                 if (logBox) {
                                     logBox.innerText += '\n' + text;
                                     logBox.scrollTop = logBox.scrollHeight;
+                                }
+                                const stepEl = document.getElementById('txtInstallingCurrentStep');
+                                if (stepEl && !text.startsWith('=')) {
+                                    stepEl.innerText = text.replace(/^[\[\*✓✗!\]\s]+/, '').trim();
                                 }
                                 if (text.includes('[*] Iniciando ejecución')) {
                                     setInstallerActive(true, 'Instalación en progreso');
@@ -1771,6 +1818,26 @@
                 const isInstalling = (inst.status === 'running' || window._localInstallingState === true);
                 const isDeInstalled = !!(de && de.installed && de.id !== 'terminal');
                 const isScreenOn = !!(data && data.is_screen_active);
+
+                // GESTIÓN DEL WIDGET DE PROGRESO DE INSTALACIÓN Y BOTÓN VER LOG
+                const boxProgress = document.getElementById('boxInstallingProgress');
+                const txtInstallingTitle = document.getElementById('txtInstallingDeTitle');
+                const txtInstallingStep = document.getElementById('txtInstallingCurrentStep');
+
+                if (boxProgress) {
+                    boxProgress.style.display = isInstalling ? 'flex' : 'none';
+                    if (isInstalling) {
+                        if (txtInstallingTitle && inst.active_target) {
+                            txtInstallingTitle.innerText = `Instalando ${inst.active_target.toUpperCase()}...`;
+                        }
+                        if (txtInstallingStep && inst.recent_logs && inst.recent_logs.length > 0) {
+                            const lastLog = inst.recent_logs[inst.recent_logs.length - 1];
+                            if (lastLog && !lastLog.startsWith('=')) {
+                                txtInstallingStep.innerText = lastLog.replace(/^[\[\*✓✗!\]\s]+/, '').trim();
+                            }
+                        }
+                    }
+                }
 
                 const segBar = document.getElementById('boxBackendSelector');
                 const btnCancelDe = document.getElementById('btnCancelDePicker');
@@ -2091,7 +2158,20 @@
         function setInstallerActive(active, targetName = '') {
             window._localInstallingState = active;
 
-            // 1. Desactivar o activar botones de acción para prevenir condiciones de carrera
+            // 1. Mostrar/ocultar el widget de progreso de instalación y botón Ver Log
+            const boxProgress = document.getElementById('boxInstallingProgress');
+            const txtTitle = document.getElementById('txtInstallingDeTitle');
+            const txtStep = document.getElementById('txtInstallingCurrentStep');
+
+            if (boxProgress) {
+                boxProgress.style.display = active ? 'flex' : 'none';
+                if (active) {
+                    if (txtTitle && targetName) txtTitle.innerText = targetName;
+                    if (txtStep) txtStep.innerText = 'Preparando paquetes y dependencias...';
+                }
+            }
+
+            // 2. Desactivar o activar botones de acción para prevenir condiciones de carrera
             const targets = [
                 document.getElementById('btnMainLaunch'),
                 document.getElementById('btnInstallDeAction'),
@@ -2112,7 +2192,7 @@
                 }
             });
 
-            // 2. Controlar visualmente el Drawer y el botón de Cancelar y Revertir
+            // 3. Controlar visualmente el Drawer y el botón de Cancelar y Revertir
             const btnCancel = document.getElementById('btnCancelInstall');
             const txtCancel = document.getElementById('txtCancelInstallLabel');
             const icoStatus = document.getElementById('icoInstallerStatus');
@@ -2174,8 +2254,6 @@
             setInstallerActive(true, `Instalando ${selectedDesktop.toUpperCase()}`);
 
             showToast(`Instalando ${selectedDesktop.toUpperCase()}...`, 'download');
-            const drawer = document.getElementById('logsDrawer');
-            if (drawer) drawer.classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
             if (logBox) logBox.innerText = `[TDM] Iniciando instalación de ${selectedDesktop.toUpperCase()}...\n`;
 
@@ -2365,9 +2443,15 @@
             }
         }
 
-        function toggleLogsDrawer() {
+        function toggleLogsDrawer(forceState) {
             const d = document.getElementById('logsDrawer');
-            d.classList.toggle('open');
+            if (!d) return;
+            if (typeof forceState === 'boolean') {
+                if (forceState) d.classList.add('open');
+                else d.classList.remove('open');
+            } else {
+                d.classList.toggle('open');
+            }
         }
 
         function sendIframeVncAction(action, extraData = {}) {
