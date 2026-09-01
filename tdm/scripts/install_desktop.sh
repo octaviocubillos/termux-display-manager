@@ -217,6 +217,26 @@ case "$PKG_MGR" in
         ;;
 esac
 
+# Optimización y limpieza automática de almacenamiento
+echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+case "$PKG_MGR" in
+    pkg|apt)
+        $SUDO apt-get autoremove -y --purge >/dev/null 2>&1 || true
+        $SUDO apt-get autoclean -y >/dev/null 2>&1 || true
+        $SUDO apt-get clean >/dev/null 2>&1 || true
+        ;;
+    apk)
+        $SUDO apk cache clean >/dev/null 2>&1 || true
+        ;;
+    pacman)
+        $SUDO pacman -Sc --noconfirm >/dev/null 2>&1 || true
+        ;;
+    dnf)
+        $SUDO dnf autoremove -y >/dev/null 2>&1 || true
+        $SUDO dnf clean all >/dev/null 2>&1 || true
+        ;;
+esac
+
 echo "====================================================="
 echo "✅ [TDM] Instalación de $DESKTOP finalizada correctamente."
 echo "====================================================="

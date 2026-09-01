@@ -51,9 +51,27 @@ except Exception:
             apt-get remove -y $PKGS_TO_REMOVE || true
         elif command -v pacman >/dev/null 2>&1; then
             pacman -R --noconfirm $PKGS_TO_REMOVE || true
+        elif command -v dnf >/dev/null 2>&1; then
+            dnf remove -y $PKGS_TO_REMOVE || true
         fi
     else
         echo "ℹ️  No hay paquetes exclusivos de TDM para desinstalar (los existentes eran previos)."
+    fi
+
+    echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+    if command -v apt-get >/dev/null 2>&1; then
+        apt-get autoremove -y --purge >/dev/null 2>&1 || true
+        apt-get autoclean -y >/dev/null 2>&1 || true
+        apt-get clean >/dev/null 2>&1 || true
+    elif command -v pkg >/dev/null 2>&1; then
+        pkg clean >/dev/null 2>&1 || true
+    elif command -v apk >/dev/null 2>&1; then
+        apk cache clean >/dev/null 2>&1 || true
+    elif command -v pacman >/dev/null 2>&1; then
+        pacman -Sc --noconfirm >/dev/null 2>&1 || true
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf autoremove -y >/dev/null 2>&1 || true
+        dnf clean all >/dev/null 2>&1 || true
     fi
 fi
 

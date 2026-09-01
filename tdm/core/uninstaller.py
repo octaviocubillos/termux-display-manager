@@ -76,6 +76,45 @@ class UninstallerService:
                     )
                     await proc.communicate()
                     result["uninstalled_packages"] = pkg_names
+
+                    # Ejecutar autoremove y autoclean para optimizar almacenamiento
+                    print("🧹 [TDM Uninstaller] Optimizando espacio en disco (autoremove & autoclean)...")
+                    if shutil.which("apt-get"):
+                        try:
+                            p = await asyncio.create_subprocess_exec("apt-get", "autoremove", "-y", "--purge", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p.wait()
+                            p2 = await asyncio.create_subprocess_exec("apt-get", "autoclean", "-y", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p2.wait()
+                            p3 = await asyncio.create_subprocess_exec("apt-get", "clean", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p3.wait()
+                        except Exception:
+                            pass
+                    elif shutil.which("pkg"):
+                        try:
+                            p = await asyncio.create_subprocess_exec("pkg", "clean", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p.wait()
+                        except Exception:
+                            pass
+                    elif shutil.which("apk"):
+                        try:
+                            p = await asyncio.create_subprocess_exec("apk", "cache", "clean", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p.wait()
+                        except Exception:
+                            pass
+                    elif shutil.which("pacman"):
+                        try:
+                            p = await asyncio.create_subprocess_exec("pacman", "-Sc", "--noconfirm", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p.wait()
+                        except Exception:
+                            pass
+                    elif shutil.which("dnf"):
+                        try:
+                            p = await asyncio.create_subprocess_exec("dnf", "autoremove", "-y", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p.wait()
+                            p2 = await asyncio.create_subprocess_exec("dnf", "clean", "all", stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+                            await p2.wait()
+                        except Exception:
+                            pass
                 else:
                     print("ℹ️  No hay paquetes registrados exclusivamente por TDM.")
             except Exception as e:

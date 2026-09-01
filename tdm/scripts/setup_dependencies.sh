@@ -69,6 +69,12 @@ pkg install -y \
     fonts-noto-cjk \
     dejavu-fonts || true
 
+# Optimización automática de paquetes
+echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+apt-get autoremove -y --purge >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1 || true
+
 # 6. Directorios de configuración y runtime
 echo "[*] Creando estructura de directorios en $HOME/.tdm..."
 mkdir -p "$HOME/.tdm/run"

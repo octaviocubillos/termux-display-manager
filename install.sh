@@ -70,6 +70,11 @@ pkg install -y x11-repo || true
 apt-get update -y || pkg update -y || true
 pkg install -y python dbus tigervnc xorg-xauth xorg-xsetroot procps tmux || true
 
+echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+apt-get autoremove -y --purge >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1 || true
+
 # Registrar enlace .pth en Python site-packages hacia el directorio del sistema
 if command -v python3 >/dev/null 2>&1; then
     PYTHON_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")

@@ -33,6 +33,11 @@ pkg install -y \
     net-tools \
     dbus
 
+echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+apt-get autoremove -y --purge >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1 || true
+
 # 3. Estructura de directorios de configuración y runtime
 echo "[*] Creando estructura de directorios..."
 mkdir -p "$HOME/.tdm/run"

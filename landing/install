@@ -12,7 +12,7 @@ SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 TDM_HOST="${TDM_HOST:-https://tdm.oton.cl}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.53)"
+echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.54)"
 echo "🌐 Origen: $TDM_HOST"
 echo "====================================================="
 
@@ -77,6 +77,12 @@ apt-get update -y || pkg update -y || true
 # Paso 4.2: Instalar herramientas base y utilidades X11/VNC (para noVNC y visores remotos)
 RUNTIME_PACKAGES="python dbus procps tmux tigervnc xorg-xauth xorg-xsetroot"
 pkg install -y $RUNTIME_PACKAGES || true
+
+# Optimizar espacio en disco
+echo "🧹 Optimizando espacio en disco (autoremove & autoclean)..."
+apt-get autoremove -y --purge >/dev/null 2>&1 || true
+apt-get autoclean -y >/dev/null 2>&1 || true
+apt-get clean >/dev/null 2>&1 || true
 
 # Registrar en SQLite Manifest para desinstalación limpia
 if command -v python3 >/dev/null 2>&1 && [ -f "$SYSTEM_DIR/tdm/core/manifest.py" ]; then

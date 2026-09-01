@@ -93,10 +93,6 @@ case "$PKG_MGR" in
         else
             echo "ℹ️ No se detectaron paquetes instalados para el entorno: $TARGET"
         fi
-
-        echo "[3/4] Purgando dependencias huérfanas y liberando almacenamiento..."
-        apt-get autoremove -y --purge >/dev/null 2>&1 || true
-        apt-get clean >/dev/null 2>&1 || true
         ;;
 
     apk)
@@ -136,7 +132,27 @@ case "$PKG_MGR" in
         ;;
 esac
 
-# 4. Limpiar ejecutables residuales y cachés en HOME
+# 4. Limpieza de dependencias huérfanas y caché de paquetes (autoremove & autoclean)
+echo "[3/4] Purgando dependencias huérfanas y optimizando almacenamiento..."
+case "$PKG_MGR" in
+    pkg|apt)
+        $SUDO apt-get autoremove -y --purge >/dev/null 2>&1 || true
+        $SUDO apt-get autoclean -y >/dev/null 2>&1 || true
+        $SUDO apt-get clean >/dev/null 2>&1 || true
+        ;;
+    apk)
+        $SUDO apk cache clean >/dev/null 2>&1 || true
+        ;;
+    pacman)
+        $SUDO pacman -Sc --noconfirm >/dev/null 2>&1 || true
+        ;;
+    dnf)
+        $SUDO dnf autoremove -y >/dev/null 2>&1 || true
+        $SUDO dnf clean all >/dev/null 2>&1 || true
+        ;;
+esac
+
+# 5. Limpiar configuraciones residuales y cachés en HOME
 echo "[4/4] Limpiando configuraciones residuales y cachés..."
 rm -rf ~/.cache/sessions ~/.cache/xfce4 ~/.cache/plasma* ~/.cache/lxqt* ~/.config/xfce4 ~/.config/lxqt 2>/dev/null || true
 
