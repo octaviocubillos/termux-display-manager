@@ -134,6 +134,21 @@ async def handle_install(args):
     elif args.full:
         print("📦 [TDM] Ejecutando instalación completa de todos los servidores...")
         success = await installer_service.run_script("setup_dependencies.sh")
+
+async def handle_uninstall(args):
+    desktop = getattr(args, "desktop", None)
+    if desktop:
+        print(f"🗑️ [TDM] Desinstalando entorno de escritorio '{desktop}'...")
+        success = await installer_service.uninstall_desktop(desktop)
+        if success:
+            print(f"✅ Entorno '{desktop}' desinstalado y almacenamiento liberado al 100%.")
+        else:
+            print(f"❌ Error desinstalando entorno '{desktop}'.")
+    else:
+        from tdm.core.uninstaller import uninstaller_service
+        purge = getattr(args, "purge", True)
+        await uninstaller_service.perform_uninstall(purge_packages=purge)
+
 async def handle_service(action: str):
     import subprocess
     home = Path.home()
@@ -411,7 +426,9 @@ def main():
     agy_parser.add_argument("extra", nargs=argparse.REMAINDER, help="Argumentos adicionales")
 
     # tdm uninstall
-    subparsers.add_parser("uninstall", help="Desinstala TDM y limpia selectivamente solo lo instalado mediante TDM")
+    uninstall_parser = subparsers.add_parser("uninstall", help="Desinstala un entorno o TDM completo")
+    uninstall_parser.add_argument("--desktop", "-d", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox", "all"], help="Desinstala un entorno de escritorio específico (o 'all' para todos)")
+    uninstall_parser.add_argument("--purge", action="store_true", default=True, help="Purga paquetes al desinstalar TDM")
 
     # tdm version
     subparsers.add_parser("version", help="Muestra la versión de TDM y esquema de manifest")
@@ -456,8 +473,7 @@ def main():
     elif args.command == "install":
         asyncio.run(handle_install(args))
     elif args.command == "uninstall":
-        from tdm.core.uninstaller import uninstaller_service
-        asyncio.run(uninstaller_service.perform_uninstall(purge_packages=True))
+        asyncio.run(handle_uninstall(args))
 
 if __name__ == "__main__":
     main()
