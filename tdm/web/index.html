@@ -1534,7 +1534,7 @@
             setTimeout(() => fetchVersion(), 1200);
         });
 
-        function sendWsRpc(action, payload = {}) {
+        function sendWsRpc(action, payload = {}, customTimeout = null) {
             return new Promise((resolve, reject) => {
                 if (!localWs || localWs.readyState !== WebSocket.OPEN) {
                     reject(new Error('WebSocket desconectado'));
@@ -1543,17 +1543,29 @@
                 const reqId = `req_${++wsReqCounter}_${Date.now()}`;
                 const msg = { action: action, type: action, id: reqId, payload: payload, ...payload };
 
+                // Timeout inteligente y ampliado: 10 minutos (600,000 ms) para tareas pesadas, 60 segundos para consultas
+                const isHeavyTask = ['install_desktop', 'uninstall_desktop', 'install', 'uninstall', 'update', 'start_screen'].includes(action);
+                const defaultTimeout = isHeavyTask ? 600000 : 60000;
+                const timeoutDuration = customTimeout || defaultTimeout;
+
                 const timer = setTimeout(() => {
                     if (wsPendingRequests.has(reqId)) {
                         wsPendingRequests.delete(reqId);
-                        reject(new Error('Timeout de WebSocket'));
+                        reject(new Error(`Timeout de WebSocket (${action}) tras ${Math.round(timeoutDuration / 1000)}s`));
                     }
-                }, 10000);
+                }, timeoutDuration);
 
                 wsPendingRequests.set(reqId, { resolve, reject, timer });
                 localWs.send(JSON.stringify(msg));
             });
         }
+
+        // Heartbeat / Latido activo para mantener la conexión viva y medir latencia
+        setInterval(() => {
+            if (localWs && localWs.readyState === WebSocket.OPEN) {
+                measureWsPing();
+            }
+        }, 5000);
 
         function measureWsPing() {
             if (localWs && localWs.readyState === WebSocket.OPEN) {
