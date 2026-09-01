@@ -282,7 +282,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Recargar versión
+    # Recargar módulos
     new_ver = __version__
     try:
         sys.path.insert(0, str(target_dir))
@@ -290,6 +290,20 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
         import tdm.version
         importlib.reload(tdm.version)
         new_ver = tdm.version.__version__
+        
+        for mod_name in [
+            "tdm.constants",
+            "tdm.core.registry",
+            "tdm.discovery.desktops",
+            "tdm.discovery.backends",
+            "tdm.core.display_manager"
+        ]:
+            try:
+                mod = sys.modules.get(mod_name)
+                if mod:
+                    importlib.reload(mod)
+            except Exception:
+                pass
     except Exception:
         pass
 
