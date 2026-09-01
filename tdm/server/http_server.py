@@ -746,11 +746,10 @@ class AsyncHTTPServer:
 
         # 8. Archivos Estáticos Web / PWA (HTML, CSS, JS, Iconos, noVNC)
         if method in ["GET", "HEAD"]:
+            # Normalizar ruta estática
             rel_path = path.lstrip("/")
             if not rel_path or rel_path == "index.html":
                 target_file = WEB_DIR / "index.html"
-            elif rel_path in ["landing", "info", "about"]:
-                target_file = WEB_DIR / "landing.html"
             else:
                 target_file = WEB_DIR / rel_path
 
