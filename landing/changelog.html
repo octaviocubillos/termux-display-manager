@@ -522,6 +522,28 @@
                         </ul>
                     </div>
 
+                    <!-- Permisos y Automatización -->
+                    <div class="change-category">
+                        <div class="category-title feat">
+                            <span class="material-symbols-rounded" style="font-size: 1.1rem;">verified_user</span>
+                            <span>Permisos y Apertura Automática de X11</span>
+                        </div>
+                        <ul class="change-list">
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Solicitud Automática en Instalación:</strong> El instalador <code>curl -sSL https://tdm.oton.cl/install | bash</code> dispara el intent de Android para abrir directamente la pantalla de permisos <em>"Mostrar sobre otras aplicaciones"</em> para Termux y Termux:X11.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Comando CLI <code>tdm permissions</code>:</strong> Comando interactivo para reabrir y comprobar la pantalla de configuración de permisos en cualquier momento.</span>
+                            </li>
+                            <li class="change-item">
+                                <span class="change-bullet">•</span>
+                                <span><strong>Timeout WebSocket Ampliado (10 min):</strong> Temporizador de peticiones RPC ampliado a 600 segundos para operaciones pesadas de paquetes con latido activo (heartbeat ping) cada 5 segundos.</span>
+                            </li>
+                        </ul>
+                    </div>
+
                     <!-- UI / UX -->
                     <div class="change-category">
                         <div class="category-title pwa">
