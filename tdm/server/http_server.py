@@ -799,6 +799,36 @@ class AsyncHTTPServer:
             self.send_json_response(writer, {"success": success, "message": msg})
             return
 
+        # 8. Diagnóstico y Depuración del Sistema
+        if path == "/api/debug/system" and method == "GET":
+            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+            usr_bin = f"{prefix}/bin"
+            files_in_bin = []
+            if os.path.exists(usr_bin):
+                try:
+                    files_in_bin = [f for f in os.listdir(usr_bin) if any(k in f for k in ["i3", "xfce", "x11", "vnc", "plasma", "mate", "lxqt", "openbox", "termux"])]
+                except Exception as e:
+                    files_in_bin = [str(e)]
+            
+            from tdm.constants import find_binary
+            checks = {
+                "i3": find_binary("i3"),
+                "xfce4-session": find_binary("xfce4-session"),
+                "startxfce4": find_binary("startxfce4"),
+                "termux-x11": find_binary("termux-x11"),
+                "Xvnc": find_binary("Xvnc"),
+            }
+            
+            self.send_json_response(writer, {
+                "prefix": prefix,
+                "path_env": os.environ.get("PATH", ""),
+                "sys_path": sys.path,
+                "files_in_bin": sorted(files_in_bin),
+                "checks": checks,
+                "installed_desktop": display_manager.get_installed_desktop()
+            })
+            return
+
         if path == "/api/install/server" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")
             target = req_data.get("server") or req_data.get("target")

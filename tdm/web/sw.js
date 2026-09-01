@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tdm-pwa-v0.0.57';
+const CACHE_NAME = 'tdm-pwa-v0.0.58';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
