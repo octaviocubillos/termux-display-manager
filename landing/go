@@ -12,7 +12,7 @@ SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 TDM_HOST="${TDM_HOST:-https://tdm.oton.cl}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.50)"
+echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.51)"
 echo "🌐 Origen: $TDM_HOST"
 echo "====================================================="
 
@@ -68,7 +68,14 @@ rm -rf "$SYSTEM_DIR/landing" "$SYSTEM_DIR/.git" "$SYSTEM_DIR/dist" 2>/dev/null |
 
 # 4. Instalar paquetes de ejecución y registrar en Manifest
 echo "[4/5] Instalando dependencias base y registrando en SQLite Manifest..."
-RUNTIME_PACKAGES="python x11-repo dbus xorg-xauth xorg-xsetroot procps tmux"
+
+# Paso 4.1: Asegurar repositorio x11-repo y actualizar catálogos de apt
+echo "📦 Asegurando repositorio x11-repo..."
+pkg install -y x11-repo || true
+apt-get update -y || pkg update -y || true
+
+# Paso 4.2: Instalar herramientas base y utilidades X11
+RUNTIME_PACKAGES="python dbus procps tmux xorg-xauth xorg-xsetroot"
 pkg install -y $RUNTIME_PACKAGES || true
 
 # Registrar en SQLite Manifest para desinstalación limpia

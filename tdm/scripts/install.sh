@@ -66,8 +66,9 @@ except Exception:
 fi
 
 echo "[3/4] Instalando dependencias base (Python, x11-repo, D-Bus)..."
-pkg update -y || true
-pkg install -y $PACKAGES_TO_INSTALL || true
+pkg install -y x11-repo || true
+apt-get update -y || pkg update -y || true
+pkg install -y python dbus xorg-xauth xorg-xsetroot procps tmux || true
 
 # Registrar enlace .pth en Python site-packages hacia el directorio del sistema
 if command -v python3 >/dev/null 2>&1; then

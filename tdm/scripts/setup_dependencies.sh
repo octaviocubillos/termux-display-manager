@@ -17,7 +17,8 @@ echo "[*] Actualizando repositorios de Termux..."
 pkg update -y
 
 echo "[*] Asegurando repositorio x11-repo..."
-pkg install -y x11-repo
+pkg install -y x11-repo || true
+pkg update -y || apt-get update -y || true
 
 # 2. Instalar herramientas base del sistema y Python
 echo "[*] Instalando herramientas base y Python..."

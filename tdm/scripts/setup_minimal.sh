@@ -21,6 +21,7 @@ pkg update -y || true
 
 echo "[*] Añadiendo repositorio x11-repo..."
 pkg install -y x11-repo || true
+apt-get update -y || pkg update -y || true
 
 # 2. Herramientas base del sistema, Python y Gestor de Servicios de Termux
 echo "[*] Instalando termux-services, Python y utilidades de proceso..."
