@@ -123,8 +123,16 @@ class UninstallerService:
                 except Exception:
                     pass
 
-        # 6. Borrar directorio ~/.tdm y la base de datos SQLite
-        print("[5/5] Eliminando directorio de configuración (~/.tdm)...")
+        # 6. Borrar directorio del sistema y directorio ~/.tdm
+        print("[5/5] Eliminando directorios de TDM...")
+        system_dir = Path(PREFIX) / "opt" / "termux-display-manager"
+        if system_dir.exists():
+            try:
+                shutil.rmtree(system_dir)
+                result["removed_files"].append(str(system_dir))
+            except Exception:
+                pass
+
         if TDM_DIR.exists():
             try:
                 shutil.rmtree(TDM_DIR)

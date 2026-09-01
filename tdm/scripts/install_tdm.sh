@@ -20,7 +20,12 @@ mkdir -p "$TMPDIR"
 printf '%s\n' \
 '#!/data/data/com.termux/files/usr/bin/bash' \
 '# Launcher script para Termux Display Manager' \
-'PROJECT_DIR="${HOME}/termux-display-manager"' \
+'PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"' \
+'PROJECT_DIR="${PREFIX}/opt/termux-display-manager"' \
+'' \
+'if [ ! -d "$PROJECT_DIR" ]; then' \
+'    PROJECT_DIR="${PREFIX}/share/termux-display-manager"' \
+'fi' \
 '' \
 'if [ ! -d "$PROJECT_DIR" ]; then' \
 '    PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"' \

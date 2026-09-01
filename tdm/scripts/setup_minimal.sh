@@ -9,7 +9,7 @@ set -e
 
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME="${HOME:-/data/data/com.termux/files/home}"
-PROJECT_DIR="${HOME}/termux-display-manager"
+PROJECT_DIR="${PREFIX}/opt/termux-display-manager"
 
 echo "====================================================="
 echo "⚡ [TDM] Instalando Dependencias Mínimas & Gestor de Servicios"
@@ -60,7 +60,7 @@ exec 2>&1
 
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME="${HOME:-/data/data/com.termux/files/home}"
-PROJECT_DIR="${HOME}/termux-display-manager"
+PROJECT_DIR="${PREFIX}/opt/termux-display-manager"
 
 # Adquirir Wake-Lock para evitar suspensión por ahorro de energía
 if command -v termux-wake-lock >/dev/null 2>&1; then

@@ -72,9 +72,9 @@ for pth in "$PREFIX"/lib/python*/site-packages/tdm.pth; do
     fi
 done
 
-# 5. Borrar directorio ~/.tdm y descargas temporales
-echo "[5/5] Eliminando archivos de configuración (~/.tdm)..."
-rm -rf "$HOME_DIR/.tdm"
+# 5. Borrar directorio del sistema, directorio ~/.tdm y descargas temporales
+echo "[5/5] Eliminando archivos de configuración y sistema..."
+rm -rf "$PREFIX/opt/termux-display-manager" "$PREFIX/share/termux-display-manager" "$HOME_DIR/.tdm"
 rm -f /sdcard/Download/tdm-bundle.tar.gz /sdcard/Download/install_tdm.sh 2>/dev/null || true
 
 echo "====================================================="

@@ -1,7 +1,20 @@
 #!/data/data/com.termux/files/usr/bin/bash
-PROJECT_DIR="${HOME}/termux-display-manager"
+PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+PROJECT_DIR="${PREFIX}/opt/termux-display-manager"
+
 if [ ! -d "$PROJECT_DIR" ]; then
-    PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    PROJECT_DIR="${PREFIX}/share/termux-display-manager"
 fi
+
+if [ ! -d "$PROJECT_DIR" ]; then
+    # Fallback si se ejecuta desde el directorio clonado localmente
+    DEV_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    if [ -f "$DEV_DIR/pyproject.toml" ]; then
+        PROJECT_DIR="$DEV_DIR"
+    else
+        PROJECT_DIR="${HOME}/termux-display-manager"
+    fi
+fi
+
 export PYTHONPATH="$PROJECT_DIR:${PYTHONPATH}"
 exec python3 -m tdm.cli.main "$@"

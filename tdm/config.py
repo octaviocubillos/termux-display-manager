@@ -10,6 +10,7 @@ IS_ANDROID = os.path.exists("/system/bin/app_process") or os.path.exists("/syste
 # Directorios base
 PREFIX = os.environ.get("PREFIX", "/usr" if not IS_TERMUX else "/data/data/com.termux/files/usr")
 HOME = os.environ.get("HOME", str(Path.home()))
+TDM_SYSTEM_DIR = Path(PREFIX) / "opt" / "termux-display-manager"
 TDM_DIR = Path(HOME) / ".tdm"
 TDM_CONFIG_FILE = TDM_DIR / "config.json"
 TDM_LOGS_DIR = TDM_DIR / "logs"

@@ -35,25 +35,25 @@ else
     fi
 fi
 
-# 2. Configurar directorios de TDM y registrar código fuente
-echo "[2/4] Preparando entorno de ejecución TDM..."
-mkdir -p "$HOME_DIR/.tdm/run" "$HOME_DIR/.tdm/logs" "$HOME_DIR/.tdm/config"
+# 2. Configurar directorios del sistema de TDM y desplegar código fuente
+SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
+echo "[2/4] Desplegando archivos del sistema en $SYSTEM_DIR..."
+mkdir -p "$SYSTEM_DIR" "$PREFIX/bin" "$HOME_DIR/.tdm/run" "$HOME_DIR/.tdm/logs" "$HOME_DIR/.tdm/config"
 
-# Registrar TDM en site-packages de Python si Python ya existe
-if command -v python3 >/dev/null 2>&1; then
-    PYTHON_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-    SITE_PACKAGES="$PREFIX/lib/python${PYTHON_VER}/site-packages"
-    if [ -d "$SITE_PACKAGES" ]; then
-        echo "$DIR" > "$SITE_PACKAGES/tdm.pth"
-    fi
+# Copiar archivos del proyecto al directorio del sistema
+if [ "$DIR" != "$SYSTEM_DIR" ]; then
+    cp -rf "$DIR"/* "$SYSTEM_DIR"/ 2>/dev/null || true
 fi
 
 # 3. Registrar en SQLite los paquetes que TDM va a instalar
 PACKAGES_TO_INSTALL="python x11-repo dbus xorg-xauth xorg-xsetroot procps tmux"
-if command -v python3 >/dev/null 2>&1 && [ -f "$DIR/tdm/core/manifest.py" ]; then
-    PYTHONPATH="$DIR" python3 -c "
-from tdm.core.manifest import manifest_ledger
-manifest_ledger.record_packages_if_new('$PACKAGES_TO_INSTALL'.split(), component='minimal')
+if command -v python3 >/dev/null 2>&1 && [ -f "$SYSTEM_DIR/tdm/core/manifest.py" ]; then
+    PYTHONPATH="$SYSTEM_DIR" python3 -c "
+try:
+    from tdm.core.manifest import manifest_ledger
+    manifest_ledger.record_packages_if_new('$PACKAGES_TO_INSTALL'.split(), component='minimal')
+except Exception:
+    pass
 " 2>/dev/null || true
 fi
 
@@ -61,23 +61,43 @@ echo "[3/4] Instalando dependencias base (Python, x11-repo, D-Bus)..."
 pkg update -y || true
 pkg install -y $PACKAGES_TO_INSTALL || true
 
-# Registrar enlace .pth después de instalar python si no estaba instalado
-PYTHON_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-SITE_PACKAGES="$PREFIX/lib/python${PYTHON_VER}/site-packages"
-if [ -d "$SITE_PACKAGES" ]; then
-    echo "$DIR" > "$SITE_PACKAGES/tdm.pth"
+# Registrar enlace .pth en Python site-packages hacia el directorio del sistema
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    SITE_PACKAGES="$PREFIX/lib/python${PYTHON_VER}/site-packages"
+    if [ -d "$SITE_PACKAGES" ]; then
+        echo "$SYSTEM_DIR" > "$SITE_PACKAGES/tdm.pth"
+    fi
 fi
 
-# 4. Crear ejecutable global 'tdm'
+# 4. Crear ejecutable global 'tdm' en el sistema
 BIN_PATH="$PREFIX/bin/tdm"
 cat << 'EOF' > "$BIN_PATH"
 #!/data/data/com.termux/files/usr/bin/bash
+PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+PROJECT_DIR="${PREFIX}/opt/termux-display-manager"
+
+if [ ! -d "$PROJECT_DIR" ]; then
+    PROJECT_DIR="${PREFIX}/share/termux-display-manager"
+fi
+
+if [ ! -d "$PROJECT_DIR" ]; then
+    DEV_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    if [ -f "$DEV_DIR/pyproject.toml" ]; then
+        PROJECT_DIR="$DEV_DIR"
+    else
+        PROJECT_DIR="${HOME}/termux-display-manager"
+    fi
+fi
+
+export PYTHONPATH="$PROJECT_DIR:${PYTHONPATH}"
 exec python3 -m tdm.cli.main "$@"
 EOF
 chmod +x "$BIN_PATH" || true
+chmod +x "$SYSTEM_DIR"/tdm/scripts/*.sh "$SYSTEM_DIR"/*.sh 2>/dev/null || true
 
 echo "====================================================="
-echo "✅ [TDM] Backend instalado con éxito!"
+echo "✅ [TDM] Backend instalado con éxito en el sistema ($SYSTEM_DIR)!"
 echo "🚀 Iniciando TDM Daemon en segundo plano (puerto 19050)..."
 echo "====================================================="
 
