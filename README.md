@@ -16,6 +16,16 @@
 
 ---
 
+## 🚀 Instalación Rápida en 1 Comando
+
+Ejecuta en tu terminal de Termux:
+```bash
+curl -sSL https://tdm.oton.cl/install | bash
+```
+*(O usa el alias corto: `curl -sSL https://tdm.oton.cl/go | bash`)*
+
+---
+
 ## 🌟 Arquitectura 100% Local y Autónoma en Termux
 
 TDM funciona completamente de manera local y soberana dentro de Termux (sin necesidad de servidores públicos en la nube):

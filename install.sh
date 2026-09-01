@@ -40,9 +40,16 @@ SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 echo "[2/4] Desplegando archivos del sistema en $SYSTEM_DIR..."
 mkdir -p "$SYSTEM_DIR" "$PREFIX/bin" "$HOME_DIR/.tdm/run" "$HOME_DIR/.tdm/logs" "$HOME_DIR/.tdm/config"
 
-# Copiar archivos del proyecto al directorio del sistema
-if [ "$DIR" != "$SYSTEM_DIR" ]; then
+# Copiar archivos del proyecto o descargar paquete al directorio del sistema
+if [ "$DIR" != "$SYSTEM_DIR" ] && [ -f "$DIR/pyproject.toml" ]; then
     cp -rf "$DIR"/* "$SYSTEM_DIR"/ 2>/dev/null || true
+    rm -rf "$SYSTEM_DIR/landing" "$SYSTEM_DIR/.git" "$SYSTEM_DIR/dist" 2>/dev/null || true
+elif [ ! -f "$SYSTEM_DIR/pyproject.toml" ]; then
+    echo "⬇️  Descargando paquete oficial de TDM..."
+    curl -sSL "https://tdm.oton.cl/tdm-bundle.tar.gz" -o "/tmp/tdm-bundle.tar.gz" 2>/dev/null && \
+        tar -xzf "/tmp/tdm-bundle.tar.gz" -C "$SYSTEM_DIR" 2>/dev/null && rm -f "/tmp/tdm-bundle.tar.gz" || \
+    curl -sSL "https://github.com/octaviocubillos/termux-display-manager/archive/refs/heads/main.tar.gz" | \
+        tar -xz --strip-components=1 -C "$SYSTEM_DIR" --exclude="landing" 2>/dev/null || true
     rm -rf "$SYSTEM_DIR/landing" "$SYSTEM_DIR/.git" "$SYSTEM_DIR/dist" 2>/dev/null || true
 fi
 
