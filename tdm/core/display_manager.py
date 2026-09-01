@@ -62,6 +62,37 @@ class DisplayManager:
 
     def get_installed_desktop(self) -> Dict[str, Any]:
         """Detecta y devuelve el entorno de escritorio nativo instalado en el sistema."""
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        scripts_dir = Path(__file__).resolve().parent.parent / "scripts"
+        detect_script = scripts_dir / "detect_desktop.sh"
+        
+        # 1. Ejecutar detector universal en bash si está disponible
+        if detect_script.exists():
+            try:
+                res = subprocess.run([str(detect_script)], capture_output=True, text=True, timeout=2.0)
+                if res.returncode == 0 and res.stdout.strip():
+                    parts = res.stdout.strip().split("|")
+                    if len(parts) >= 4 and parts[3] == "true":
+                        de_id, de_name, de_exec, _ = parts
+                        from tdm.core.registry import get_desktop_entry
+                        entry = get_desktop_entry(de_id) or {
+                            "id": de_id,
+                            "name": de_name,
+                            "type": "de",
+                            "description": f"Entorno {de_name} instalado.",
+                            "exec_candidates": [os.path.basename(de_exec)],
+                            "packages": [de_id],
+                            "icon": de_id,
+                            "env_vars": {}
+                        }
+                        entry = dict(entry)
+                        entry["installed"] = True
+                        entry["executable"] = de_exec
+                        return entry
+            except Exception:
+                pass
+
+        # 2. Respaldo directo en Python con discover_desktops
         import tdm.discovery.desktops as dd
         desktops = dd.discover_desktops()
         for d in desktops:
@@ -69,7 +100,6 @@ class DisplayManager:
                 return d
 
         # Failsafe directo: Comprobar existencia física de ejecutables en $PREFIX/bin
-        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
         failsafe_candidates = [
             ("i3", "i3 Window Manager", [f"{prefix}/bin/i3", "/data/data/com.termux/files/usr/bin/i3"]),
             ("xfce4", "XFCE4", [f"{prefix}/bin/xfce4-session", f"{prefix}/bin/startxfce4", "/data/data/com.termux/files/usr/bin/xfce4-session", "/data/data/com.termux/files/usr/bin/startxfce4"]),

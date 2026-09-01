@@ -105,6 +105,27 @@ def handle_permissions():
     print("\n✅ Pantalla de permisos solicitada en tu móvil.")
     print("💡 En MIUI / HyperOS (Xiaomi / Poco): Ve a Ajustes > Apps > Administrar Apps > Termux > Otros Permisos y activa 'Mostrar ventanas emergentes en segundo plano'.")
 
+def handle_desktop(args=None):
+    de = display_manager.get_installed_desktop()
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(de, indent=2))
+        return
+
+    if de.get("installed"):
+        print("=====================================================")
+        print(f"🎨 Entorno de Escritorio Instalado: {de['name']}")
+        print(f"📁 Binario Ejecutable: {de['executable']}")
+        print(f"🆔 Identificador (ID): {de['id']}")
+        print(f"📦 Paquetes Base: {', '.join(de.get('packages', []))}")
+        print("=====================================================")
+    else:
+        print("=====================================================")
+        print("ℹ️  No se detectó ningún entorno de escritorio instalado.")
+        print("💡 Puedes instalar uno con: tdm install --desktop [xfce|i3|kde|mate|lxqt|openbox]")
+        print("   O desde el panel web: http://localhost:19050")
+        print("=====================================================")
+
 async def handle_doctor():
     print("🔍 [TDM] Comprobando componentes del sistema...")
     desktops = discover_desktops()
@@ -450,6 +471,10 @@ def main():
     uninstall_parser.add_argument("--desktop", "-d", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox", "all"], help="Desinstala un entorno de escritorio específico (o 'all' para todos)")
     uninstall_parser.add_argument("--purge", action="store_true", default=True, help="Purga paquetes al desinstalar TDM")
 
+    # tdm desktop / env / de
+    desktop_parser = subparsers.add_parser("desktop", aliases=["env", "de"], help="Muestra el entorno de escritorio instalado y su binario ejecutable")
+    desktop_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
     # tdm permissions / perms
     subparsers.add_parser("permissions", aliases=["perms"], help="Solicita en pantalla los permisos de Android para abrir X11 automáticamente")
 
@@ -471,7 +496,9 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    if args.command == "status":
+    if args.command in ["desktop", "env", "de"]:
+        handle_desktop(args)
+    elif args.command == "status":
         asyncio.run(handle_status())
     elif args.command == "permissions" or args.command == "perms":
         handle_permissions()
