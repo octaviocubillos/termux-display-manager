@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tdm-pwa-v0.0.54';
+const CACHE_NAME = 'tdm-pwa-v0.0.54-r2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -10,10 +10,11 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch(() => {});
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -38,9 +39,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Estrategia Network-First para asegurar siempre la versión más reciente
   event.respondWith(
-    fetch(event.request).catch(() => {
-      return caches.match(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && event.request.method === 'GET') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });

@@ -2320,8 +2320,6 @@
 
             setInstallerActive(true, `Desinstalando ${deName}`);
             showToast(`Desinstalando ${deName}...`, 'delete');
-            const drawer = document.getElementById('logsDrawer');
-            if (drawer) drawer.classList.add('open');
             const logBox = document.getElementById('liveTerminalContent');
             if (logBox) logBox.innerText = `[TDM] Desinstalando ${deName} y liberando almacenamiento...\n`;
 
@@ -2658,7 +2656,16 @@
 
         function initPwa() {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(() => {});
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (!refreshing) {
+                        refreshing = true;
+                        window.location.reload();
+                    }
+                });
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    reg.update().catch(() => {});
+                }).catch(() => {});
             }
 
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

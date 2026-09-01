@@ -873,6 +873,9 @@ class AsyncHTTPServer:
             "Content-Type: application/json; charset=utf-8",
             f"Content-Length: {len(body)}",
             "Access-Control-Allow-Origin: *",
+            "Cache-Control: no-cache, no-store, must-revalidate",
+            "Pragma: no-cache",
+            "Expires: 0",
             "Connection: close",
             "\r\n"
         ]
@@ -888,6 +891,7 @@ class AsyncHTTPServer:
             f"Content-Type: {content_type}; charset=utf-8",
             f"Content-Length: {len(body)}",
             "Access-Control-Allow-Origin: *",
+            "Cache-Control: no-cache, no-store, must-revalidate",
             "Connection: close",
             "\r\n"
         ]
@@ -899,12 +903,20 @@ class AsyncHTTPServer:
     def send_file_response(self, writer: asyncio.StreamWriter, file_path: Path, content_type: str = "text/plain", status_code: int = 200, send_body: bool = True):
         try:
             file_size = file_path.stat().st_size
+            fname = file_path.name.lower()
+            ext = file_path.suffix.lower()
+
+            if fname in ["index.html", "sw.js", "manifest.json"] or ext in [".html", ".htm", ".json"]:
+                cache_header = "Cache-Control: no-cache, no-store, must-revalidate, max-age=0"
+            else:
+                cache_header = "Cache-Control: public, max-age=86400"
+
             headers = [
                 f"HTTP/1.1 {status_code} OK",
                 f"Content-Type: {content_type}",
                 f"Content-Length: {file_size}",
                 "Access-Control-Allow-Origin: *",
-                "Cache-Control: public, max-age=3600",
+                cache_header,
                 "Connection: close",
                 "\r\n"
             ]
