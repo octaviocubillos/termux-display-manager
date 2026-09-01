@@ -12,7 +12,7 @@ SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 TDM_HOST="${TDM_HOST:-https://tdm.oton.cl}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.54)"
+echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.55)"
 echo "🌐 Origen: $TDM_HOST"
 echo "====================================================="
 
@@ -74,8 +74,8 @@ echo "📦 Asegurando repositorio x11-repo..."
 pkg install -y x11-repo || true
 apt-get update -y || pkg update -y || true
 
-# Paso 4.2: Instalar herramientas base y utilidades X11/VNC (para noVNC y visores remotos)
-RUNTIME_PACKAGES="python dbus procps tmux tigervnc xorg-xauth xorg-xsetroot"
+# Paso 4.2: Instalar herramientas base y utilidades X11/VNC (para noVNC, Termux:X11 y visores remotos)
+RUNTIME_PACKAGES="python dbus procps tmux tigervnc xorg-xauth xorg-xsetroot termux-x11-nightly"
 pkg install -y $RUNTIME_PACKAGES || true
 
 # Optimizar espacio en disco

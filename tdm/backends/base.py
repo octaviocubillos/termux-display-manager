@@ -47,7 +47,25 @@ class BaseDisplayBackend(ABC):
 
         server_bin = shutil.which(cmd[0]) or cmd[0]
         if not os.path.exists(server_bin) and not shutil.which(cmd[0]):
+            if "termux-x11" in str(cmd[0]) and shutil.which("pkg"):
+                print("[*] Servidor termux-x11 no detectado. Instalando automáticamente 'termux-x11-nightly'...")
+                import subprocess
+                subprocess.run(["pkg", "install", "-y", "x11-repo"], capture_output=True)
+                subprocess.run(["pkg", "install", "-y", "termux-x11-nightly"], capture_output=True)
+                server_bin = shutil.which("termux-x11") or f"{PREFIX}/bin/termux-x11"
+            elif "Xvnc" in str(cmd[0]) and shutil.which("pkg"):
+                print("[*] Servidor VNC no detectado. Instalando automáticamente 'tigervnc'...")
+                import subprocess
+                subprocess.run(["pkg", "install", "-y", "tigervnc"], capture_output=True)
+                server_bin = shutil.which("Xvnc") or f"{PREFIX}/bin/Xvnc"
+
+        if not os.path.exists(server_bin) and not shutil.which(cmd[0]):
             print(f"[!] Servidor gráfico '{cmd[0]}' no está instalado en el sistema.")
+            if "termux-x11" in str(cmd[0]):
+                print("💡 Para instalarlo en Termux ejecuta: pkg install -y x11-repo termux-x11-nightly")
+                print("💡 O inicia en modo navegador web con: tdm start -b novnc")
+            elif "Xvnc" in str(cmd[0]):
+                print("💡 Para instalarlo en Termux ejecuta: pkg install -y tigervnc")
             return False
 
         merged_env = {**os.environ, **env}
