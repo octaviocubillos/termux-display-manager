@@ -75,11 +75,14 @@ class PackageInstaller:
             "PYTHONPATH": f"{TDM_DIR.parent}:" + os.environ.get("PYTHONPATH", ""),
         }
 
+        working_dir = str(Path.home()) if Path.home().exists() else "/data/data/com.termux/files/home"
+
         try:
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
+                cwd=working_dir,
                 env=env
             )
 

@@ -105,7 +105,9 @@ echo "====================================================="
 echo "🛑 [TDM] Apagando entornos gráficos y procesos activos (manteniendo servicio TDM)..."
 echo "====================================================="
 
-pkill -9 -f "xfce4|xfwm4|xfdesktop|mate-session|marco|caja|plasma|kwin|startlxqt|lxqt-session|openbox|i3|termux-x11|Xwayland|Xvnc|websockify|pulseaudio|virgl_test_server" 2>/dev/null || true
+for proc in xfce4-session xfwm4 xfdesktop mate-session marco caja plasma-desktop kwin startlxqt lxqt-session openbox i3 i3status termux-x11 Xwayland Xvnc websockify virgl_test_server; do
+    pkill -9 -x "$proc" 2>/dev/null || true
+done
 rm -f /tmp/.X*-lock /tmp/.X11-unix/X* /data/data/com.termux/files/usr/tmp/.X*-lock /data/data/com.termux/files/usr/tmp/.X11-unix/X* 2>/dev/null || true
 
 # ==============================================================================

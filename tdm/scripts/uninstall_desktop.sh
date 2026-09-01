@@ -42,7 +42,9 @@ fi
 
 # 1. Detener todas las pantallas y procesos de escritorio activos (manteniendo servicio TDM)
 echo "[1/4] Deteniendo pantallas y procesos gráficos..."
-pkill -9 -f "xfce4|xfwm4|xfdesktop|mate-session|marco|caja|plasma|kwin|startlxqt|lxqt-session|openbox|i3|termux-x11|Xwayland|Xvnc|websockify|pulseaudio|virgl_test_server" 2>/dev/null || true
+for proc in xfce4-session xfwm4 xfdesktop mate-session marco caja plasma-desktop kwin startlxqt lxqt-session openbox i3 i3status termux-x11 Xwayland Xvnc websockify virgl_test_server; do
+    pkill -9 -x "$proc" 2>/dev/null || true
+done
 
 # Limpiar sockets X11
 rm -f /tmp/.X*-lock /tmp/.X11-unix/X* "${PREFIX_PATH}/tmp/.X*-lock" "${PREFIX_PATH}/tmp/.X11-unix/X*" 2>/dev/null || true
