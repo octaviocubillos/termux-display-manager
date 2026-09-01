@@ -54,7 +54,7 @@ elif [ ! -f "$SYSTEM_DIR/pyproject.toml" ]; then
 fi
 
 # 3. Registrar en SQLite los paquetes que TDM va a instalar
-PACKAGES_TO_INSTALL="python x11-repo dbus xorg-xauth xorg-xsetroot procps tmux"
+PACKAGES_TO_INSTALL="python x11-repo dbus tigervnc xorg-xauth xorg-xsetroot procps tmux"
 if command -v python3 >/dev/null 2>&1 && [ -f "$SYSTEM_DIR/tdm/core/manifest.py" ]; then
     PYTHONPATH="$SYSTEM_DIR" python3 -c "
 try:
@@ -65,10 +65,10 @@ except Exception:
 " 2>/dev/null || true
 fi
 
-echo "[3/4] Instalando dependencias base (Python, x11-repo, D-Bus)..."
+echo "[3/4] Instalando dependencias base (Python, x11-repo, TigerVNC, D-Bus)..."
 pkg install -y x11-repo || true
 apt-get update -y || pkg update -y || true
-pkg install -y python dbus xorg-xauth xorg-xsetroot procps tmux || true
+pkg install -y python dbus tigervnc xorg-xauth xorg-xsetroot procps tmux || true
 
 # Registrar enlace .pth en Python site-packages hacia el directorio del sistema
 if command -v python3 >/dev/null 2>&1; then

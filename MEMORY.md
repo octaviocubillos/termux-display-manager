@@ -2,7 +2,7 @@
 
 > **Termux Display Manager (TDM)**
 > Motor unificado de entornos gráficos nativos, servidor REST asíncrono, WebSockets locales y PWA para Android/Termux y Linux.
-> **Versión**: `v0.0.51` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
+> **Versión**: `v0.0.52` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
 
 ---
 

@@ -41,22 +41,43 @@ class BaseDisplayBackend(ABC):
         cmd, env = self.build_server_command()
         self.cleanup(None)
 
+        if not cmd or not cmd[0]:
+            print("[!] Comando de servidor gráfico vacío.")
+            return False
+
+        server_bin = shutil.which(cmd[0]) or cmd[0]
+        if not os.path.exists(server_bin) and not shutil.which(cmd[0]):
+            print(f"[!] Servidor gráfico '{cmd[0]}' no está instalado en el sistema.")
+            return False
+
         merged_env = {**os.environ, **env}
 
         try:
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 env=merged_env,
-                stdout=asyncio.subprocess.DEVNULL,
-                stderr=asyncio.subprocess.DEVNULL
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT
             )
         except Exception as e:
             print(f"[!] Error iniciando servidor gráfico: {e}")
             return False
 
+        # Verificar si el proceso murió inmediatamente tras iniciar
+        await asyncio.sleep(0.4)
+        if self.process.returncode is not None:
+            output = ""
+            try:
+                out_bytes = await asyncio.wait_for(self.process.stdout.read(2048), timeout=0.2)
+                output = out_bytes.decode(errors="replace").strip()
+            except Exception:
+                pass
+            print(f"[!] Servidor gráfico {cmd[0]} finalizó inesperadamente (código {self.process.returncode}): {output}")
+            return False
+
         bridge_cmd = self.build_bridge_command()
         if bridge_cmd:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
             try:
                 self.bridge_process = await asyncio.create_subprocess_exec(
                     *bridge_cmd,

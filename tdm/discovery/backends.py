@@ -19,11 +19,16 @@ def discover_backends() -> List[Dict[str, Any]]:
                 entry["executable"] = path
                 break
                 
-        # Soporte para noVNC con motor embebido si python está disponible
-        if b["id"] == BACKEND_NOVNC and not entry["installed"]:
-            entry["installed"] = True
-            entry["executable"] = "builtin-websockify"
-            entry["description"] += " (Motor WebSockets TDM activo)"
+        # Para noVNC, TDM provee el cliente HTML5 y proxy WebSocket nativos, pero requiere Xvnc (tigervnc)
+        if b["id"] == BACKEND_NOVNC:
+            xvnc_path = shutil.which("Xvnc") or shutil.which("vncserver")
+            if xvnc_path:
+                entry["installed"] = True
+                entry["executable"] = xvnc_path
+                entry["description"] += " (Motor WebSockets TDM nativo)"
+            else:
+                entry["installed"] = False
+                entry["executable"] = None
 
         discovered.append(entry)
         

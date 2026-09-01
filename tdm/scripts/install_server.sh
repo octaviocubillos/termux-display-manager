@@ -61,9 +61,9 @@ case "$SERVER" in
     novnc)
         echo "🌐 [TDM] Instalando noVNC Web Server (HTML5)..."
         if [ "$PKG_MGR" = "apk" ]; then
-            PKGS="tigervnc py3-numpy xauth xsetroot"
+            PKGS="tigervnc xauth xsetroot"
         else
-            PKGS="tigervnc novnc python-numpy xorg-xauth xorg-xsetroot"
+            PKGS="tigervnc xorg-xauth xorg-xsetroot"
         fi
         ;;
     vnc|tigervnc)
@@ -71,7 +71,7 @@ case "$SERVER" in
         if [ "$PKG_MGR" = "apk" ]; then
             PKGS="tigervnc xauth xrdb xsetroot xdpyinfo"
         else
-            PKGS="tigervnc xorg-xauth xorg-xrdb xorg-xsetroot xorg-xdpyinfo"
+            PKGS="tigervnc xorg-xauth xorg-xsetroot"
         fi
         ;;
     rdp|xrdp)

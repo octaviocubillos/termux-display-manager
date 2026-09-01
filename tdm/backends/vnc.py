@@ -20,7 +20,7 @@ class VNCBackend(BaseDisplayBackend):
         env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
         display_str = f":{self.config.display_num}"
         
-        xvnc = shutil.which("Xvnc") or f"{PREFIX}/bin/Xvnc"
+        xvnc = shutil.which("Xvnc") or shutil.which("vncserver") or f"{PREFIX}/bin/Xvnc"
             
         cmd = [
             xvnc,
@@ -29,7 +29,6 @@ class VNCBackend(BaseDisplayBackend):
             "-depth", str(self.config.depth),
             "-dpi", str(self.config.dpi),
             "-rfbport", str(self.config.vnc_port),
-            "-listen", "0.0.0.0",
             "-ac"
         ]
         
@@ -46,6 +45,14 @@ class VNCBackend(BaseDisplayBackend):
 
     def cleanup(self, session: Optional[DisplaySession] = None) -> None:
         num = self.config.display_num
+        try:
+            os.makedirs("/tmp/.X11-unix", mode=0o1777, exist_ok=True)
+        except Exception:
+            pass
+        try:
+            os.makedirs(f"{PREFIX}/tmp/.X11-unix", mode=0o1777, exist_ok=True)
+        except Exception:
+            pass
         locks = [
             f"/tmp/.X{num}-lock",
             f"/tmp/.X11-unix/X{num}",

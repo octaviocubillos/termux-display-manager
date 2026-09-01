@@ -447,6 +447,12 @@ class AsyncHTTPServer:
     async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = 19053):
         """Puente nativo asíncrono WebSocket (noVNC RFC 6455) a TCP (TigerVNC RFB) sin dependencias externas."""
         try:
+            if display_manager.active_session and display_manager.active_session.config.vnc_port:
+                target_port = display_manager.active_session.config.vnc_port
+        except Exception:
+            pass
+
+        try:
             tcp_reader, tcp_writer = await asyncio.open_connection(target_host, target_port)
         except Exception as e:
             print(f"[!] Error conectando puente VNC TCP {target_host}:{target_port} -> {e}")
