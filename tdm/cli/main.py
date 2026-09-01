@@ -298,112 +298,30 @@ async def handle_logs(args):
         print("  • tdm logs --clear -> Limpiar todos los registros")
 
 async def handle_update(args):
-    """Descarga e instala la última versión del backend de TDM desde el Hub central."""
-    import urllib.request
-    import tarfile
-    import tempfile
+    """Descarga e instala la última versión del backend de TDM desde el Hub central o GitHub."""
+    from tdm.core.updater import perform_update
     from tdm.version import __version__
-    from tdm.config import HOME, PREFIX
 
     hub_url = getattr(args, "hub", None)
-    if not hub_url:
-        cfg_file = HOME / ".tdm" / "config" / "agent.json"
-        if cfg_file.exists():
-            try:
-                cfg = json.loads(cfg_file.read_text())
-                hub_url = cfg.get("hub")
-            except Exception:
-                pass
-    if not hub_url:
-        hub_url = "https://tdm.oton.cl"
+    result = await perform_update(hub_url=hub_url)
 
-    hub_url = hub_url.rstrip("/")
-    bundle_url = f"{hub_url}/tdm-bundle.tar.gz"
-
-    print("=====================================================")
-    print(f"🔄 [TDM Update] Actualizando Backend (Versión actual: v{__version__})")
-    print(f"🌐 Servidor de origen: {hub_url}")
-    print("=====================================================")
-
-    print(f"⬇️  Descargando paquete de actualización...")
-    try:
-        req = urllib.request.Request(
-            bundle_url,
-            headers={"User-Agent": f"TDM-Updater/{__version__}"}
-        )
-        with urllib.request.urlopen(req, timeout=15) as response:
-            if response.status != 200:
-                print(f"❌ Error al descargar actualización: Código HTTP {response.status}")
-                return
-            data = response.read()
-            print(f"📦 Paquete descargado con éxito ({len(data) // 1024} KB).")
-    except Exception as e:
-        print(f"❌ No se pudo conectar al servidor de actualización: {e}")
+    if not result.get("success"):
+        print(f"❌ Error al actualizar: {result.get('error')}")
         return
 
-    # Extraer paquete
-    print("🛠️  Aplicando actualización en el sistema...")
-    target_dir = HOME / "termux-display-manager"
-    target_dir.mkdir(parents=True, exist_ok=True)
+    new_ver = result.get("new_version", __version__)
 
-    with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
-        tmp.write(data)
-        tmp_path = tmp.name
-
-    try:
-        with tarfile.open(tmp_path, "r:gz") as tar:
-            tar.extractall(path=target_dir)
-        print("✓ Archivos del núcleo TDM actualizados correctamente.")
-    except Exception as e:
-        print(f"❌ Error al descomprimir actualización: {e}")
-        return
-    finally:
-        if os.path.exists(tmp_path):
-            try: os.unlink(tmp_path)
-            except Exception: pass
-
-    # Actualizar enlace .pth en Python
-    try:
-        py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
-        pth_path = Path(f"{PREFIX}/lib/python{py_ver}/site-packages/tdm.pth")
-        if pth_path.parent.exists():
-            pth_path.write_text(str(target_dir))
-    except Exception:
-        pass
-
-    # Actualizar binario ejecutable tdm
-    bin_path = Path(f"{PREFIX}/bin/tdm")
-    if bin_path.parent.exists():
-        wrapper = "#!/data/data/com.termux/files/usr/bin/bash\n"
-        wrapper += f'export PYTHONPATH="{target_dir}:$PYTHONPATH"\n'
-        wrapper += 'exec python3 -m tdm.cli.main "$@"\n'
+    # Reiniciar servicios en segundo plano si estaban activos
+    restart = getattr(args, "restart", True)
+    if restart:
+        print("🔄 Reiniciando servicios de TDM...")
         try:
-            bin_path.write_text(wrapper)
-            bin_path.chmod(0o755)
+            await handle_service("restart")
         except Exception:
             pass
 
-    # Leer nueva versión
-    try:
-        sys.path.insert(0, str(target_dir))
-        import importlib
-        import tdm.version
-        importlib.reload(tdm.version)
-        new_ver = tdm.version.__version__
-    except Exception:
-        new_ver = "actualizada"
-
-    print(f"🎉 ¡TDM Backend actualizado con éxito a v{new_ver}!")
-
-    # Reiniciar servicios en segundo plano si estaban activos
-    if getattr(args, "restart", True):
-        print("🔄 Reiniciando servicios en segundo plano...")
-        await handle_service("stop")
-        await asyncio.sleep(1)
-        await handle_service("start")
-
     print("=====================================================")
-    print("✅ Actualización completada y operativa.")
+    print(f"✅ TDM actualizado y operativo en versión v{new_ver}.")
     print("=====================================================")
 
 async def handle_agy(args):

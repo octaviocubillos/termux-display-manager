@@ -111,18 +111,31 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
 
     loop = asyncio.get_running_loop()
 
+    candidate_urls = [
+        f"{hub_url}/tdm-bundle.tar.gz",
+        "https://raw.githubusercontent.com/octaviocubillos/termux-display-manager/main/landing/tdm-bundle.tar.gz",
+        "https://github.com/octaviocubillos/termux-display-manager/archive/refs/heads/main.tar.gz"
+    ]
+
     def download_bundle():
-        req = urllib.request.Request(
-            bundle_url,
-            headers={"User-Agent": f"TDM-Updater/{__version__}"}
-        )
-        with urllib.request.urlopen(req, timeout=20) as response:
-            if response.status != 200:
-                raise RuntimeError(f"Error HTTP {response.status} al descargar paquete.")
-            return response.read()
+        last_err = None
+        for url in candidate_urls:
+            try:
+                installer_service._broadcast_log(f"⬇️  Descargando desde: {url}...")
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": f"TDM-Updater/{__version__}"}
+                )
+                with urllib.request.urlopen(req, timeout=15) as response:
+                    if response.status == 200:
+                        return response.read(), url
+            except Exception as e:
+                last_err = e
+                installer_service._broadcast_log(f"⚠️ Falló descarga desde {url}: {e}")
+        raise RuntimeError(f"No se pudo descargar de ninguna fuente: {last_err}")
 
     try:
-        data = await loop.run_in_executor(None, download_bundle)
+        data, used_url = await loop.run_in_executor(None, download_bundle)
         size_kb = len(data) // 1024
         installer_service._broadcast_log(f"📦 Paquete descargado con éxito ({size_kb} KB).")
     except Exception as e:
@@ -132,7 +145,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     # Descomprimir
     installer_service._broadcast_log("🛠️  Aplicando actualización en el sistema...")
     target_dir = Path(PREFIX) / "opt" / "termux-display-manager"
-    if not target_dir.parent.exists():
+    if not os.path.exists(PREFIX) and not os.environ.get("PREFIX"):
         target_dir = Path(HOME) / "termux-display-manager"
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -143,8 +156,14 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
     try:
         def extract_tar():
             import subprocess
+            is_github_archive = ("archive/refs/heads" in used_url)
+            tar_cmd = ["tar", "-xzf", tmp_path]
+            if is_github_archive:
+                tar_cmd.extend(["--strip-components=1"])
+            tar_cmd.extend(["--exclude=landing", "-C", str(target_dir)])
+
             try:
-                subprocess.run(["tar", "-xzf", tmp_path, "-C", str(target_dir)], check=True)
+                subprocess.run(tar_cmd, check=True)
             except Exception:
                 try:
                     import tarfile
@@ -152,6 +171,7 @@ async def perform_update(hub_url: Optional[str] = None) -> Dict[str, Any]:
                         tar.extractall(path=target_dir)
                 except Exception as e:
                     raise RuntimeError(f"Error extrayendo tar.gz: {e}")
+
         await loop.run_in_executor(None, extract_tar)
         installer_service._broadcast_log("✓ Archivos del núcleo TDM actualizados correctamente.")
     except Exception as e:
