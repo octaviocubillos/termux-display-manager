@@ -2,7 +2,7 @@
 
 > **Termux Display Manager (TDM)**
 > Motor unificado de entornos gráficos nativos, servidor REST asíncrono, WebSockets locales y PWA para Android/Termux y Linux.
-> **Versión**: `v0.0.54` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
+> **Versión**: `v0.0.60` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
 
 ---
 
@@ -17,7 +17,7 @@ El sistema elimina la complejidad de configurar scripts dispersos, gestionar soc
 |                             CLIENTES & CONTROL                                |
 |   +------------------------------------+  +-------------------------------+   |
 |   |    PWA / Web Dashboard (Local)     |  |          CLI Terminal         |   |
-|   |  (Canvas Único, Material You MD3)  |  | (tdm start, status, update...) |   |
+|   |  (Canvas Único, Material You MD3)  |  | (tdm start, desktop, doctor)  |   |
 |   +-----------------+------------------+  +---------------+---------------+   |
 +---------------------|-------------------------------------|-------------------+
                       | REST API / WebSocket Local (/ws)    | Local IPC
@@ -81,7 +81,11 @@ Todos los servicios y protocolos de comunicación operan en el bloque `19050 - 1
 - **Cierre Forzado en Android**: Emite broadcasts a Termux:X11 (`am force-stop com.termux.x11`) y libera el Wake-Lock (`termux-wake-unlock`).
 - **Limpieza de Locks**: Elimina sockets `/tmp/.X11-unix`, pipes y sockets D-Bus temporales.
 
-### 3.3. Telemetría de Memoria en Tiempo Real
+### 3.3. Detección Universal Failsafe de Entornos (`tdm/scripts/detect_desktop.sh`)
+- Inspección directa e infalible de binarios en `$PREFIX/bin` y `/data/data/com.termux/files/usr/bin`.
+- Garantiza cero falsos negativos tras instalaciones desde la web o consola.
+
+### 3.4. Telemetría de Memoria en Tiempo Real
 - Consulta dinámica de `/proc/meminfo` retornando memoria total, usada, disponible y porcentaje de carga en la API y en `tdm status`.
 
 ---
@@ -104,6 +108,10 @@ Para que Termux:X11 se inicie automáticamente en Android 10+ (MIUI, HyperOS, On
 # Ver estado del sistema, pantalla y telemetría de memoria
 tdm status
 
+# Ver qué entorno de escritorio está instalado en el sistema
+tdm desktop
+tdm desktop --json
+
 # Ver registros y eventos en vivo
 tdm logs -a -f          # Logs del agente WebSocket
 tdm logs -s             # Logs del servidor HTTP
@@ -117,12 +125,16 @@ tdm stop
 # Actualizar el backend a la última versión
 tdm update
 
+# Solicitar permisos en pantalla de Android para Termux:X11
+tdm permissions
+
 # Gestión del servicio en segundo plano
 tdm service start
 tdm service stop
+tdm service restart
 tdm service status
 
-# Diagnóstico de paquetes y dependencias
+# Diagnóstico completo de paquetes, dependencias y redes
 tdm doctor
 
 # Desinstalación completa sin residuos
