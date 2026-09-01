@@ -479,15 +479,38 @@ class AsyncHTTPServer:
 
         prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
         home = os.environ.get("HOME", "/data/data/com.termux/files/home")
+
+        # 1. Verificar si el usuario configuró un shell personalizado en Termux (~/.termux/shell)
+        custom_shell = None
+        custom_shell_file = Path(home) / ".termux" / "shell"
+        if custom_shell_file.exists():
+            try:
+                candidate = custom_shell_file.read_text(encoding="utf-8").strip()
+                if candidate and os.path.exists(candidate) and os.access(candidate, os.X_OK):
+                    custom_shell = candidate
+            except Exception:
+                pass
+
+        # 2. Variable de entorno SHELL (si es un shell válido de Termux o Linux que no sea /bin/sh genérico)
+        env_shell = os.environ.get("SHELL", "").strip()
+        if env_shell and (not os.path.exists(env_shell) or not os.access(env_shell, os.X_OK) or env_shell == "/bin/sh"):
+            env_shell = None
+
+        # 3. Lista priorizada de candidatos (bash por defecto en Termux)
         shell_candidates = [
-            os.environ.get("SHELL", ""),
+            custom_shell,
+            env_shell,
             f"{prefix}/bin/bash",
+            f"{prefix}/bin/login",
             f"{prefix}/bin/zsh",
             f"{prefix}/bin/sh",
             "/bin/bash",
             "/bin/sh"
         ]
-        shell_bin = next((s for s in shell_candidates if s and os.path.exists(s)), "/bin/sh")
+        shell_bin = next(
+            (s for s in shell_candidates if s and os.path.exists(s) and os.access(s, os.X_OK)),
+            f"{prefix}/bin/bash" if os.path.exists(f"{prefix}/bin/bash") else "/bin/sh"
+        )
 
         env = {
             **os.environ,
@@ -495,6 +518,7 @@ class AsyncHTTPServer:
             "COLORTERM": "truecolor",
             "LANG": os.environ.get("LANG", "en_US.UTF-8"),
             "PATH": f"{prefix}/bin:" + os.environ.get("PATH", "/usr/bin:/bin"),
+            "SHELL": shell_bin,
             "HOME": home,
             "PREFIX": prefix
         }
