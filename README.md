@@ -64,14 +64,6 @@ termux-display-manager/
 │   ├── SCREENS_AND_BACKENDS.md# Backends gráficos y resoluciones
 │   └── TAILSCALE_AND_SECURITY.md # Conectividad segura LAN y Tailscale Mesh
 ├── plans/                     # Especificaciones de API y arquitectura
-├── scripts/                   # Scripts de instalación y administración
-│   ├── install.sh             # Instalador bootstrap del backend
-│   ├── install_desktop.sh     # Instalador modular de entornos de escritorio
-│   ├── install_server.sh      # Instalador de servidores de pantalla
-│   ├── setup_dependencies.sh  # Instalación de paquetes base
-│   ├── stop_x11.sh            # Purga de procesos y apagado total
-│   ├── uninstall_desktop.sh   # Desinstalador limpio de entornos de escritorio
-│   └── uninstall.sh           # Desinstalación limpia auditada
 ├── tdm/                       # Paquete Python del núcleo de TDM (Zero-Dependencies)
 │   ├── agent/                 # Agente WebSocket cliente para Termux
 │   ├── backends/              # Adaptadores de Termux:X11, noVNC, XRDP, VNC
@@ -79,12 +71,12 @@ termux-display-manager/
 │   ├── core/                  # Supervisor de pantallas, manifest SQLite e instalador
 │   ├── discovery/             # Detección de entornos, backends y red
 │   ├── runners/               # Generador de scripts de sesión y variables D-Bus
-│   ├── scripts/               # Scripts empaquetados para ejecución en runtime
+│   ├── scripts/               # Scripts oficiales de instalación, arranque y limpieza en runtime
 │   ├── server/                # Servidor HTTP REST, WebSocket RFC 6455 y Hub Relay
 │   └── web/                   # PWA (HTML5, CSS, JS, manifest.json, sw.js, noVNC, terminal xterm.js)
 ├── tests/                     # Suite de pruebas automatizadas
-├── install.sh                 # Acceso directo al instalador bootstrap
-├── uninstall.sh               # Acceso directo al desinstalador limpio
+├── install.sh                 # Instalador bootstrap directo
+├── uninstall.sh               # Desinstalador limpio auditado directo
 ├── pyproject.toml             # Empaquetado pip estándar (Zero dependencias)
 ├── MEMORY.md                  # Memoria técnica del proyecto y decisiones de diseño
 └── README.md

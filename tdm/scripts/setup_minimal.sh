@@ -92,10 +92,10 @@ if command -v sv-enable >/dev/null 2>&1; then
 fi
 
 # 7. Instalar lanzador binario 'tdm'
-if [ -f "$PROJECT_DIR/scripts/install_tdm.sh" ]; then
-    bash "$PROJECT_DIR/scripts/install_tdm.sh" || true
-elif [ -f "./scripts/install_tdm.sh" ]; then
-    bash "./scripts/install_tdm.sh" || true
+if [ -f "$PROJECT_DIR/tdm/scripts/install_tdm.sh" ]; then
+    bash "$PROJECT_DIR/tdm/scripts/install_tdm.sh" || true
+elif [ -f "./tdm/scripts/install_tdm.sh" ]; then
+    bash "./tdm/scripts/install_tdm.sh" || true
 fi
 
 echo "====================================================="

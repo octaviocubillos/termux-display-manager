@@ -32,7 +32,7 @@ printf '%s\n' \
 chmod +x "$TARGET_BIN"
 
 # Asegurar permisos de scripts
-chmod +x "$DIR"/scripts/*.sh 2>/dev/null || true
+chmod +x "$DIR"/tdm/scripts/*.sh "$DIR"/*.sh 2>/dev/null || true
 
 echo "✅ Comando 'tdm' instalado correctamente en $TARGET_BIN"
 echo "💡 Ahora puedes ejecutar 'tdm --help' o 'tdm status' desde cualquier lugar."
