@@ -2312,7 +2312,10 @@
         }
 
         async function apiUninstallCurrentDesktop() {
-            const deName = document.getElementById('txtDeName')?.innerText || 'el entorno de escritorio';
+            const de = lastStatusData?.installed_desktop;
+            const targetDesktop = (de && de.installed && de.id !== 'terminal') ? ((de.id === 'xfce4') ? 'xfce' : de.id) : (selectedDesktop || 'all');
+            const deName = de?.name || targetDesktop.toUpperCase();
+
             if (!confirm(`¿Estás seguro de que deseas desinstalar completamente ${deName} y liberar memoria interna?\n\n(Se cerrarán sesiones activas y se purgarán todos los paquetes de escritorio)`)) return;
 
             setInstallerActive(true, `Desinstalando ${deName}`);
@@ -2324,12 +2327,12 @@
 
             try {
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
-                    await sendWsRpc('uninstall_desktop', { desktop: selectedDesktop || 'all' });
+                    await sendWsRpc('uninstall_desktop', { desktop: targetDesktop });
                 } else {
                     const res = await fetch('/api/uninstall/desktop', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ desktop: selectedDesktop || 'all' })
+                        body: JSON.stringify({ desktop: targetDesktop })
                     });
                     const d = await res.json();
                     if (!d.success) throw new Error(d.error || 'Error al desinstalar');
@@ -2340,6 +2343,7 @@
                 showToast(`Error al desinstalar: ${e.message || e}`, 'error');
             } finally {
                 setInstallerActive(false);
+                isDePickerOpen = true;
                 await refreshStatus();
             }
         }

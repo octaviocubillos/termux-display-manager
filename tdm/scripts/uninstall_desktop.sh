@@ -54,7 +54,7 @@ echo "[2/4] Identificando paquetes instalados para purga completa..."
 
 case "$PKG_MGR" in
     pkg|apt)
-        INSTALLED_LIST="$(dpkg -l 2>/dev/null | awk '/^ii/ {print $2}' || true)"
+        INSTALLED_LIST="$(dpkg -l 2>/dev/null | awk '/^ii/ {split($2, a, ":"); print a[1]}' || true)"
         PKGS_TO_REMOVE=""
 
         get_matching_pkgs() {
@@ -90,11 +90,26 @@ case "$PKG_MGR" in
             echo "📦 Purgando paquetes encontrados:"
             echo "$PKGS_TO_REMOVE"
             for p in $PKGS_TO_REMOVE; do
-                apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                if command -v pkg >/dev/null 2>&1; then
+                    pkg uninstall -y "$p" >/dev/null 2>&1 || apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                else
+                    $SUDO apt-get purge -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" "$p" >/dev/null 2>&1 || true
+                fi
             done
         else
             echo "ℹ️ No se detectaron paquetes instalados para el entorno: $TARGET"
         fi
+
+        # Limpiar binarios residuales por seguridad para que la detección sea 100% inmediata
+        case "$TARGET" in
+            xfce|xfce4) rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/xfwm4" 2>/dev/null || true ;;
+            kde) rm -f "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/plasma-session" "$PREFIX_PATH/bin/kwin" 2>/dev/null || true ;;
+            mate) rm -f "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/marco" 2>/dev/null || true ;;
+            lxqt) rm -f "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/lxqt-session" 2>/dev/null || true ;;
+            i3) rm -f "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/i3status" 2>/dev/null || true ;;
+            openbox) rm -f "$PREFIX_PATH/bin/openbox" "$PREFIX_PATH/bin/openbox-session" 2>/dev/null || true ;;
+            all|*) rm -f "$PREFIX_PATH/bin/startxfce4" "$PREFIX_PATH/bin/xfce4-session" "$PREFIX_PATH/bin/startplasma-x11" "$PREFIX_PATH/bin/mate-session" "$PREFIX_PATH/bin/startlxqt" "$PREFIX_PATH/bin/i3" "$PREFIX_PATH/bin/openbox" 2>/dev/null || true ;;
+        esac
         ;;
 
     apk)
