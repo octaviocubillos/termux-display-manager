@@ -5,8 +5,7 @@ from pathlib import Path
 from tdm.backends.base import BaseDisplayBackend
 from tdm.core.models import DisplayConfig, DisplaySession
 from tdm.runners.env_helper import prepare_environment
-from tdm.config import PREFIX
-from tdm.constants import BACKEND_VNC, PORT_VNC_DEFAULT
+from tdm.constants import BACKEND_VNC, PORT_VNC_DEFAULT, PREFIX, find_binary
 
 class VNCBackend(BaseDisplayBackend):
     """Adaptador para servidores VNC (TigerVNC / TightVNC)."""
@@ -20,7 +19,7 @@ class VNCBackend(BaseDisplayBackend):
         env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
         display_str = f":{self.config.display_num}"
         
-        xvnc = shutil.which("Xvnc") or shutil.which("vncserver") or f"{PREFIX}/bin/Xvnc"
+        xvnc = find_binary("Xvnc") or find_binary("vncserver") or f"{PREFIX}/bin/Xvnc"
             
         cmd = [
             xvnc,

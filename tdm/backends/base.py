@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, Tuple, List
 from pathlib import Path
 from tdm.core.models import DisplayConfig, DisplaySession, DisplayStatus
+from tdm.constants import PREFIX, find_binary
 
 class BaseDisplayBackend(ABC):
     """Clase base abstracta para los servidores de pantalla (Termux:X11, VNC, noVNC, RDP)."""
@@ -45,21 +46,22 @@ class BaseDisplayBackend(ABC):
             print("[!] Comando de servidor gráfico vacío.")
             return False
 
-        server_bin = shutil.which(cmd[0]) or cmd[0]
-        if not os.path.exists(server_bin) and not shutil.which(cmd[0]):
-            if "termux-x11" in str(cmd[0]) and shutil.which("pkg"):
+        server_bin = find_binary(cmd[0]) or cmd[0]
+        if not os.path.exists(server_bin) and not find_binary(cmd[0]):
+            pkg_bin = find_binary("pkg") or f"{PREFIX}/bin/pkg"
+            if "termux-x11" in str(cmd[0]) and pkg_bin:
                 print("[*] Servidor termux-x11 no detectado. Instalando automáticamente 'termux-x11-nightly'...")
                 import subprocess
-                subprocess.run(["pkg", "install", "-y", "x11-repo"], capture_output=True)
-                subprocess.run(["pkg", "install", "-y", "termux-x11-nightly"], capture_output=True)
-                server_bin = shutil.which("termux-x11") or f"{PREFIX}/bin/termux-x11"
-            elif "Xvnc" in str(cmd[0]) and shutil.which("pkg"):
+                subprocess.run([pkg_bin, "install", "-y", "x11-repo"], capture_output=True)
+                subprocess.run([pkg_bin, "install", "-y", "termux-x11-nightly"], capture_output=True)
+                server_bin = find_binary("termux-x11") or f"{PREFIX}/bin/termux-x11"
+            elif "Xvnc" in str(cmd[0]) and pkg_bin:
                 print("[*] Servidor VNC no detectado. Instalando automáticamente 'tigervnc'...")
                 import subprocess
-                subprocess.run(["pkg", "install", "-y", "tigervnc"], capture_output=True)
-                server_bin = shutil.which("Xvnc") or f"{PREFIX}/bin/Xvnc"
+                subprocess.run([pkg_bin, "install", "-y", "tigervnc"], capture_output=True)
+                server_bin = find_binary("Xvnc") or f"{PREFIX}/bin/Xvnc"
 
-        if not os.path.exists(server_bin) and not shutil.which(cmd[0]):
+        if not os.path.exists(server_bin) and not find_binary(cmd[0]):
             print(f"[!] Servidor gráfico '{cmd[0]}' no está instalado en el sistema.")
             if "termux-x11" in str(cmd[0]):
                 print("💡 Para instalarlo en Termux ejecuta: pkg install -y x11-repo termux-x11-nightly")

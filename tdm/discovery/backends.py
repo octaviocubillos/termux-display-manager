@@ -1,7 +1,6 @@
-import shutil
 from typing import Dict, List, Any, Optional
 from tdm.core.registry import BACKEND_CATALOG, get_backend_entry
-from tdm.constants import BACKEND_NOVNC
+from tdm.constants import BACKEND_NOVNC, find_binary
 
 def discover_backends() -> List[Dict[str, Any]]:
     """Descubre qué servidores de pantalla del catálogo están instalados y disponibles."""
@@ -13,7 +12,7 @@ def discover_backends() -> List[Dict[str, Any]]:
         entry["executable"] = None
         
         for cand in b["exec_candidates"]:
-            path = shutil.which(cand)
+            path = find_binary(cand)
             if path:
                 entry["installed"] = True
                 entry["executable"] = path
@@ -21,7 +20,7 @@ def discover_backends() -> List[Dict[str, Any]]:
                 
         # Para noVNC, TDM provee el cliente HTML5 y proxy WebSocket nativos, pero requiere Xvnc (tigervnc)
         if b["id"] == BACKEND_NOVNC:
-            xvnc_path = shutil.which("Xvnc") or shutil.which("vncserver")
+            xvnc_path = find_binary("Xvnc") or find_binary("vncserver")
             if xvnc_path:
                 entry["installed"] = True
                 entry["executable"] = xvnc_path
@@ -44,9 +43,9 @@ def get_backend_by_id(backend_id: str) -> Optional[Dict[str, Any]]:
 def discover_system_features() -> Dict[str, Any]:
     """Descubre utilidades auxiliares como D-Bus, PulseAudio y aceleración VirGL."""
     return {
-        "dbus": bool(shutil.which("dbus-daemon") or shutil.which("dbus-launch")),
-        "pulseaudio": bool(shutil.which("pulseaudio") or shutil.which("paplay")),
-        "virgl": bool(shutil.which("virgl_test_server") or shutil.which("virglrenderer")),
-        "xrandr": bool(shutil.which("xrandr")),
-        "xdotool": bool(shutil.which("xdotool")),
+        "dbus": bool(find_binary("dbus-daemon") or find_binary("dbus-launch")),
+        "pulseaudio": bool(find_binary("pulseaudio") or find_binary("paplay")),
+        "virgl": bool(find_binary("virgl_test_server") or find_binary("virglrenderer")),
+        "xrandr": bool(find_binary("xrandr")),
+        "xdotool": bool(find_binary("xdotool")),
     }

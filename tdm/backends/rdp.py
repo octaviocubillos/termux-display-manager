@@ -5,8 +5,7 @@ from pathlib import Path
 from tdm.backends.base import BaseDisplayBackend
 from tdm.core.models import DisplayConfig, DisplaySession
 from tdm.runners.env_helper import prepare_environment
-from tdm.config import PREFIX
-from tdm.constants import BACKEND_RDP, PORT_RDP_DEFAULT
+from tdm.constants import BACKEND_RDP, PORT_RDP_DEFAULT, PREFIX, find_binary
 
 class XRDPBackend(BaseDisplayBackend):
     """Adaptador para el servidor Microsoft Remote Desktop (xrdp)."""
@@ -18,7 +17,7 @@ class XRDPBackend(BaseDisplayBackend):
 
     def build_server_command(self) -> Tuple[list, Dict[str, str]]:
         env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
-        xrdp_bin = shutil.which("xrdp") or f"{PREFIX}/bin/xrdp"
+        xrdp_bin = find_binary("xrdp") or f"{PREFIX}/bin/xrdp"
         
         cmd = [
             xrdp_bin,

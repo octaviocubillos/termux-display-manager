@@ -6,7 +6,7 @@ from tdm.backends.base import BaseDisplayBackend
 from tdm.core.models import DisplayConfig, DisplaySession
 from tdm.runners.env_helper import prepare_environment
 from tdm.config import PREFIX
-from tdm.constants import BACKEND_TERMUX_X11
+from tdm.constants import BACKEND_TERMUX_X11, find_binary
 
 class TermuxX11Backend(BaseDisplayBackend):
     """Adaptador para el servidor gráfico nativo Termux:X11 en Android."""
@@ -15,7 +15,7 @@ class TermuxX11Backend(BaseDisplayBackend):
         env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
         display_str = f":{self.config.display_num}"
         
-        termux_x11_bin = shutil.which("termux-x11") or f"{PREFIX}/bin/termux-x11"
+        termux_x11_bin = find_binary("termux-x11") or f"{PREFIX}/bin/termux-x11"
         cmd = [
             termux_x11_bin,
             display_str,
@@ -26,7 +26,7 @@ class TermuxX11Backend(BaseDisplayBackend):
 
     def build_bridge_command(self) -> Optional[list]:
         """Lanza la app Termux:X11 en Android automáticamente desde Termux."""
-        am_bin = shutil.which("am") or shutil.which("termux-am") or f"{PREFIX}/bin/am"
+        am_bin = find_binary("am") or find_binary("termux-am") or "/system/bin/am" or f"{PREFIX}/bin/am"
         return [
             am_bin,
             "start",

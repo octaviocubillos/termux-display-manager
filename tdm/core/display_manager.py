@@ -185,26 +185,33 @@ class DisplayManager:
             sock2 = f"{prefix}/tmp/.X11-unix/X{disp}"
             pipe = f"/tmp/X11-pipe/X{disp}"
             if os.path.exists(sock1) or os.path.exists(sock2) or os.path.exists(pipe):
-                if not detected_backend:
+                # Solo marcar backend si hay sockets reales y procesos gráficos
+                if graphical_procs and not detected_backend:
                     detected_backend = "termux-x11"
                 detected_display = f":{disp}"
 
-        if graphical_procs or detected_backend or detected_desktop:
+        # Requiere al menos un backend gráfico activo O un entorno de escritorio activo
+        if detected_backend or detected_desktop:
             if not detected_backend:
                 detected_backend = "termux-x11"
             if not detected_desktop:
                 installed = self.get_installed_desktop()
-                detected_desktop = installed["id"]
-                detected_desktop_name = installed["name"]
+                detected_desktop = installed.get("id")
+                detected_desktop_name = installed.get("name")
 
             return {
-                "is_active": True,
+                "id": "detected-screen-0",
+                "status": DisplayStatus.RUNNING.value,
                 "backend": detected_backend,
-                "desktop_id": detected_desktop,
-                "desktop_name": detected_desktop_name or detected_desktop.upper(),
+                "desktop": detected_desktop,
+                "desktop_name": detected_desktop_name or (detected_desktop.upper() if detected_desktop else "Ninguno"),
                 "display": detected_display,
+                "resolution": "Nativo / Detectado",
+                "dpi": 96,
+                "audio": True,
+                "virgl": True,
                 "process_count": len(graphical_procs),
-                "processes": [p["comm"] for p in graphical_procs[:8]]
+                "processes": [p["comm"] for p in graphical_procs if p["comm"]][:5]
             }
 
         return None

@@ -1,7 +1,7 @@
-import shutil
 import os
 from typing import Dict, List, Any, Optional
 from tdm.core.registry import DESKTOP_CATALOG, get_desktop_entry
+from tdm.constants import find_binary
 
 def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
     """Descubre qué entornos de escritorio del catálogo están instalados en el sistema."""
@@ -13,7 +13,7 @@ def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> Lis
         entry["executable"] = None
         
         for cand in de["exec_candidates"]:
-            path = shutil.which(cand)
+            path = find_binary(cand)
             if path:
                 entry["installed"] = True
                 entry["executable"] = path
@@ -27,7 +27,7 @@ def discover_desktops(custom_list: Optional[List[Dict[str, Any]]] = None) -> Lis
             c_id = custom.get("id", "custom")
             c_cmd = custom.get("command", "")
             first_cmd = c_cmd.split()[0] if c_cmd else ""
-            path = shutil.which(first_cmd) if first_cmd else None
+            path = find_binary(first_cmd) if first_cmd else None
             
             discovered.append({
                 "id": c_id,
