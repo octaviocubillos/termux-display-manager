@@ -815,26 +815,6 @@
 </head>
 <body>
 
-    <!-- TOP BAR -->
-    <header>
-        <div class="brand-box" onclick="location.reload()">
-            <div class="brand-logo">
-                <span class="material-symbols-rounded filled">desktop_windows</span>
-            </div>
-            <div class="brand-title" style="display: flex; align-items: center;">
-                <span>TDM</span>
-                <span id="lblHeaderVersion" class="version-badge">v0.0.38</span>
-            </div>
-        </div>
-
-        <div class="nav-actions">
-            <button class="btn-m3 btn-m3-tonal" id="btnInstallPwa" onclick="triggerPwaInstall()" style="display: none;">
-                <span class="material-symbols-rounded">download</span>
-                <span>PWA</span>
-            </button>
-        </div>
-    </header>
-
     <!-- MAIN DASHBOARD -->
     <main>
 
@@ -866,7 +846,10 @@
                 <div class="island-header">
                     <div class="device-info-box">
                         <div>
-                            <div class="device-title" id="txtDevTitle">Termux Display Manager</div>
+                            <div class="device-title" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                <span id="txtDevTitle">Termux Display Manager</span>
+                                <span id="lblHeaderVersion" class="version-badge" style="margin-left: 0;">v0.0.39</span>
+                            </div>
                             <div class="device-subtitle" id="txtDevSubtitle">Termux Local • Conectando...</div>
                         </div>
                     </div>
@@ -879,6 +862,9 @@
                         <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnHeaderStopAll" onclick="apiStopAllService()" style="display: none; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Apagar pantalla y cerrar todos los procesos de Termux">
                             <span class="material-symbols-rounded">power_settings_new</span>
                             <span>Apagar Todo</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" id="btnInstallPwa" onclick="triggerPwaInstall()" style="display: none;" title="Instalar como App PWA">
+                            <span class="material-symbols-rounded">download</span>
                         </button>
                         <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="openWebTerminal()" title="Abrir Consola Terminal de Termux" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border-color: rgba(34, 197, 94, 0.25);">
                             <span class="material-symbols-rounded">terminal</span>
