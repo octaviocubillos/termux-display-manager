@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
-# 🧹 Termux Display Manager (TDM) - Limpiador Total y Reseteo a Cero
+# Termux Display Manager (TDM) - Limpiador Total y Reseteo a Cero
 # ==============================================================================
 # Uso:
 #   bash clean.sh
@@ -15,13 +15,13 @@ HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
 MANIFEST_DB="$HOME_DIR/.tdm/manifest.sqlite3"
 
 echo "=================================================================="
-echo "🧹 [TDM] Limpiando Termux de TDM y Entornos de Escritorio..."
+echo "[TDM] Limpiando Termux de TDM y Entornos de Escritorio..."
 echo "=================================================================="
 
 # ------------------------------------------------------------------------------
 # 1. Detener absolutamente todos los procesos de TDM y entornos gráficos
 # ------------------------------------------------------------------------------
-echo "⏹️  [1/6] Deteniendo procesos, servidores gráficos y daemons..."
+echo "[1/6] Deteniendo procesos, servidores gráficos y daemons..."
 
 PROCS_TO_KILL=(
     "tdm.cli.main" "tdm.server" "tdm.agent" "websockify"
@@ -58,7 +58,7 @@ termux-wake-unlock 2>/dev/null || true
 # ------------------------------------------------------------------------------
 # 2. Desinstalar paquetes registrados en el SQLite Manifest de TDM
 # ------------------------------------------------------------------------------
-echo "📦 [2/6] Desinstalando paquetes registrados en SQLite Manifest..."
+echo "[2/6] Desinstalando paquetes registrados en SQLite Manifest..."
 
 if [ -f "$MANIFEST_DB" ] && command -v python3 >/dev/null 2>&1; then
     PKGS_FROM_MANIFEST=$(python3 -c "
@@ -73,7 +73,7 @@ except Exception:
 " 2>/dev/null || true)
 
     if [ -n "$PKGS_FROM_MANIFEST" ]; then
-        echo "   -> Eliminando paquetes registrados: $PKGS_FROM_MANIFEST"
+        echo "  • Eliminando paquetes registrados: $PKGS_FROM_MANIFEST"
         pkg uninstall -y $PKGS_FROM_MANIFEST >/dev/null 2>&1 || true
     fi
 fi
@@ -81,7 +81,7 @@ fi
 # ------------------------------------------------------------------------------
 # 3. Purgar paquetes de escritorios y dependencias gráficas instaladas
 # ------------------------------------------------------------------------------
-echo "🗑️  [3/6] Purgando paquetes de entornos gráficos y librerías..."
+echo "[3/6] Purgando paquetes de entornos gráficos y librerías..."
 
 if command -v dpkg >/dev/null 2>&1; then
     INSTALLED_PKGS="$(dpkg -l 2>/dev/null | awk '/^ii/ {split($2, a, ":"); print a[1]}' || true)"
@@ -104,7 +104,7 @@ if command -v dpkg >/dev/null 2>&1; then
     done
 
     if [ ${#PKGS_TO_PURGE[@]} -gt 0 ]; then
-        echo "   -> Purgando paquetes gráficos: ${PKGS_TO_PURGE[*]}"
+        echo "  • Purgando paquetes gráficos: ${PKGS_TO_PURGE[*]}"
         pkg uninstall -y "${PKGS_TO_PURGE[@]}" >/dev/null 2>&1 || \
         apt-get purge -y -o Dpkg::Options::="--force-confdef" "${PKGS_TO_PURGE[@]}" >/dev/null 2>&1 || true
     fi
@@ -113,7 +113,7 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Limpieza profunda de almacenamiento en Termux (autoremove & clean)
 # ------------------------------------------------------------------------------
-echo "🧼 [4/6] Limpiando dependencias huérfanas y cachés de paquetes..."
+echo "[4/6] Limpiando dependencias huérfanas y cachés de paquetes..."
 
 if command -v apt-get >/dev/null 2>&1; then
     apt-get autoremove -y --purge >/dev/null 2>&1 || true
@@ -126,7 +126,7 @@ fi
 # ------------------------------------------------------------------------------
 # 5. Eliminar ejecutables, módulos Python y archivos de sistema de TDM
 # ------------------------------------------------------------------------------
-echo "📁 [5/6] Eliminando archivos del sistema TDM y enlaces..."
+echo "[5/6] Eliminando archivos del sistema TDM y enlaces..."
 
 # Binario CLI
 rm -f "$PREFIX/bin/tdm"
@@ -155,7 +155,7 @@ rm -rf "$HOME_DIR/.vnc"
 # ------------------------------------------------------------------------------
 # 6. Limpieza de sockets, tuberías IPC y temporales
 # ------------------------------------------------------------------------------
-echo "🔌 [6/6] Limpiando sockets X11 y archivos temporales..."
+echo "[6/6] Limpiando sockets X11 y archivos temporales..."
 
 TMPDIRS=("/tmp" "$PREFIX/tmp" "${TMPDIR:-/data/data/com.termux/files/usr/tmp}")
 for dir in "${TMPDIRS[@]}"; do
@@ -172,8 +172,8 @@ done
 rm -f /sdcard/Download/tdm-bundle.tar.gz /sdcard/Download/install_tdm.sh 2>/dev/null || true
 
 echo "=================================================================="
-echo "✨ [TDM] Limpieza completa finalizada exitosamente."
-echo "🚀 Termux ha quedado limpio y listo para probar la instalación de 0:"
+echo "[TDM] Limpieza completa finalizada exitosamente."
+echo "Termux ha quedado limpio y listo para probar la instalación desde cero:"
 echo ""
 echo "   curl -sSL https://tdm.oton.cl/install | bash"
 echo "=================================================================="
