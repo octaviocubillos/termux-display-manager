@@ -18,8 +18,11 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, Any, List
 
 LANDING_DIR = Path(__file__).resolve().parent
+ROOT_DIR = LANDING_DIR.parent
 if str(LANDING_DIR) not in sys.path:
     sys.path.insert(0, str(LANDING_DIR))
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 try:
     from landing.db import landing_db, LandingDatabase, HASH_REGEX

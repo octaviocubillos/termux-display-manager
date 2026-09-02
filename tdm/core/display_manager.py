@@ -396,6 +396,7 @@ class DisplayManager:
             "battery": full_dev.get("battery", {}),
             "volume": full_dev.get("volume", {}),
             "device_status": full_dev,
+            "companion": full_dev.get("companion", device_manager.get_companion_status()),
             "version": ver_info,
             "is_screen_active": is_screen_active,
             "active_screen": session_dict,

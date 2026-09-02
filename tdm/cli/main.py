@@ -306,6 +306,10 @@ async def handle_install(args):
         print(f"🖥️ [TDM] Instalando servidor gráfico '{args.server}' bajo demanda...")
         success = await installer_service.run_script("install_server.sh", [args.server])
         print(f"✅ Servidor {args.server} instalado con éxito." if success else f"❌ Error instalando servidor {args.server}.")
+    elif getattr(args, "companion", False) or getattr(args, "api", False):
+        print("⚡ [TDM] Instalando paquetes de soporte para Termux:X11 y Termux:API...")
+        success = await installer_service.install_companion(restart_after=True)
+        print("✅ Apps complementarias listas." if success else "❌ Error instalando paquetes de soporte.")
     elif getattr(args, "desktop", None):
         print(f"🎨 [TDM] Instalando entorno de escritorio '{args.desktop}' bajo demanda...")
         success = await installer_service.install_desktop(args.desktop)
@@ -697,6 +701,7 @@ def build_cli_parser():
     install_parser.add_argument("--server", "-s", choices=["termux-x11", "novnc", "vnc", "rdp", "audio"], help="Instala un servidor gráfico específico")
     install_parser.add_argument("--desktop", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox"], help="Instala un escritorio específico")
     install_parser.add_argument("--driver-3d", "--3d", "--gpu", dest="driver_3d", action="store_true", help="Instala el controlador de aceleración 3D para la GPU detectada")
+    install_parser.add_argument("--companion", action="store_true", help="Instala los paquetes para Termux:X11 y Termux:API")
     install_parser.add_argument("--api", action="store_true", help="Instala el paquete termux-api")
     install_parser.add_argument("--full", "-f", action="store_true", help="Instala todos los servidores y utilidades")
     install_parser.add_argument("--cancel", "-c", action="store_true", help="Cancela y revierte la instalación en curso")

@@ -90,6 +90,7 @@ tdm doctor                                    # Diagnóstico de paquetes, aceler
 tdm server [--port 19050]                     # Servidor HTTP REST y panel Web Dashboard/PWA
 tdm service [start|stop|restart|status]       # Gestor de servicio en segundo plano con wake-lock
 tdm install --desktop [xfce|kde|openbox]      # Instalación modular de escritorios bajo demanda
+tdm install --companion                       # Instala paquetes de soporte para Termux:X11 y Termux:API
 tdm uninstall                                 # Desinstalación selectiva auditada por SQLite
 tdm permissions                               # Solicita en pantalla el permiso "Mostrar sobre otras apps"
 ```

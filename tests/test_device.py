@@ -28,6 +28,16 @@ class TestDeviceManager(unittest.TestCase):
         self.assertIn("battery", dev)
         self.assertIn("volume", dev)
         self.assertIn("api", dev)
+        self.assertIn("companion", dev)
+
+    def test_companion_status(self):
+        comp = device_manager.get_companion_status()
+        self.assertIsInstance(comp, dict)
+        self.assertIn("needs_setup", comp)
+        self.assertIn("termux_x11", comp)
+        self.assertIn("termux_api", comp)
+        self.assertIn("ready", comp["termux_x11"])
+        self.assertIn("ready", comp["termux_api"])
 
 if __name__ == "__main__":
     unittest.main()

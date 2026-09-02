@@ -201,14 +201,88 @@ class DeviceManager:
 
         return {"success": False, "error": "termux-brightness no disponible"}
 
+    def is_app_installed_android(self, package_name: str) -> bool:
+        """Comprueba si una app de Android está instalada en el sistema mediante pm."""
+        if not IS_TERMUX:
+            return True
+        try:
+            out = subprocess.check_output(["pm", "list", "packages", package_name], text=True, timeout=2).strip()
+            if f"package:{package_name}" in out:
+                return True
+        except Exception:
+            pass
+        return False
+
+    def is_termux_api_app_installed(self) -> bool:
+        """Comprueba si la aplicacion Android Termux:API esta instalada y disponible."""
+        if not IS_TERMUX:
+            return True
+        if self.is_app_installed_android("com.termux.api"):
+            return True
+        if shutil.which("termux-battery-status"):
+            try:
+                out = subprocess.check_output(["termux-battery-status"], text=True, timeout=2).strip()
+                if out and ("percentage" in out or "level" in out):
+                    return True
+            except Exception:
+                pass
+        return False
+
+    def is_termux_x11_package_installed(self) -> bool:
+        """Comprueba si el paquete binario termux-x11 esta instalado en Termux."""
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        return bool(shutil.which("termux-x11") or (Path(prefix) / "bin" / "termux-x11").exists())
+
+    def is_termux_x11_app_installed(self) -> bool:
+        """Comprueba si la aplicacion APK Termux:X11 esta instalada en Android."""
+        if not IS_TERMUX:
+            return True
+        return self.is_app_installed_android("com.termux.x11")
+
+    def get_companion_status(self) -> Dict[str, Any]:
+        """Devuelve el estado de las aplicaciones complementarias recomendadas."""
+        x11_pkg = self.is_termux_x11_package_installed()
+        x11_app = self.is_termux_x11_app_installed()
+        x11_ready = bool(x11_pkg and x11_app)
+
+        api_pkg = self.is_termux_api_installed()
+        api_app = self.is_termux_api_app_installed()
+        api_ready = bool(api_pkg and api_app)
+
+        needs_setup = not (x11_ready and api_ready)
+        needs_pkg_install = not (x11_pkg and api_pkg)
+
+        return {
+            "needs_setup": needs_setup,
+            "needs_pkg_install": needs_pkg_install,
+            "termux_x11": {
+                "package_installed": x11_pkg,
+                "app_installed": x11_app,
+                "ready": x11_ready,
+                "apk_url": "https://github.com/termux/termux-x11/releases",
+                "apk_name": "Termux:X11 (GitHub Releases)",
+                "pkg_command": "pkg install -y x11-repo && pkg install -y termux-x11-nightly"
+            },
+            "termux_api": {
+                "package_installed": api_pkg,
+                "app_installed": api_app,
+                "ready": api_ready,
+                "apk_url": "https://github.com/termux/termux-api/releases",
+                "apk_name": "Termux:API (GitHub / F-Droid)",
+                "pkg_command": "pkg install -y termux-api"
+            }
+        }
+
     def get_full_device_info(self) -> Dict[str, Any]:
-        """Devuelve el estado integrado de hardware, bateria, volumen y termux-api."""
-        cli_installed = self.is_termux_api_installed()
-        app_installed = self.is_termux_api_app_installed() if IS_TERMUX else True
+        """Devuelve el estado integrado de hardware, bateria, volumen, termux-api y companion apps."""
+        companion = self.get_companion_status()
+        cli_installed = companion["termux_api"]["package_installed"]
+        app_installed = companion["termux_api"]["app_installed"]
         
         return {
             "battery": self.get_battery_status(),
             "volume": self.get_volume_info(),
+            "companion": companion,
             "api": {
                 "cli_installed": cli_installed,
                 "app_installed": app_installed,

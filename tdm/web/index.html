@@ -1177,6 +1177,77 @@
             </div>
         </div>
 
+        <!-- COMPANION APPS RECOMMENDATION BANNER (Termux:X11 & Termux:API) -->
+        <div id="companionAppsBanner" style="display: none; background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.28); border-radius: var(--md-shape-corner-lg); padding: 0.9rem 1.1rem; margin-bottom: 0.75rem; flex-direction: column; gap: 0.75rem;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem;">
+                <div style="display: flex; align-items: flex-start; gap: 0.75rem; min-width: 0;">
+                    <span class="material-symbols-rounded" style="font-size: 1.5rem; color: #facc15; flex-shrink: 0; margin-top: 0.1rem;">speed</span>
+                    <div style="min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span style="font-size: 0.88rem; font-weight: 800; color: #fef08a;">Optimización de Rendimiento Recomendada</span>
+                            <span style="background: rgba(234, 179, 8, 0.2); color: #fef08a; font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 9999px; font-weight: 700;">Termux:X11 & Termux:API</span>
+                        </div>
+                        <div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 0.25rem; line-height: 1.45;">
+                            Para obtener aceleración GPU nativa a <strong>60/120 FPS</strong> en la pantalla de tu móvil y control total de hardware (volumen, batería avanzada), se recomienda instalar las aplicaciones y paquetes complementarios.
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="dismissCompanionBanner()" title="Cerrar aviso" style="flex-shrink: 0;">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+
+            <!-- APPS STATUS CARDS -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.6rem;">
+                <!-- Card Termux:X11 -->
+                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.78rem; font-weight: 700; color: #fff;">1. Termux:X11 (Pantalla Física)</span>
+                        <span id="badgeX11Status" style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 9999px; background: rgba(239, 68, 68, 0.2); color: #f87171;">Pendiente</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;" id="txtX11Desc">
+                        Permite salida gráfica nativa a 60/120 FPS sin latencia de red.
+                    </div>
+                    <div style="display: flex; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap;">
+                        <a id="lnkX11Apk" href="https://github.com/termux/termux-x11/releases" target="_blank" rel="noopener noreferrer" class="btn-m3 btn-m3-tonal btn-m3-xs" style="text-decoration: none;">
+                            <span class="material-symbols-rounded" style="font-size: 0.85rem;">open_in_new</span>
+                            <span>Descargar APK</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Card Termux:API -->
+                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.65rem 0.85rem; display: flex; flex-direction: column; gap: 0.35rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.78rem; font-weight: 700; color: #fff;">2. Termux:API (Hardware)</span>
+                        <span id="badgeApiStatus" style="font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 9999px; background: rgba(239, 68, 68, 0.2); color: #f87171;">Pendiente</span>
+                    </div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;" id="txtApiDesc">
+                        Habilita control de volumen multimedia y telemetría avanzada.
+                    </div>
+                    <div style="display: flex; gap: 0.4rem; margin-top: 0.2rem; flex-wrap: wrap;">
+                        <a id="lnkApiApk" href="https://github.com/termux/termux-api/releases" target="_blank" rel="noopener noreferrer" class="btn-m3 btn-m3-tonal btn-m3-xs" style="text-decoration: none;">
+                            <span class="material-symbols-rounded" style="font-size: 0.85rem;">open_in_new</span>
+                            <span>Descargar APK</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ACTION FOOTER -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; padding-top: 0.2rem; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="font-size: 0.7rem; color: #94a3b8;" id="txtCompanionStatusNote">
+                    El instalador configurará los repositorios y paquetes automáticamente y reiniciará el servicio TDM.
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button class="btn-m3 btn-m3-filled btn-m3-sm" id="btnInstallCompanion" onclick="apiInstallCompanion()">
+                        <span class="material-symbols-rounded" id="icoInstallCompanion">build_circle</span>
+                        <span id="lblInstallCompanion">Instalar Paquetes en Termux</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- PANEL DE CONTROL ACTIVO (TERMUX LOCAL DIRECTO) -->
         <div id="boxActiveDevicePanel" style="display: flex; flex-direction: column; gap: 1.25rem;">
             
@@ -2194,13 +2265,15 @@
                     if (fBadge) fBadge.innerText = `v${data.version.version}`;
                 }
 
-                const lanIp = data.network?.lan_ip || '127.0.0.1';
                 if (data.is_screen_active) {
                     const deTitle = act.desktop_name || (de?.name || 'Entorno Gráfico');
                     sub.innerText = `Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
                 } else {
                     sub.innerText = `Termux Local • IP: ${lanIp} • Apagado`;
                 }
+
+                // Actualizar banner de advertencia/recomendación de apps complementarias (Termux:X11 y Termux:API)
+                updateCompanionAppsBanner(data);
 
                 // TELEMETRÍA COMPLETA (TARJETAS CPU, RAM, DISCO, RED):
                 // 1. CPU
@@ -3655,15 +3728,144 @@
         }
 
         async function apiInstallTermuxApi() {
-            showToast('Instalando Termux:API en segundo plano...', 'download');
-            try {
-                const resp = await fetch(apiPath('/api/device/install-api'), {method: 'POST'});
-                if (resp.ok) {
-                    showToast('Instalación de Termux:API solicitada.', 'check_circle');
-                    setTimeout(() => refreshStatus(), 2000);
+            return apiInstallCompanion();
+        }
+
+        function updateCompanionAppsBanner(data) {
+            const banner = document.getElementById('companionAppsBanner');
+            if (!banner) return;
+
+            const companion = data?.companion || data?.device_status?.companion;
+            if (!companion) return;
+
+            // Si el usuario ya lo descartó en esta sesión:
+            const isDismissed = sessionStorage.getItem('tdm_companion_dismissed');
+
+            if (!companion.needs_setup) {
+                // Ambas apps y paquetes están instalados y listos: ocultar banner
+                banner.style.display = 'none';
+                return;
+            }
+
+            if (isDismissed) {
+                banner.style.display = 'none';
+                return;
+            }
+
+            banner.style.display = 'flex';
+
+            // 1. Estado Termux:X11
+            const x11 = companion.termux_x11 || {};
+            const badgeX11 = document.getElementById('badgeX11Status');
+            const txtX11 = document.getElementById('txtX11Desc');
+            if (badgeX11) {
+                if (x11.ready) {
+                    badgeX11.innerText = 'Listo (Nativo 60/120 Hz)';
+                    badgeX11.style.background = 'rgba(34, 197, 94, 0.2)';
+                    badgeX11.style.color = '#4ade80';
+                    if (txtX11) txtX11.innerText = 'Paquete Termux y App Android instalados y operativos.';
+                } else if (x11.package_installed) {
+                    badgeX11.innerText = 'Paquete listo • Falta APK';
+                    badgeX11.style.background = 'rgba(234, 179, 8, 0.2)';
+                    badgeX11.style.color = '#fef08a';
+                    if (txtX11) txtX11.innerText = 'Paquete termux-x11 instalado. Falta instalar/abrir la app Android Termux:X11.';
+                } else {
+                    badgeX11.innerText = 'No instalado';
+                    badgeX11.style.background = 'rgba(239, 68, 68, 0.2)';
+                    badgeX11.style.color = '#f87171';
+                    if (txtX11) txtX11.innerText = 'Permite aceleración GPU nativa a 60/120 FPS sin latencia de red.';
                 }
-            } catch (e) {
-                showToast('Error iniciando instalación de Termux:API', 'error');
+            }
+
+            // 2. Estado Termux:API
+            const api = companion.termux_api || {};
+            const badgeApi = document.getElementById('badgeApiStatus');
+            const txtApi = document.getElementById('txtApiDesc');
+            if (badgeApi) {
+                if (api.ready) {
+                    badgeApi.innerText = 'Listo (Hardware Activo)';
+                    badgeApi.style.background = 'rgba(34, 197, 94, 0.2)';
+                    badgeApi.style.color = '#4ade80';
+                    if (txtApi) txtApi.innerText = 'Paquete Termux y App Android instalados y operativos.';
+                } else if (api.package_installed) {
+                    badgeApi.innerText = 'Paquete listo • Falta APK';
+                    badgeApi.style.background = 'rgba(234, 179, 8, 0.2)';
+                    badgeApi.style.color = '#fef08a';
+                    if (txtApi) txtApi.innerText = 'Paquete termux-api instalado. Falta instalar la app Android Termux:API.';
+                } else {
+                    badgeApi.innerText = 'No instalado';
+                    badgeApi.style.background = 'rgba(239, 68, 68, 0.2)';
+                    badgeApi.style.color = '#f87171';
+                    if (txtApi) txtApi.innerText = 'Habilita control de volumen multimedia y telemetría por hardware.';
+                }
+            }
+
+            // 3. Botón de Instalación
+            const btn = document.getElementById('btnInstallCompanion');
+            const lbl = document.getElementById('lblInstallCompanion');
+            const note = document.getElementById('txtCompanionStatusNote');
+            if (btn && lbl) {
+                if (!companion.needs_pkg_install) {
+                    lbl.innerText = 'Paquetes Termux Listos';
+                    btn.classList.remove('btn-m3-filled');
+                    btn.classList.add('btn-m3-tonal');
+                    if (note) note.innerText = 'Paquetes de Termux listos. Descarga e instala los archivos APK en Android si aún no los tienes.';
+                } else {
+                    lbl.innerText = 'Instalar Paquetes en Termux';
+                    btn.classList.remove('btn-m3-tonal');
+                    btn.classList.add('btn-m3-filled');
+                    if (note) note.innerText = 'El instalador configurará los repositorios y paquetes automáticamente y reiniciará el servicio TDM.';
+                }
+            }
+        }
+
+        function dismissCompanionBanner() {
+            sessionStorage.setItem('tdm_companion_dismissed', 'true');
+            const banner = document.getElementById('companionAppsBanner');
+            if (banner) banner.style.display = 'none';
+        }
+
+        async function apiInstallCompanion() {
+            const btn = document.getElementById('btnInstallCompanion');
+            const lbl = document.getElementById('lblInstallCompanion');
+            const ico = document.getElementById('icoInstallCompanion');
+            
+            if (btn) btn.disabled = true;
+            if (lbl) lbl.innerText = 'Iniciando instalación...';
+            if (ico) ico.innerText = 'sync';
+
+            try {
+                showToast('Iniciando instalación de paquetes Termux:X11 y Termux:API...', 'build');
+                const res = await fetch(apiPath('/api/companion/install'), { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    showToast('Instalando paquetes en Termux...', 'downloading');
+                    if (lbl) lbl.innerText = 'Instalando en Termux...';
+
+                    // Cuenta regresiva para el reinicio automático del servicio
+                    let countdown = 8;
+                    const interval = setInterval(() => {
+                        if (countdown <= 0) {
+                            clearInterval(interval);
+                            showToast('Reiniciando servicio TDM y recargando página...', 'autorenew');
+                            setTimeout(() => window.location.reload(), 1500);
+                        } else {
+                            if (lbl) lbl.innerText = `Reiniciando servicio (${countdown}s)...`;
+                            countdown--;
+                        }
+                    }, 1000);
+                } else {
+                    showToast(data.error || 'Error al iniciar instalación', 'error');
+                    if (btn) btn.disabled = false;
+                    if (lbl) lbl.innerText = 'Reintentar Instalación';
+                    if (ico) ico.innerText = 'refresh';
+                }
+            } catch (err) {
+                showToast('Fallo de red al solicitar instalación: ' + err.message, 'error');
+                if (btn) btn.disabled = false;
+                if (lbl) lbl.innerText = 'Reintentar Instalación';
+                if (ico) ico.innerText = 'refresh';
             }
         }
 

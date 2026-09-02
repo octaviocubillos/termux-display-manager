@@ -302,6 +302,91 @@ class PackageInstaller:
         self.active_target = server
         return await self.run_script("install_server.sh", [server])
 
+    async def install_companion(self, restart_after: bool = True) -> bool:
+        """Instala los paquetes necesarios para Termux:X11 y Termux:API en Termux y reinicia el servicio."""
+        self.status = InstallerStatus.RUNNING
+        self.active_target = "companion"
+        self.current_task = "Instalando paquetes Termux:X11 y Termux:API"
+        self.logs = []
+        self._broadcast_progress(10, "Iniciando instalación de apps complementarias...")
+        self._broadcast_log("[TDM] Instalando dependencias de soporte para Termux:X11 y Termux:API...")
+
+        prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+        
+        # 1. Habilitar x11-repo
+        self._broadcast_progress(25, "Habilitando repositorio x11-repo...")
+        self._broadcast_log("[*] Verificando repositorio x11-repo en Termux...")
+        cmd_repo = ["pkg", "install", "-y", "x11-repo"]
+        try:
+            p_repo = await asyncio.create_subprocess_exec(*cmd_repo, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+            while True:
+                line = await p_repo.stdout.readline()
+                if not line:
+                    break
+                self._broadcast_log(line.decode(errors="replace").rstrip())
+            await p_repo.wait()
+        except Exception as e:
+            self._broadcast_log(f"[!] Aviso al configurar repo: {e}")
+
+        # 2. Instalar termux-x11-nightly y termux-api
+        self._broadcast_progress(50, "Descargando e instalando termux-x11-nightly y termux-api...")
+        self._broadcast_log("[*] Instalando paquetes: termux-x11-nightly termux-api...")
+        pkgs = ["termux-x11-nightly", "termux-api"]
+        cmd_install = ["pkg", "install", "-y"] + pkgs
+        success = False
+        try:
+            self.process = await asyncio.create_subprocess_exec(*cmd_install, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT)
+            while True:
+                line = await self.process.stdout.readline()
+                if not line:
+                    break
+                self._broadcast_log(line.decode(errors="replace").rstrip())
+            await self.process.wait()
+            success = (self.process.returncode == 0)
+        except Exception as e:
+            self._broadcast_log(f"[!] Error ejecutando pkg install: {e}")
+            success = False
+        finally:
+            self.process = None
+
+        # 3. Registrar en SQLite Manifest para control y auditoría
+        if success:
+            try:
+                from tdm.core.manifest import manifest_ledger
+                manifest_ledger.record_packages_if_new(["x11-repo", "termux-x11-nightly", "termux-api"], component="companion")
+                self._broadcast_log("[✓] Paquetes registrados en manifiesto SQLite.")
+            except Exception:
+                pass
+
+            self.status = InstallerStatus.COMPLETED
+            self._broadcast_progress(100, "¡Paquetes complementarios instalados con éxito!")
+            self._broadcast_log("[✓] Instalación de Termux:X11 y Termux:API completada.")
+
+            if restart_after:
+                self._broadcast_log("[*] Reiniciando servicio TDM en 2 segundos para aplicar cambios...")
+                asyncio.create_task(self._delayed_service_restart(delay=2.0))
+            return True
+        else:
+            self.status = InstallerStatus.FAILED
+            self._broadcast_progress(self.progress_percent, "Falló la instalación de paquetes complementarios")
+            self._broadcast_log("[✗] Error instalando paquetes de soporte.")
+            return False
+
+    async def _delayed_service_restart(self, delay: float = 2.0):
+        """Reinicia el servicio TDM en segundo plano tras un breve retraso."""
+        try:
+            await asyncio.sleep(delay)
+            import subprocess, sys
+            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+            bin_tdm = shutil.which("tdm") or f"{prefix}/bin/tdm"
+            if os.path.exists(bin_tdm):
+                subprocess.run([bin_tdm, "service", "restart"], check=False)
+            else:
+                py_bin = sys.executable or f"{prefix}/bin/python3"
+                subprocess.run([py_bin, "-m", "tdm.cli.main", "service", "restart"], check=False)
+        except Exception as e:
+            self._broadcast_log(f"[!] Error al reiniciar servicio: {e}")
+
     def get_status(self) -> Dict[str, Any]:
         return {
             "status": self.status,

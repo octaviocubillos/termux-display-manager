@@ -851,9 +851,26 @@ class AsyncHTTPServer:
                 self.send_json_response(writer, {"success": False, "error": str(e)}, status_code=400)
             return
 
-        if path == "/api/device/install-api" and method == "POST":
-            res = await execute_cli_command(["install", "--api"])
-            self.send_json_response(writer, res)
+        if path == "/api/companion/status" and method in ["GET", "HEAD"]:
+            from tdm.core.device_manager import device_manager
+            self.send_json_response(writer, device_manager.get_companion_status())
+            return
+
+        if path in ["/api/companion/install", "/api/device/install-api"] and method == "POST":
+            from tdm.core.installer import installer_service
+            if installer_service.status == "running":
+                self.send_json_response(writer, {
+                    "success": False,
+                    "error": "El instalador ya se encuentra ejecutando una tarea."
+                }, status_code=409)
+                return
+
+            asyncio.create_task(installer_service.install_companion(restart_after=True))
+            self.send_json_response(writer, {
+                "success": True,
+                "message": "Instalación de paquetes de soporte iniciada. El servicio TDM se reiniciará automáticamente al concluir.",
+                "restart_scheduled": True
+            })
             return
 
         # 8. Endpoint de Versionado y Actualización
