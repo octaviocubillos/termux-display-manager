@@ -66,6 +66,8 @@ async def handle_status(args=None):
         print(f"  • Red LAN:      {net['access_urls']['lan']}")
     if net.get("tailscale_ip"):
         print(f"  • Tailscale:    {net['access_urls']['tailscale']}")
+    if net.get("access_urls", {}).get("web"):
+        print(f"  • Web (HTTPS):  {net['access_urls']['web']}")
     return status
 
 async def handle_start(args):
@@ -243,6 +245,24 @@ async def handle_doctor():
         print(f"  [✓] Tailscale Mesh VPN:    {net['tailscale_ip']} (Activo)")
     else:
         print(f"  [i] Tailscale Mesh VPN:    No detectado (Opcional para acceso fuera de casa)")
+    if net.get("access_urls", {}).get("web"):
+        print(f"  [✓] Acceso Central HTTPS:  {net['access_urls']['web']}")
+
+def handle_register(args):
+    """Registra el dispositivo en el Hub central y proyecta los accesos web locales y remotos."""
+    from tdm.core.device import register_device_to_hub, format_access_banner
+    hub_url = getattr(args, "hub", "https://tdm.oton.cl")
+    port = getattr(args, "port", PORT_TDM_SERVER)
+    res = register_device_to_hub(hub_url=hub_url, port=port)
+
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(res, indent=2))
+    elif getattr(args, "quiet", False):
+        print(res.get("url", ""))
+    else:
+        print(format_access_banner(port=port, hub_url=hub_url))
+    return res
 
 async def handle_server(args, is_hub=False):
     import faulthandler
@@ -700,6 +720,13 @@ def build_cli_parser():
     # tdm permissions / perms
     subparsers.add_parser("permissions", aliases=["perms"], help="Solicita en pantalla los permisos de Android para abrir X11 automáticamente")
 
+    # tdm register / link / access / urls
+    reg_parser = subparsers.add_parser("register", aliases=["link", "access", "urls"], help="Registra el dispositivo en el Hub y muestra los accesos web locales y remotos")
+    reg_parser.add_argument("--hub", "-H", default="https://tdm.oton.cl", help="URL del servidor Hub (por defecto https://tdm.oton.cl)")
+    reg_parser.add_argument("--port", "-p", type=int, default=PORT_TDM_SERVER, help="Puerto del servidor Web TDM (por defecto 19050)")
+    reg_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+    reg_parser.add_argument("--quiet", "-q", action="store_true", help="Imprime únicamente la URL central")
+
     # tdm version
     subparsers.add_parser("version", help="Muestra la versión de TDM y esquema de manifest")
     parser.add_argument("--version", "-v", action="store_true", help="Muestra la versión de TDM")
@@ -777,6 +804,9 @@ async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
     elif args.command in ["brightness"]:
         res = handle_brightness(args)
         return {"success": True, "data": res}
+    elif args.command in ["register", "link", "access", "urls"]:
+        res = handle_register(args)
+        return {"success": res.get("success", False), "data": res}
     elif args.command == "doctor":
         await handle_doctor()
         return {"success": True}
@@ -812,6 +842,8 @@ def main():
         handle_brightness(args)
     elif args.command == "status":
         asyncio.run(handle_status(args))
+    elif args.command in ["register", "link", "access", "urls"]:
+        handle_register(args)
     elif args.command == "permissions" or args.command == "perms":
         handle_permissions()
     elif args.command == "logs":

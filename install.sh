@@ -126,6 +126,9 @@ echo "====================================================="
 
 pkill -f "tdm.cli.main" 2>/dev/null || true
 sleep 0.5
-PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" service restart
+PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" service restart 2>/dev/null || true
 
-echo "[TDM] Core activo. Acceso Web: http://127.0.0.1:19050"
+# Registrar identidad en SQLite, detectar IPs locales/Tailscale y proyectar banner completo
+PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" register 2>/dev/null || {
+    echo "[TDM] Core activo. Acceso Web: http://127.0.0.1:19050"
+}

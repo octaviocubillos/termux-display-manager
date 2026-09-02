@@ -167,8 +167,18 @@ if [ -d "/data/data/com.termux" ]; then
     echo "• Activa 'Permitir' en la pantalla de ajustes de tu teléfono."
 fi
 
-echo "====================================================="
-echo "[TDM] Instalación completada con éxito."
-echo "Dashboard Web: http://localhost:19050"
-echo "Comandos disponibles: tdm start, tdm stop, tdm permissions"
-echo "====================================================="
+if [ -f "$BIN_PATH" ]; then
+    PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" register 2>/dev/null || {
+        echo "====================================================="
+        echo "[TDM] Instalación completada con éxito."
+        echo "Dashboard Web: http://localhost:19050"
+        echo "Comandos disponibles: tdm start, tdm stop, tdm permissions"
+        echo "====================================================="
+    }
+else
+    echo "====================================================="
+    echo "[TDM] Instalación completada con éxito."
+    echo "Dashboard Web: http://localhost:19050"
+    echo "Comandos disponibles: tdm start, tdm stop, tdm permissions"
+    echo "====================================================="
+fi

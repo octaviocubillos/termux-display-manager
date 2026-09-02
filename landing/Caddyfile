@@ -1,8 +1,17 @@
 # Configuración Caddy para Landing Page de TDM con Reverse Proxy HTTP/WS en /aabbcc
 tdm.oton.cl {
-    # 1. Reverse Proxy a la App Web TDM en /aabbcc
+    # 1. Reverse Proxy Dinámico y API Hub hacia server.py (puerto 8080)
+    @dynamic_proxy path_regexp hash ^/[a-z]{8}(/.*)?$
+    handle @dynamic_proxy {
+        reverse_proxy 127.0.0.1:8080
+    }
+
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8080
+    }
+
     handle_path /aabbcc/* {
-        reverse_proxy 192.168.1.197:19050
+        reverse_proxy 127.0.0.1:8080
     }
 
     # 2. Servir instaladores con MIME text/plain

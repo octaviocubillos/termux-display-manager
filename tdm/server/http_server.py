@@ -47,23 +47,39 @@ class AsyncHTTPServer:
         self.server = await asyncio.start_server(self.handle_client, self.host, self.port)
         
         # Auto-descubrimiento de interfaces de red
-        net_info = network_discovery.get_all_interfaces()
+        net_info = network_discovery.get_all_interfaces(port=self.port)
         
+        web_central_url = net_info.get("access_urls", {}).get("web", "")
+
         print("\n" + "=" * 55)
         print(f"🚀 [TDM Server] Servidor Web y WebSocket Activo")
         print("=" * 55)
         print("🌐 Direcciones de Acceso:")
         print(f"  • Local:        http://localhost:{self.port}")
-        if net_info.get("lan_ip"):
+        if net_info.get("lan_ip") and net_info["lan_ip"] != "127.0.0.1":
             print(f"  • Red LAN:      http://{net_info['lan_ip']}:{self.port}")
-        if net_info.get("web"):
-            print(f"  • Web:          {net_info['web']}")
+        if web_central_url:
+            print(f"  • Web Central:  {web_central_url}")
         if net_info.get("tailscale_ip"):
             print(f"  • Tailscale:    http://{net_info['tailscale_ip']}:{self.port} 🔒")
         print("=" * 55 + "\n")
 
+        if not self.is_hub:
+            asyncio.create_task(self._auto_register_loop())
+
         async with self.server:
             await self.server.serve_forever()
+
+    async def _auto_register_loop(self):
+        """Mantiene el registro del dispositivo actualizado en el Hub periódicamente."""
+        from tdm.core.device import register_device_to_hub
+        await asyncio.sleep(1.5)
+        while self.running:
+            try:
+                await asyncio.to_thread(register_device_to_hub, "https://tdm.oton.cl", self.port)
+            except Exception:
+                pass
+            await asyncio.sleep(300)
 
     async def stop(self):
         """Detiene el servidor."""

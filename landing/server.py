@@ -1,25 +1,94 @@
 #!/usr/bin/env python3
 """
-Servidor Web para Landing Page de TDM con Reverse Proxy HTTP/WebSocket en /aabbcc.
-Sirve archivos estáticos (install, go, changelog, etc.) y reenvía /aabbcc al runtime TDM.
+Servidor Web para Landing Page de TDM con Reverse Proxy Dinámico HTTP/WebSocket
+basado en Hashes de 8 letras y SQLite, además de soporte legacy para /aabbcc.
+Sirve archivos estáticos y protege scripts de instalación contra navegadores.
 """
 
 import asyncio
 import os
 import sys
+import json
+import time
+import re
 import argparse
 import mimetypes
 import urllib.parse
 from pathlib import Path
+from typing import Optional, Tuple, Dict, Any, List
 
 LANDING_DIR = Path(__file__).resolve().parent
+if str(LANDING_DIR) not in sys.path:
+    sys.path.insert(0, str(LANDING_DIR))
+
+try:
+    from landing.db import landing_db, LandingDatabase, HASH_REGEX
+except ImportError:
+    from db import landing_db, LandingDatabase, HASH_REGEX
+
+DEVICE_ROUTE_REGEX = re.compile(r"^/([a-z]{8})(?:/(.*))?$")
+
 
 class LandingProxyServer:
-    def __init__(self, host: str = "0.0.0.0", port: int = 8080, target_host: str = "192.168.1.197", target_port: int = 19050):
+    def __init__(
+        self,
+        host: str = "0.0.0.0",
+        port: int = 8080,
+        target_host: str = "192.168.1.197",
+        target_port: int = 19050,
+        db: Optional[LandingDatabase] = None
+    ):
         self.host = host
         self.port = port
         self.target_host = target_host
         self.target_port = target_port
+        self.db = db or landing_db
+        self.active_targets: Dict[str, Dict[str, Any]] = {}
+
+    async def find_active_target(self, device: Dict[str, Any]) -> Optional[Tuple[str, int]]:
+        """
+        Determina la IP activa del dispositivo probando secuencialmente:
+        1. 127.0.0.1 (mismo host)
+        2. IPs locales (LAN / Wi-Fi)
+        3. IP de Tailscale (si existe)
+        Caché en memoria por 15 segundos para no penalizar peticiones continuas.
+        """
+        dev_hash = device["device_hash"]
+        now = time.time()
+        cached = self.active_targets.get(dev_hash)
+        if cached and (now - cached["ts"] < 15.0):
+            return (cached["host"], cached["port"])
+
+        port = int(device.get("port", 19050))
+        candidates: List[str] = ["127.0.0.1"]
+
+        for ip in device.get("ips", []):
+            if ip and ip not in candidates:
+                candidates.append(ip)
+
+        ts_ip = device.get("tailscale_ip")
+        if ts_ip and ts_ip not in candidates:
+            candidates.append(ts_ip)
+
+        async def probe(h: str, p: int) -> bool:
+            try:
+                _, w = await asyncio.wait_for(asyncio.open_connection(h, p), timeout=0.35)
+                w.close()
+                await w.wait_closed()
+                return True
+            except Exception:
+                return False
+
+        for candidate in candidates:
+            if await probe(candidate, port):
+                self.active_targets[dev_hash] = {"host": candidate, "port": port, "ts": now}
+                try:
+                    self.db.set_last_active_ip(dev_hash, candidate)
+                except Exception:
+                    pass
+                return (candidate, port)
+
+        return None
 
     async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         try:
@@ -58,24 +127,87 @@ class LandingProxyServer:
                 except ValueError:
                     content_length = 0
 
-            # 1. ¿Es Reverse Proxy a TDM (/aabbcc o /aabbcc/*)?
+            body_bytes = b""
+            if content_length > 0:
+                body_bytes = await reader.readexactly(content_length)
+
+            # -------------------------------------------------------------
+            # 1. API Endpoints del Landing Page
+            # -------------------------------------------------------------
+            if path == "/api/register" and method == "POST":
+                await self.handle_api_register(headers, body_bytes, writer)
+                return
+
+            if path == "/api/devices" and method == "GET":
+                devices = self.db.list_devices()
+                resp = json.dumps({"success": True, "count": len(devices), "devices": devices}).encode("utf-8")
+                self.send_response(writer, 200, "application/json", resp)
+                return
+
+            if path.startswith("/api/device/") and method == "GET":
+                req_hash = path[len("/api/device/"):].strip().lower()
+                dev = self.db.get_device(req_hash)
+                if dev:
+                    resp = json.dumps({"success": True, "device": dev}).encode("utf-8")
+                    self.send_response(writer, 200, "application/json", resp)
+                else:
+                    self.send_response(writer, 404, "application/json", b'{"success": false, "error": "device_not_found"}')
+                return
+
+            # -------------------------------------------------------------
+            # 2. Reverse Proxy Dinámico por Hash de 8 letras (/<hash>/...)
+            # -------------------------------------------------------------
+            route_match = DEVICE_ROUTE_REGEX.match(path)
+            if route_match:
+                device_hash = route_match.group(1).lower()
+                sub_path_raw = route_match.group(2)
+
+                # Redirigir /<hash> a /<hash>/ para mantener consistencia de rutas relativas
+                if sub_path_raw is None:
+                    target_redirect = f"/{device_hash}/" + (f"?{query}" if query else "")
+                    self.send_redirect(writer, target_redirect)
+                    return
+
+                device = self.db.get_device(device_hash)
+                if not device:
+                    self.send_not_found_device(writer, device_hash)
+                    return
+
+                target = await self.find_active_target(device)
+                if not target:
+                    self.send_unreachable_device(writer, device_hash, device)
+                    return
+
+                target_host, target_port = target
+                target_path = "/" + sub_path_raw if sub_path_raw else "/"
+
+                is_ws = headers.get("upgrade", "").lower() == "websocket"
+                if is_ws:
+                    await self.proxy_websocket(target_host, target_port, target_path, query, headers, reader, writer)
+                else:
+                    await self.proxy_http(target_host, target_port, method, target_path, query, headers, body_bytes, writer, device_hash=device_hash)
+                return
+
+            # -------------------------------------------------------------
+            # 3. Reverse Proxy Legacy (/aabbcc y /aabbcc/*)
+            # -------------------------------------------------------------
             if path == "/aabbcc":
                 target = "/aabbcc/" + (f"?{query}" if query else "")
                 self.send_redirect(writer, target)
                 return
 
             if path.startswith("/aabbcc/"):
+                target_path = path[7:] or "/"
                 is_ws = headers.get("upgrade", "").lower() == "websocket"
                 if is_ws:
-                    await self.proxy_websocket(path, query, headers, reader, writer)
+                    await self.proxy_websocket(self.target_host, self.target_port, target_path, query, headers, reader, writer)
                 else:
-                    body_bytes = b""
-                    if content_length > 0:
-                        body_bytes = await reader.readexactly(content_length)
-                    await self.proxy_http(method, path, query, headers, body_bytes, writer)
+                    await self.proxy_http(self.target_host, self.target_port, method, target_path, query, headers, body_bytes, writer, device_hash="legacy")
                 return
 
-            # 2. Servir Archivos Estáticos de la Landing Page
+            # -------------------------------------------------------------
+            # 4. Servir Archivos Estáticos de la Landing Page
+            # -------------------------------------------------------------
             await self.serve_static(method, path, headers, writer)
 
         except asyncio.CancelledError:
@@ -93,27 +225,64 @@ class LandingProxyServer:
             except Exception:
                 pass
 
-    async def proxy_http(self, method: str, path: str, query: str, headers: dict, body_bytes: bytes, writer: asyncio.StreamWriter):
-        """Reenvío de peticiones HTTP a la aplicación Web de TDM."""
-        if path.startswith("/aabbcc/"):
-            target_path = path[7:]
-        elif path == "/aabbcc":
-            target_path = "/"
-        else:
-            target_path = path
+    async def handle_api_register(self, headers: dict, body_bytes: bytes, writer: asyncio.StreamWriter):
+        """Registra o actualiza un dispositivo TDM vía POST JSON."""
+        try:
+            data = json.loads(body_bytes.decode("utf-8"))
+            dev_hash = data.get("hash", "").strip().lower()
+            ips = data.get("ips", [])
+            tailscale_ip = data.get("tailscale_ip")
+            port = int(data.get("port", 19050))
+            version = data.get("version", "")
+            ua = headers.get("user-agent", "")
 
+            if not dev_hash or not HASH_REGEX.match(dev_hash):
+                self.send_response(
+                    writer, 400, "application/json",
+                    b'{"success":false,"error":"invalid_hash","message":"El hash debe tener exactamente 8 letras minusculas [a-z]"}'
+                )
+                return
+
+            registered = self.db.register_device(
+                device_hash=dev_hash,
+                ips=ips,
+                port=port,
+                tailscale_ip=tailscale_ip,
+                client_version=version,
+                user_agent=ua
+            )
+            resp = json.dumps({"success": True, "device": registered}).encode("utf-8")
+            self.send_response(writer, 200, "application/json", resp)
+        except Exception as e:
+            err = json.dumps({"success": False, "error": str(e)}).encode("utf-8")
+            self.send_response(writer, 400, "application/json", err)
+
+    async def proxy_http(
+        self,
+        target_host: str,
+        target_port: int,
+        method: str,
+        target_path: str,
+        query: str,
+        headers: dict,
+        body_bytes: bytes,
+        writer: asyncio.StreamWriter,
+        device_hash: Optional[str] = None
+    ):
+        """Reenvío de peticiones HTTP a la aplicación Web de TDM."""
+        full_target = target_path
         if query:
-            target_path = f"{target_path}?{query}"
+            full_target = f"{full_target}?{query}"
 
         try:
-            up_reader, up_writer = await asyncio.open_connection(self.target_host, self.target_port)
-            
-            req_lines = [f"{method} {target_path} HTTP/1.1"]
+            up_reader, up_writer = await asyncio.open_connection(target_host, target_port)
+
+            req_lines = [f"{method} {full_target} HTTP/1.1"]
             for k, v in headers.items():
                 if k.lower() in ("host", "connection", "accept-encoding"):
                     continue
                 req_lines.append(f"{k}: {v}")
-            req_lines.append(f"Host: {self.target_host}:{self.target_port}")
+            req_lines.append(f"Host: {target_host}:{target_port}")
             req_lines.append("Connection: close")
             req_data = "\r\n".join(req_lines).encode("utf-8") + b"\r\n\r\n" + body_bytes
 
@@ -131,38 +300,33 @@ class LandingProxyServer:
             await up_writer.wait_closed()
         except Exception as e:
             if target_path.startswith("/api") or "application/json" in headers.get("accept", ""):
-                json_msg = f'{{"error":"bad_gateway","message":"No se pudo conectar al runtime TDM en http://{self.target_host}:{self.target_port}","detail":"{str(e)}"}}'.encode("utf-8")
+                json_msg = f'{{"error":"bad_gateway","message":"No se pudo conectar al runtime TDM en http://{target_host}:{target_port}","detail":"{str(e)}"}}'.encode("utf-8")
                 self.send_response(writer, 502, "application/json", json_msg)
             else:
-                msg = (
-                    f"<html><body style='background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:2rem;text-align:center;'>"
-                    f"<h2>⚠️ TDM HTTP-Proxy Gateway (/aabbcc)</h2>"
-                    f"<p>No se pudo conectar al runtime TDM en <code>http://{self.target_host}:{self.target_port}</code></p>"
-                    f"<p style='color:#94a3b8;font-size:0.85rem;'>Asegúrate de que TDM esté activo en el dispositivo y accesible desde este servidor.</p>"
-                    f"<p style='color:#ef4444;font-size:0.8rem;'>Detalle: {e}</p>"
-                    f"</body></html>"
-                ).encode("utf-8")
-                self.send_response(writer, 502, "text/html; charset=utf-8", msg)
+                self.send_unreachable_device(writer, device_hash or "desconocido", {"last_active_ip": target_host, "port": target_port}, detail=str(e))
 
-    async def proxy_websocket(self, path: str, query: str, headers: dict, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def proxy_websocket(
+        self,
+        target_host: str,
+        target_port: int,
+        target_path: str,
+        query: str,
+        headers: dict,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter
+    ):
         """Reenvío bidireccional de WebSockets (noVNC websockify / Terminal PTY)."""
-        if path.startswith("/aabbcc/"):
-            target_path = path[7:]
-        elif path == "/aabbcc":
-            target_path = "/"
-        else:
-            target_path = path
-
+        full_target = target_path
         if query:
-            target_path = f"{target_path}?{query}"
+            full_target = f"{full_target}?{query}"
 
         try:
-            up_reader, up_writer = await asyncio.open_connection(self.target_host, self.target_port)
+            up_reader, up_writer = await asyncio.open_connection(target_host, target_port)
 
-            req_lines = [f"GET {target_path} HTTP/1.1"]
+            req_lines = [f"GET {full_target} HTTP/1.1"]
             for k, v in headers.items():
                 if k.lower() == "host":
-                    req_lines.append(f"Host: {self.target_host}:{self.target_port}")
+                    req_lines.append(f"Host: {target_host}:{target_port}")
                 else:
                     req_lines.append(f"{k}: {v}")
             req_data = "\r\n".join(req_lines).encode("utf-8") + b"\r\n\r\n"
@@ -191,6 +355,89 @@ class LandingProxyServer:
         except Exception:
             pass
 
+    def send_not_found_device(self, writer: asyncio.StreamWriter, device_hash: str):
+        """Responde con aviso amigable cuando un hash de 8 letras no existe en SQLite."""
+        html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[TDM] Dispositivo no encontrado</title>
+    <style>
+        body {{ background: #0b1120; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; box-sizing: border-box; }}
+        .card {{ background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2.2rem; max-width: 540px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: center; }}
+        .tag {{ display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(234,179,8,0.15); color: #eab308; padding: 0.3rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; border: 1px solid rgba(234,179,8,0.3); }}
+        h1 {{ font-size: 1.35rem; color: #f8fafc; margin: 0 0 0.75rem; font-weight: 600; }}
+        p {{ font-size: 0.95rem; color: #94a3b8; line-height: 1.6; margin: 0.5rem 0 1.5rem; }}
+        code {{ display: block; background: #0f172a; color: #38bdf8; padding: 0.9rem; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.85rem; word-break: break-all; border: 1px solid #334155; }}
+        .btn {{ display: inline-block; margin-top: 1.5rem; color: #38bdf8; text-decoration: none; font-size: 0.88rem; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="tag">[TDM] Dispositivo Inexistente</div>
+        <h1>Identificador no Registrado</h1>
+        <p>El código <strong>{device_hash}</strong> no corresponde a ningún dispositivo TDM registrado en el sistema.</p>
+        <p>Para registrar tu teléfono Android, abre Termux y ejecuta:</p>
+        <code>tdm register</code>
+        <a class="btn" href="/">← Volver al inicio</a>
+    </div>
+</body>
+</html>""".encode("utf-8")
+        self.send_response(writer, 404, "text/html; charset=utf-8", html)
+
+    def send_unreachable_device(self, writer: asyncio.StreamWriter, device_hash: str, device: dict, detail: str = ""):
+        """Responde cuando el dispositivo está registrado pero ninguna IP responde."""
+        ips = device.get("ips", [])
+        ips_str = ", ".join(ips) if ips else "Ninguna IP local reportada"
+        ts_ip = device.get("tailscale_ip")
+        ts_info = f" • Tailscale: {ts_ip}" if ts_ip else ""
+
+        html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[TDM] Dispositivo Inaccesible</title>
+    <style>
+        body {{ background: #0b1120; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; box-sizing: border-box; }}
+        .card {{ background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2.2rem; max-width: 580px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: left; }}
+        .tag {{ display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(239,68,68,0.15); color: #ef4444; padding: 0.3rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; border: 1px solid rgba(239,68,68,0.3); }}
+        h1 {{ font-size: 1.35rem; color: #f8fafc; margin: 0 0 0.75rem; font-weight: 600; text-align: center; }}
+        p {{ font-size: 0.95rem; color: #94a3b8; line-height: 1.6; margin: 0.5rem 0 1.2rem; }}
+        .box {{ background: #0f172a; padding: 1rem; border-radius: 8px; border: 1px solid #334155; margin-bottom: 1.2rem; font-size: 0.88rem; }}
+        .box ul {{ margin: 0.5rem 0 0; padding-left: 1.2rem; color: #cbd5e1; }}
+        .box li {{ margin-bottom: 0.3rem; }}
+        code {{ color: #38bdf8; font-family: ui-monospace, monospace; }}
+        .center {{ text-align: center; }}
+        .btn {{ display: inline-block; color: #94a3b8; text-decoration: none; font-size: 0.88rem; border-bottom: 1px dashed #475569; padding-bottom: 2px; }}
+        .btn:hover {{ color: #38bdf8; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="center"><div class="tag">[TDM] Dispositivo Inaccesible</div></div>
+        <h1>No se pudo conectar con el dispositivo ({device_hash})</h1>
+        <p>El identificador es válido, pero el servicio TDM en tu teléfono no responde en las IPs registradas (LAN: <code>{ips_str}</code>{ts_info}).</p>
+        
+        <div class="box">
+            <strong>⚠️ Condición de Acceso Web:</strong>
+            <ul>
+                <li>Tu equipo actual (PC, tablet o laptop) debe estar conectado a la <strong>misma red Wi-Fi/local</strong> del teléfono.</li>
+                <li>O bien, tener activo <strong>Tailscale</strong> en ambos dispositivos si estás fuera de casa.</li>
+                <li>Verifica que el servicio TDM esté iniciado en Termux ejecutando: <code>tdm service restart</code>.</li>
+            </ul>
+        </div>
+        
+        <div class="center">
+            <a class="btn" href="javascript:location.reload()">Reintentar Conexión</a> &nbsp;|&nbsp; 
+            <a class="btn" href="/">Volver a Inicio</a>
+        </div>
+    </div>
+</body>
+</html>""".encode("utf-8")
+        self.send_response(writer, 502, "text/html; charset=utf-8", html)
+
     async def serve_static(self, method: str, path: str, headers: dict, writer: asyncio.StreamWriter):
         rel = path.lstrip("/")
 
@@ -212,7 +459,6 @@ class LandingProxyServer:
             )
 
             if is_browser:
-                # Bloquear visualización en navegadores web y responder 403 con aviso
                 forbidden_html = f"""<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -225,8 +471,8 @@ class LandingProxyServer:
         .tag {{ display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(239,68,68,0.15); color: #ef4444; padding: 0.3rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; border: 1px solid rgba(239,68,68,0.3); }}
         h1 {{ font-size: 1.35rem; color: #f8fafc; margin: 0 0 0.75rem; font-weight: 600; }}
         p {{ font-size: 0.95rem; color: #94a3b8; line-height: 1.6; margin: 0.5rem 0 1.5rem; }}
-        code {{ display: block; background: #0f172a; color: #38bdf8; padding: 0.9rem; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; word-break: break-all; border: 1px solid #334155; user-select: all; }}
-        .btn {{ display: inline-block; margin-top: 1.75rem; color: #94a3b8; text-decoration: none; font-size: 0.88rem; border-bottom: 1px dashed #475569; padding-bottom: 2px; transition: color 0.2s; }}
+        code {{ display: block; background: #0f172a; color: #38bdf8; padding: 0.9rem; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.85rem; word-break: break-all; border: 1px solid #334155; user-select: all; }}
+        .btn {{ display: inline-block; margin-top: 1.75rem; color: #94a3b8; text-decoration: none; font-size: 0.88rem; border-bottom: 1px dashed #475569; padding-bottom: 2px; }}
         .btn:hover {{ color: #38bdf8; border-bottom-color: #38bdf8; }}
     </style>
 </head>
@@ -284,7 +530,7 @@ class LandingProxyServer:
             self.send_response(writer, 500, "text/plain", f"Error: {e}".encode("utf-8"))
 
     def send_response(self, writer: asyncio.StreamWriter, status: int, ctype: str, body: bytes):
-        status_text = {200: "OK", 403: "Forbidden", 404: "Not Found", 500: "Internal Server Error", 502: "Bad Gateway"}.get(status, "OK")
+        status_text = {200: "OK", 400: "Bad Request", 403: "Forbidden", 404: "Not Found", 500: "Internal Server Error", 502: "Bad Gateway"}.get(status, "OK")
         resp = [
             f"HTTP/1.1 {status} {status_text}",
             f"Content-Type: {ctype}",
@@ -311,16 +557,18 @@ class LandingProxyServer:
     async def start(self):
         server = await asyncio.start_server(self.handle_client, self.host, self.port)
         print(f"🌐 [Landing Page + HTTP-Proxy] Servidor iniciado en http://{self.host}:{self.port}")
-        print(f"🔀 [HTTP Reverse Proxy] Ruta /aabbcc -> http://{self.target_host}:{self.target_port}")
+        print(f"🔀 [Dynamic Reverse Proxy] Rutas /<hash>/ -> SQLite Activo con detección LAN/Tailscale")
+        print(f"🔀 [HTTP Reverse Proxy Legacy] Ruta /aabbcc -> http://{self.target_host}:{self.target_port}")
         async with server:
             await server.serve_forever()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="TDM Landing Page + Reverse Proxy Server")
     parser.add_argument("--host", default="0.0.0.0", help="Host bind (default: 0.0.0.0)")
     parser.add_argument("--port", type=int, default=8080, help="Puerto del servidor (default: 8080)")
-    parser.add_argument("--target-host", default=os.environ.get("TDM_TARGET_HOST", "192.168.1.197"), help="Host destino de TDM")
-    parser.add_argument("--target-port", type=int, default=int(os.environ.get("TDM_TARGET_PORT", "19050")), help="Puerto destino de TDM (default: 19050)")
+    parser.add_argument("--target-host", default=os.environ.get("TDM_TARGET_HOST", "192.168.1.197"), help="Host destino legacy")
+    parser.add_argument("--target-port", type=int, default=int(os.environ.get("TDM_TARGET_PORT", "19050")), help="Puerto destino legacy (default: 19050)")
     args = parser.parse_args()
 
     try:
