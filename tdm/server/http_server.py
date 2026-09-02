@@ -317,29 +317,16 @@ class AsyncHTTPServer:
                     st = display_manager.get_status()
                     await ws.send_json({"type": "status_update", "data": st})
 
-                # 4. Apagar Pantalla (Delegado al CLI: tdm stop)
-                elif req_type in ["stop_screen", "screen_stop"]:
-                    res = await execute_cli_command(["stop"])
+                # 4 & 5. Apagar Pantallas y Procesos Gráficos (Servicio TDM permanece activo)
+                elif req_type in ["stop_screen", "screen_stop", "stop_service", "shutdown", "stop_all"]:
+                    res = await display_manager.stop_screen()
                     await ws.send_json({
                         "type": "action_result",
-                        "action": "stop_screen",
-                        "id": req_id,
-                        "success": res.get("success", False),
-                        "stopped": res.get("stopped", True),
-                        "message": "Pantalla apagada correctamente"
-                    })
-                    st = display_manager.get_status()
-                    await ws.send_json({"type": "status_update", "data": st})
-
-                # 5. Apagar Todo (Delegado al CLI: tdm service stop)
-                elif req_type in ["stop_service", "shutdown", "stop_all"]:
-                    res = await execute_cli_command(["service", "stop"])
-                    await ws.send_json({
-                        "type": "action_result",
-                        "action": "stop_service",
+                        "action": req_type,
                         "id": req_id,
                         "success": True,
-                        "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
+                        "stopped": res,
+                        "message": "Todas las pantallas y procesos gráficos apagados. Servicio TDM activo."
                     })
                     st = display_manager.get_status()
                     await ws.send_json({"type": "status_update", "data": st})
@@ -676,9 +663,13 @@ class AsyncHTTPServer:
                 self.send_json_response(writer, {"error": res.get("error", "Error al iniciar pantalla")}, status_code=400)
             return
 
-        if path == "/api/screen/stop" and method == "POST":
-            res = await execute_cli_command(["stop"])
-            self.send_json_response(writer, {"stopped": res.get("stopped", True), "message": "Pantalla apagada correctamente"})
+        if path in ["/api/screen/stop", "/api/service/stop", "/api/novnc/stop", "/api/system/shutdown"] and method == "POST":
+            res = await display_manager.stop_screen()
+            self.send_json_response(writer, {
+                "success": True,
+                "stopped": res,
+                "message": "Todas las pantallas y procesos gráficos apagados. Servicio TDM activo."
+            })
             return
 
         # Endpoints específicos para noVNC Web
@@ -711,19 +702,6 @@ class AsyncHTTPServer:
                 self.send_json_response(writer, res.get("data", {}))
             else:
                 self.send_json_response(writer, {"error": res.get("error", "Error al iniciar noVNC")}, status_code=400)
-            return
-
-        if path == "/api/novnc/stop" and method == "POST":
-            res = await execute_cli_command(["stop"])
-            self.send_json_response(writer, {"stopped": res.get("stopped", True), "message": "Sesión noVNC apagada correctamente"})
-            return
-
-        if path in ["/api/service/stop", "/api/system/shutdown"] and method == "POST":
-            res = await execute_cli_command(["service", "stop"])
-            self.send_json_response(writer, {
-                "stopped": True,
-                "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
-            })
             return
 
         if path in ["/api/service/restart", "/api/system/restart"] and method == "POST":

@@ -97,9 +97,9 @@ async def handle_start(args):
     return result
 
 async def handle_stop():
-    print("🛑 [TDM] Deteniendo pantalla activa...")
+    print("🛑 [TDM] Apagando todas las pantallas y procesos gráficos...")
     stopped = await display_manager.stop_screen()
-    print("✅ Pantalla detenida y sockets X11 liberados.")
+    print("✅ Pantallas y entornos detenidos (Servicio TDM permanece activo).")
     return stopped
 
 async def handle_novnc(args):
@@ -361,6 +361,7 @@ async def handle_service(action: str):
 
     elif action in ["stop", "disable"]:
         print("🛑 [TDM Service] Deteniendo/Deshabilitando servicios...")
+        await display_manager.stop_screen()
         if has_sv:
             subprocess.run([sv_bin, "down", "tdm"], capture_output=True)
             if action == "disable" and os.path.exists(sv_disable_bin):
@@ -759,6 +760,9 @@ async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
         res = await handle_update(args)
         return {"success": True, "data": res}
     elif args.command == "service":
+        if args.action in ["stop", "shutdown"]:
+            stopped = await display_manager.stop_screen()
+            return {"success": True, "action": args.action, "stopped": stopped, "message": "Todas las pantallas y procesos gráficos apagados. Servicio TDM activo."}
         await handle_service(args.action)
         return {"success": True, "action": args.action}
     elif args.command in ["device"]:

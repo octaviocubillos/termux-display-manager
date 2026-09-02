@@ -12,22 +12,23 @@ class XRDPBackend(BaseDisplayBackend):
     """
     Adaptador RDP para Termux.
 
-    Estrategia: xrdp en Termux no tiene sesman funcional ni PAM. El enfoque
-    más confiable es levantar un servidor VNC (Xvnc) y luego configurar xrdp
-    para que actúe como proxy RDP → VNC en el mismo display. Así el cliente
-    RDP (Microsoft Remote Desktop, Remmina, etc.) se conecta al puerto 3389
-    y xrdp lo redirige internamente al Xvnc local.
+    Modo de operación:
+    ─────────────────
+    • Si xrdp está instalado → Xvnc (localhost:5900) + xrdp (0.0.0.0:3389 como proxy RDP→VNC)
+    • Si xrdp NO está instalado (Termux por defecto) → Xvnc expuesto directamente en 0.0.0.0:5900
+      El cliente se conecta con cualquier cliente VNC o con Microsoft RD Client en modo VNC.
 
-    Requisitos en Termux:
-        pkg install tigervnc xrdp
+    Puerto expuesto al cliente:
+    • Con xrdp: 3389  (protocolo RDP puro)
+    • Sin xrdp: 5900  (protocolo VNC/RFB)
     """
 
     def __init__(self, config: DisplayConfig):
         super().__init__(config)
         if not self.config.rdp_port:
             self.config.rdp_port = PORT_RDP_DEFAULT
-        # Puerto VNC interno (no expuesto directamente)
         self._internal_vnc_port = PORT_VNC_DEFAULT + self.config.display_num
+        self._xrdp_available = bool(find_binary("xrdp"))
 
     # ------------------------------------------------------------------
     # Helpers
@@ -36,23 +37,14 @@ class XRDPBackend(BaseDisplayBackend):
     def _ensure_vnc_dir(self) -> None:
         (Path.home() / ".vnc").mkdir(parents=True, exist_ok=True)
 
-    def _xrdp_conf_path(self) -> Path:
-        return Path.home() / ".tdm" / "xrdp.ini"
-
     def _write_xrdp_conf(self) -> Path:
-        """
-        Genera un xrdp.ini mínimo que redirige RDP → VNC local.
-        Evita depender del xrdp.ini del sistema (que puede no existir en Termux).
-        """
+        """Genera xrdp.ini mínimo que redirige RDP → VNC local."""
         conf_dir = Path.home() / ".tdm"
         conf_dir.mkdir(parents=True, exist_ok=True)
         conf_path = conf_dir / "xrdp.ini"
-
-        conf_content = f"""; xrdp.ini generado por TDM — no editar manualmente
+        conf_content = f"""; xrdp.ini generado por TDM
 [globals]
 port={self.config.rdp_port}
-allow_channels=true
-max_bpp=32
 fork=false
 tcp_nodelay=true
 tcp_keepalive=true
@@ -65,7 +57,6 @@ tls_ciphers=HIGH
 channel_code=1
 bitmap_compression=yes
 autorun=
-bulk_compression=yes
 hidelogwindow=true
 loglevel=ERROR
 logfile={conf_dir}/xrdp.log
@@ -81,8 +72,6 @@ rdpdr=true
 rdpsnd=true
 drdynvc=true
 cliprdr=true
-rail=false
-xrdpvr=false
 
 [vnc-any]
 name=Sesión VNC Local (TDM)
@@ -97,10 +86,10 @@ delay_ms=2000
         return conf_path
 
     # ------------------------------------------------------------------
-    # Paso 1: Levantar Xvnc en el puerto interno
+    # Comando principal: Xvnc
     # ------------------------------------------------------------------
 
-    def _build_xvnc_command(self) -> Tuple[list, Dict[str, str]]:
+    def build_server_command(self) -> Tuple[list, Dict[str, str]]:
         env = prepare_environment(
             self.config.display_num,
             self.config.desktop_id,
@@ -110,45 +99,37 @@ delay_ms=2000
         )
         self._ensure_vnc_dir()
         xvnc = find_binary("Xvnc") or f"{PREFIX}/bin/Xvnc"
+
+        # Si xrdp está disponible → Xvnc solo en localhost (xrdp actúa de proxy)
+        # Si xrdp NO está → Xvnc expuesto directamente en todas las interfaces
+        localhost_only = "yes" if self._xrdp_available else "no"
+        vnc_port = self._internal_vnc_port if self._xrdp_available else self._internal_vnc_port
+
         cmd = [
             xvnc,
             f":{self.config.display_num}",
             "-geometry", self.config.resolution,
             "-depth", str(self.config.depth),
             "-dpi", str(self.config.dpi),
-            "-rfbport", str(self._internal_vnc_port),
+            "-rfbport", str(vnc_port),
             "-SecurityTypes", "None",
             "-ac",
-            "-localhost", "yes",   # Solo local: xrdp accede desde 127.0.0.1
+            "-localhost", localhost_only,
             "-alwaysshared",
             "-MaxIdleTime", "0",
         ]
         return cmd, env
 
     # ------------------------------------------------------------------
-    # Paso 2: build_server_command usa Xvnc como servidor principal
-    # ------------------------------------------------------------------
-
-    def build_server_command(self) -> Tuple[list, Dict[str, str]]:
-        return self._build_xvnc_command()
-
-    # ------------------------------------------------------------------
-    # Paso 3: xrdp como proceso puente (bridge) RDP → VNC
+    # Bridge: xrdp (solo si está instalado)
     # ------------------------------------------------------------------
 
     def build_bridge_command(self) -> Optional[list]:
-        xrdp_bin = find_binary("xrdp") or f"{PREFIX}/bin/xrdp"
-        if not os.path.exists(xrdp_bin):
-            print("[!] xrdp no está instalado. Instálalo con: pkg install xrdp")
-            print("[!] El servidor VNC (Xvnc) estará disponible directamente.")
-            return None
-
+        if not self._xrdp_available:
+            return None  # Sin xrdp → Xvnc directo, no hay bridge
+        xrdp_bin = find_binary("xrdp")
         conf_path = self._write_xrdp_conf()
-        return [
-            xrdp_bin,
-            "--nodaemon",
-            "--config", str(conf_path),
-        ]
+        return [xrdp_bin, "--nodaemon", "--config", str(conf_path)]
 
     # ------------------------------------------------------------------
     # Limpieza
@@ -156,21 +137,15 @@ delay_ms=2000
 
     def cleanup(self, session: Optional[DisplaySession] = None) -> None:
         num = self.config.display_num
-
-        # Matar xrdp
         subprocess.run(["pkill", "-f", "xrdp"], capture_output=True)
-
-        # Matar Xvnc interno
         subprocess.run(["pkill", "-f", f"Xvnc.*:{num}"], capture_output=True)
 
-        # Asegurar directorios de sockets X11
         for socket_dir in ["/tmp/.X11-unix", f"{PREFIX}/tmp/.X11-unix"]:
             try:
                 os.makedirs(socket_dir, mode=0o1777, exist_ok=True)
             except Exception:
                 pass
 
-        # Archivos lock / socket / PID
         node = os.uname().nodename
         locks = [
             f"/tmp/.X{num}-lock",
@@ -188,27 +163,41 @@ delay_ms=2000
                 pass
 
     # ------------------------------------------------------------------
-    # Información de conexión
+    # Información de conexión (clara y precisa)
     # ------------------------------------------------------------------
 
     def get_connection_info(self, host: str = "127.0.0.1") -> Dict[str, str]:
-        rdp_port = self.config.rdp_port or PORT_RDP_DEFAULT
-        xrdp_available = bool(find_binary("xrdp"))
+        if self._xrdp_available:
+            # xrdp en puerto 3389 (RDP real)
+            exposed_port = self.config.rdp_port or PORT_RDP_DEFAULT
+            protocol = "RDP"
+            url = f"rdp://{host}:{exposed_port}"
+            instructions = (
+                f"Cliente RDP → {host}:{exposed_port}\n"
+                f"• Android: Microsoft Remote Desktop\n"
+                f"• PC: mstsc.exe / Remmina\n"
+                f"• Usuario: na  •  Sin contraseña"
+            )
+        else:
+            # Sin xrdp → VNC directo en puerto 5900
+            exposed_port = self._internal_vnc_port
+            protocol = "RFB (VNC)"
+            url = f"vnc://{host}:{exposed_port}"
+            instructions = (
+                f"xrdp no instalado en Termux. Conexión VNC directa en {host}:{exposed_port}\n"
+                f"• Android: bVNC, MultiVNC\n"
+                f"• PC: TigerVNC Viewer, RealVNC\n"
+                f"• Sin contraseña (SecurityTypes=None)"
+            )
+
         return {
             "type": BACKEND_RDP,
-            "protocol": "RDP",
-            "port": str(rdp_port),
-            "rdp_url": f"rdp://{host}:{rdp_port}",
-            "vnc_fallback_port": str(self._internal_vnc_port),
-            "xrdp_available": str(xrdp_available),
-            "instructions": (
-                f"Cliente RDP → {host}:{rdp_port}\n"
-                f"• Android: Microsoft Remote Desktop\n"
-                f"• PC: Remmina, mstsc.exe\n"
-                + (
-                    f"• VNC directo también disponible en {host}:{self._internal_vnc_port}"
-                    if not xrdp_available
-                    else f"• xrdp activo: conecta como usuario 'na' sin contraseña"
-                )
-            ),
+            "protocol": protocol,
+            "port": str(exposed_port),
+            "display": f":{self.config.display_num}",
+            "url": url,
+            "xrdp_available": str(self._xrdp_available),
+            "vnc_port": str(self._internal_vnc_port),
+            "rdp_port": str(self.config.rdp_port or PORT_RDP_DEFAULT),
+            "instructions": instructions,
         }

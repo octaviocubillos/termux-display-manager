@@ -545,16 +545,18 @@ class DisplayManager:
         target_names = {
             "termux-x11", "Xvnc", "vncserver", "tigervnc", "xrdp", "xrdp-sesman", "websockify",
             "xfce4-session", "xfce4-panel", "xfce4-power-manager", "xfce4-notifyd", "xfce4-appfinder",
-            "xfwm4", "xfdesktop", "thunar", "Thunar", "wrapper-2.0", "xfconfd", "xfsettingsd",
+            "xfwm4", "xfdesktop", "thunar", "Thunar", "wrapper-2.0", "xfconfd", "xfsettingsd", "xsettingsd",
             "startplasma-x11", "plasmashell", "kwin_x11", "kwin", "plasma-session", "kded5", "kded6",
             "klauncher", "ksmserver", "kaccess", "mate-session", "mate-panel", "marco", "caja",
             "mate-settings-daemon", "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel",
             "lxqt-globalkeysd", "lxqt-notificationd", "openbox", "openbox-session", "tint2",
-            "i3", "i3bar", "i3status", "xterm", "qterminal", "mate-terminal", "xfce4-terminal",
-            "pulseaudio", "virgl_test_server", "virgl_test_server_android", "xorg-xsetroot", "xsetroot"
+            "i3", "i3bar", "i3status", "xterm", "qterminal", "mate-terminal", "xfce4-terminal", "konsole",
+            "pulseaudio", "virgl_test_server", "virgl_test_server_android", "xorg-xsetroot", "xsetroot",
+            "at-spi-bus-launcher", "at-spi2-registryd", "dconf-service"
         }
 
         current_pid = os.getpid()
+        parent_pid = os.getppid() if hasattr(os, "getppid") else -1
         try:
             entries = os.listdir("/proc")
         except Exception:
@@ -564,7 +566,7 @@ class DisplayManager:
             if not entry.isdigit():
                 continue
             pid = int(entry)
-            if pid == current_pid or pid == 1:
+            if pid == current_pid or pid == parent_pid or pid == 1:
                 continue
             try:
                 comm = ""
@@ -585,14 +587,14 @@ class DisplayManager:
                     with open(env_file, "rb") as f:
                         environ_str = f.read().decode("utf-8", errors="ignore")
 
-                # No matar el agente de TDM, ni el servidor CLI ni procesos esenciales
-                if any(safe in cmdline for safe in ["tdm.cli.main", "tdm.agent.client", "tdm.server.service", "tdm hub", "tdm server"]):
+                # NUNCA matar el servidor base de TDM, ni el agente ni sus procesos internos
+                if any(safe in cmdline for safe in ["tdm.cli.main", "tdm.agent.client", "tdm.server", "tdm hub", "tdm server", "tdm service"]):
                     continue
 
                 should_kill = False
 
-                # A. Si el proceso tiene DISPLAY=:0 o DISPLAY=: en sus variables de entorno
-                if "DISPLAY=:" in environ_str:
+                # A. Si el proceso tiene DISPLAY=: en sus variables de entorno
+                if "DISPLAY=:" in environ_str or "WAYLAND_DISPLAY=" in environ_str:
                     should_kill = True
 
                 # B. Si el binario o comando coincide con un entorno de escritorio o servidor gráfico
@@ -600,7 +602,11 @@ class DisplayManager:
                     should_kill = True
 
                 # C. Si es un script de inicio de sesión o binario gráfico
-                elif any(runner in cmdline for runner in ["session-display", "startxfce4", "startplasma", "startlxqt", "launch_x11", "Xvnc", "termux-x11"]):
+                elif any(runner in cmdline for runner in ["session-display", "startxfce4", "startplasma", "startlxqt", "launch_x11", "Xvnc", "termux-x11", "xinit"]):
+                    should_kill = True
+
+                # D. Si es un proceso dbus asociado a sesión de escritorio
+                elif comm in ["dbus-daemon", "dbus-launch"] and any(k in cmdline for k in ["--session", "--config-file", "DISPLAY", "session.conf"]):
                     should_kill = True
 
                 if should_kill:
@@ -615,7 +621,19 @@ class DisplayManager:
             except Exception:
                 pass
 
-        # 4. Detener servicios de aceleración 3D VirGL y Audio PulseAudio
+        # 4. Detener servicios supervisados de Termux (runit) de entorno gráfico si existieran
+        try:
+            prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+            sv_bin = shutil.which("sv") or f"{prefix}/bin/sv"
+            service_dir = Path(prefix) / "var" / "service"
+            if os.path.exists(sv_bin) and service_dir.exists():
+                for s_item in service_dir.iterdir():
+                    if s_item.name != "tdm" and any(k in s_item.name for k in ["x11", "xfce", "vnc", "gui", "desktop", "display", "tx11"]):
+                        subprocess.run([sv_bin, "down", s_item.name], capture_output=True, timeout=1)
+        except Exception:
+            pass
+
+        # 5. Detener servicios de aceleración 3D VirGL y Audio PulseAudio
         try:
             from tdm.core.gpu_manager import gpu_manager
             await gpu_manager.stop_3d_services()
@@ -627,13 +645,15 @@ class DisplayManager:
         except Exception:
             pass
 
-        # 4. Barrido de respaldo con pkill por nombres exactos de proceso (-x)
+        # 6. Barrido de respaldo con pkill por nombres exactos de proceso (-x)
         exact_procs = [
-            "xfce4-session", "xfce4-panel", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd",
+            "xfce4-session", "xfce4-panel", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd", "xfconfd",
+            "xfce4-power-manager", "xfce4-notifyd", "xfce4-appfinder", "xsettingsd",
             "plasmashell", "startplasma-x11", "kwin_x11", "mate-session", "mate-panel", "marco", "caja",
             "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel", "openbox", "i3", "i3bar", "i3status",
-            "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server", "virgl_test_server_android", "pulseaudio", "xsetroot",
-            "aterm", "xterm", "qterminal", "mate-terminal", "xfce4-terminal", "konsole"
+            "termux-x11", "Xvnc", "xrdp", "xrdp-sesman", "websockify", "virgl_test_server", "virgl_test_server_android", "pulseaudio", "xsetroot",
+            "aterm", "xterm", "qterminal", "mate-terminal", "xfce4-terminal", "konsole",
+            "at-spi-bus-launcher", "at-spi2-registryd", "dconf-service"
         ]
         for proc in exact_procs:
             try:
@@ -641,7 +661,14 @@ class DisplayManager:
             except Exception:
                 pass
 
-        # 5. Enviar señal / comando para cerrar la app Android Termux:X11
+        # Barrido adicional por patrones de línea de comando
+        for pattern in ["session-display-", "startxfce4", "launch_x11", "tx11-xfce4"]:
+            try:
+                subprocess.run(["pkill", "-9", "-f", pattern], capture_output=True)
+            except Exception:
+                pass
+
+        # 7. Enviar señal / comando para cerrar la app Android Termux:X11
         for cmd in [
             ["am", "broadcast", "-a", "com.termux.x11.ACTION_STOP"],
             ["am", "force-stop", "com.termux.x11"],
@@ -653,7 +680,7 @@ class DisplayManager:
             except Exception:
                 pass
 
-        # 6. Limpiar sockets y archivos temporales de X11 en todos los displays (0 a 9)
+        # 8. Limpiar sockets y archivos temporales de X11 en todos los displays (0 a 9)
         for disp_num in range(10):
             self._cleanup_x11_sockets(disp_num)
 
