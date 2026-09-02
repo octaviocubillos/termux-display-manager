@@ -90,10 +90,67 @@ async def handle_start(args):
         virgl=virgl
     )
     if result.get("status") == "running":
-        print(f"✅ Pantalla iniciada con éxito en {backend} (:0)")
-        if result.get("urls"):
-            for k, v in result["urls"].items():
-                print(f"   {k}: {v}")
+        from tdm.discovery.network import discover_network_interfaces
+        net = discover_network_interfaces()
+        urls = result.get("urls", {})
+        lan_ip = net.get("lan_ip", "127.0.0.1")
+        tail_ip = net.get("tailscale_ip")
+        device_hash = net.get("device_hash")
+        port = net.get("ports", {}).get("pwa_server", PORT_TDM_SERVER)
+        vnc_port = net.get("ports", {}).get("vnc", 5900)
+        rdp_port = net.get("ports", {}).get("rdp", 3389)
+
+        print("=====================================================")
+        print(f"✅ [TDM] Pantalla Iniciada con Éxito")
+        print("=====================================================")
+        print(f"  Backend:     {backend}")
+        print(f"  Escritorio:  {result.get('desktop_id', 'N/A')}")
+        print(f"  Resolución:  {result.get('resolution', resolution)} (DPI {result.get('dpi', dpi)})")
+        print(f"  Display:     {result.get('display', ':0')}")
+        print("")
+        print("🔗 URLs de Acceso:")
+
+        if backend in ["novnc", "vnc"]:
+            print(f"  • Panel Web (Local):      http://localhost:{port}")
+            if lan_ip != "127.0.0.1":
+                print(f"  • Panel Web (Red LAN):    http://{lan_ip}:{port}")
+        if backend == "vnc":
+            print(f"  • VNC Local:              vnc://localhost:{vnc_port}")
+            if lan_ip != "127.0.0.1":
+                print(f"  • VNC Red LAN:            vnc://{lan_ip}:{vnc_port}")
+            if tail_ip:
+                print(f"  • VNC Tailscale:          vnc://{tail_ip}:{vnc_port}")
+        elif backend == "rdp":
+            print(f"  • RDP Local:              rdp://localhost:{rdp_port}")
+            if lan_ip != "127.0.0.1":
+                print(f"  • RDP Red LAN:            rdp://{lan_ip}:{rdp_port}")
+            if tail_ip:
+                print(f"  • RDP Tailscale:          rdp://{tail_ip}:{rdp_port}")
+            print(f"  • Panel Web (Local):      http://localhost:{port}")
+        elif backend == "termux-x11":
+            print(f"  • App Termux:X11:         Se lanza automáticamente en la pantalla del móvil")
+            print(f"  • Panel Web (Local):      http://localhost:{port}")
+            if lan_ip != "127.0.0.1":
+                print(f"  • Panel Web (Red LAN):    http://{lan_ip}:{port}")
+
+        if tail_ip and backend not in ["vnc", "rdp"]:
+            print(f"  • Panel Web (Tailscale):  http://{tail_ip}:{port}")
+        if device_hash:
+            print(f"  • Acceso Central (HTTPS): https://tdm.oton.cl/{device_hash}/")
+
+        # Instrucciones específicas del backend
+        if backend == "vnc":
+            print("")
+            print("📌 Clientes VNC: bVNC (Android), TigerVNC Viewer (PC), RealVNC")
+        elif backend == "rdp":
+            print("")
+            print("📌 Clientes RDP: Microsoft Remote Desktop (Android/macOS), mstsc.exe (Windows), Remmina (Linux)")
+            print("   Usuario: na  |  Sin contraseña")
+        elif backend == "novnc":
+            print("")
+            print("📌 Abre cualquier navegador web e ingresa a las URLs indicadas arriba.")
+
+        print("=====================================================")
     else:
         print(f"❌ Error iniciando pantalla: {result.get('error_message')}")
     return result

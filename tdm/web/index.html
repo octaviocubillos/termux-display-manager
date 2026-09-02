@@ -1642,6 +1642,57 @@
 
     </main>
 
+    <!-- CONNECTION INFO MODAL (Se muestra al iniciar cualquier pantalla) -->
+    <div class="modal-overlay" id="connectionInfoModal" onclick="if(event.target===this)closeConnectionInfoModal()">
+        <div style="background: var(--md-sys-color-surface-container-high); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--md-shape-corner-xl); max-width: 520px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);">
+            <!-- Header -->
+            <div style="padding: 1.1rem 1.25rem 0.6rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <span class="material-symbols-rounded" id="icoConnInfoBackend" style="font-size: 1.5rem; color: #4ade80;">connected_tv</span>
+                    <div>
+                        <div style="font-size: 0.92rem; font-weight: 800; color: #fff;" id="txtConnInfoTitle">Pantalla Iniciada</div>
+                        <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);" id="txtConnInfoSubtitle">Conecta desde cualquier dispositivo</div>
+                    </div>
+                </div>
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="closeConnectionInfoModal()" title="Cerrar">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+
+            <!-- Backend & Desktop info -->
+            <div style="padding: 0 1.25rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span id="badgeConnBackend" style="background: rgba(96, 165, 250, 0.15); color: #93c5fd; font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 9999px;">noVNC</span>
+                <span id="badgeConnDesktop" style="background: rgba(74, 222, 128, 0.15); color: #86efac; font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 9999px;">XFCE4</span>
+                <span id="badgeConnResolution" style="background: rgba(251, 191, 36, 0.15); color: #fde68a; font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 9999px;">1920x1080</span>
+            </div>
+
+            <!-- Connection URLs -->
+            <div style="padding: 0.75rem 1.25rem; display: flex; flex-direction: column; gap: 0.55rem;" id="boxConnUrls">
+                <!-- URLs are dynamically inserted here -->
+            </div>
+
+            <!-- Backend-specific instructions -->
+            <div id="boxConnInstructions" style="padding: 0 1.25rem 0.75rem; display: none;">
+                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.7rem 0.85rem;">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.3rem;">Instrucciones de Conexion</div>
+                    <div id="txtConnInstructions" style="font-size: 0.74rem; color: #cbd5e1; line-height: 1.5; white-space: pre-line;"></div>
+                </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div style="padding: 0.5rem 1.25rem 1rem; display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnConnOpenViewer" onclick="closeConnectionInfoModal(); openWebViewer();" style="display: none;">
+                    <span class="material-symbols-rounded">language</span>
+                    <span>Abrir Visor Web</span>
+                </button>
+                <button class="btn-m3 btn-m3-filled btn-m3-sm" onclick="closeConnectionInfoModal()">
+                    <span class="material-symbols-rounded">check</span>
+                    <span>Entendido</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- WEB VIEWER MODAL (noVNC) -->
     <div class="modal-overlay" id="webViewerModal">
         <div id="vncModalContainer">
@@ -2267,9 +2318,11 @@
 
                 if (data.is_screen_active) {
                     const deTitle = act.desktop_name || (de?.name || 'Entorno Gráfico');
-                    sub.innerText = `Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
+                    sub.innerText = `Encendido • IP: 127.0.0.1 • ${deTitle} (${act.backend || 'Activo'})`;
+                    // sub.innerText = `Encendido • IP: ${lanIp} • ${deTitle} (${act.backend || 'Activo'})`;
                 } else {
-                    sub.innerText = `Termux Local • IP: ${lanIp} • Apagado`;
+                    // sub.innerText = `Termux Local • IP: ${lanIp} • Apagado`;
+                    sub.innerText = `Termux Local • IP: 127.0.0.1 • Apagado`;
                 }
 
                 // Actualizar banner de advertencia/recomendación de apps complementarias (Termux:X11 y Termux:API)
@@ -3122,8 +3175,9 @@
 
                 if (d.status === 'running' || d.started || d.server_pid) {
                     showToast(`¡Pantalla Iniciada (${optDisplay.resolution})!`, 'check_circle');
+                    setTimeout(() => showConnectionInfoModal(selectedBackend, d), 400);
                     if (selectedBackend === 'novnc') {
-                        setTimeout(() => openWebViewer(), 600);
+                        setTimeout(() => openWebViewer(), 1200);
                     }
                 } else {
                     showToast(`Error: ${d.error || d.error_message || 'No se pudo iniciar'}`, 'error');
@@ -3213,7 +3267,10 @@
                     d = await res.json();
                 }
                 showToast(`Perfil aplicado (${resolution})`, 'check_circle');
-                setTimeout(() => openWebViewer(), 600);
+                setTimeout(() => showConnectionInfoModal(selectedBackend, d), 400);
+                if (selectedBackend === 'novnc') {
+                    setTimeout(() => openWebViewer(), 1200);
+                }
             } catch(e) {
                 showToast('Error al aplicar perfil de pantalla', 'error');
             }
@@ -3867,6 +3924,128 @@
                 if (lbl) lbl.innerText = 'Reintentar Instalación';
                 if (ico) ico.innerText = 'refresh';
             }
+        }
+
+        function showConnectionInfoModal(backend, responseData) {
+            const modal = document.getElementById('connectionInfoModal');
+            if (!modal) return;
+
+            const net = lastStatusData?.network || {};
+            const lanIp = net.lan_ip || '127.0.0.1';
+            const tailIp = net.tailscale_ip || null;
+            const deviceHash = net.device_hash || null;
+            const port = net.ports?.pwa_server || 19050;
+            const vncPort = net.ports?.vnc || 5900;
+            const rdpPort = net.ports?.rdp || 3389;
+
+            const desktopName = responseData?.desktop_id || lastStatusData?.installed_desktop?.name || 'Escritorio';
+            const resolution = responseData?.resolution || 'Auto';
+
+            // Header
+            const backendLabels = {
+                'novnc': { label: 'noVNC (Web HTML5)', icon: 'language', color: '#60a5fa' },
+                'vnc': { label: 'VNC (TigerVNC)', icon: 'monitor', color: '#a78bfa' },
+                'rdp': { label: 'RDP (Remote Desktop)', icon: 'desktop_windows', color: '#f472b6' },
+                'termux-x11': { label: 'Termux:X11 (Nativo)', icon: 'smartphone', color: '#4ade80' }
+            };
+            const info = backendLabels[backend] || { label: backend.toUpperCase(), icon: 'connected_tv', color: '#4ade80' };
+
+            document.getElementById('icoConnInfoBackend').innerText = info.icon;
+            document.getElementById('icoConnInfoBackend').style.color = info.color;
+            document.getElementById('txtConnInfoTitle').innerText = 'Pantalla Iniciada';
+            document.getElementById('txtConnInfoSubtitle').innerText = 'Conecta desde cualquier dispositivo en tu red';
+            document.getElementById('badgeConnBackend').innerText = info.label;
+            document.getElementById('badgeConnDesktop').innerText = desktopName;
+            document.getElementById('badgeConnResolution').innerText = resolution;
+
+            // Build URL rows
+            const box = document.getElementById('boxConnUrls');
+            box.innerHTML = '';
+
+            const urlRows = [];
+
+            if (backend === 'novnc') {
+                urlRows.push({ label: 'Panel Web (Local)', url: `http://localhost:${port}`, icon: 'home', note: 'En este dispositivo' });
+                if (lanIp !== '127.0.0.1') urlRows.push({ label: 'Panel Web (Red LAN)', url: `http://${lanIp}:${port}`, icon: 'wifi', note: 'Misma red Wi-Fi' });
+                if (tailIp) urlRows.push({ label: 'Panel Web (Tailscale)', url: `http://${tailIp}:${port}`, icon: 'vpn_lock', note: 'Red privada VPN' });
+                if (deviceHash) urlRows.push({ label: 'Acceso Central (HTTPS)', url: `https://tdm.oton.cl/${deviceHash}/`, icon: 'lock', note: 'Certificado TLS valido' });
+            } else if (backend === 'vnc') {
+                urlRows.push({ label: 'VNC Local', url: `vnc://localhost:${vncPort}`, icon: 'home', note: 'En este dispositivo' });
+                if (lanIp !== '127.0.0.1') urlRows.push({ label: 'VNC Red LAN', url: `vnc://${lanIp}:${vncPort}`, icon: 'wifi', note: 'Misma red Wi-Fi' });
+                if (tailIp) urlRows.push({ label: 'VNC Tailscale', url: `vnc://${tailIp}:${vncPort}`, icon: 'vpn_lock', note: 'Red privada VPN' });
+                urlRows.push({ label: 'Panel Web (Local)', url: `http://localhost:${port}`, icon: 'language', note: 'Gestion y noVNC integrado' });
+                if (deviceHash) urlRows.push({ label: 'Acceso Central (HTTPS)', url: `https://tdm.oton.cl/${deviceHash}/`, icon: 'lock', note: 'Certificado TLS valido' });
+            } else if (backend === 'rdp') {
+                urlRows.push({ label: 'RDP Local', url: `rdp://localhost:${rdpPort}`, icon: 'home', note: 'En este dispositivo' });
+                if (lanIp !== '127.0.0.1') urlRows.push({ label: 'RDP Red LAN', url: `rdp://${lanIp}:${rdpPort}`, icon: 'wifi', note: 'Misma red Wi-Fi' });
+                if (tailIp) urlRows.push({ label: 'RDP Tailscale', url: `rdp://${tailIp}:${rdpPort}`, icon: 'vpn_lock', note: 'Red privada VPN' });
+                urlRows.push({ label: 'Panel Web (Local)', url: `http://localhost:${port}`, icon: 'language', note: 'Gestion y noVNC integrado' });
+                if (deviceHash) urlRows.push({ label: 'Acceso Central (HTTPS)', url: `https://tdm.oton.cl/${deviceHash}/`, icon: 'lock', note: 'Certificado TLS valido' });
+            } else if (backend === 'termux-x11') {
+                urlRows.push({ label: 'Termux:X11 App', url: 'Abre la app Termux:X11 en tu telefono', icon: 'smartphone', note: 'Se lanza automaticamente' });
+                urlRows.push({ label: 'Panel Web (Local)', url: `http://localhost:${port}`, icon: 'language', note: 'Gestion y monitoreo' });
+                if (lanIp !== '127.0.0.1') urlRows.push({ label: 'Panel Web (Red LAN)', url: `http://${lanIp}:${port}`, icon: 'wifi', note: 'Misma red Wi-Fi' });
+                if (deviceHash) urlRows.push({ label: 'Acceso Central (HTTPS)', url: `https://tdm.oton.cl/${deviceHash}/`, icon: 'lock', note: 'Certificado TLS valido' });
+            }
+
+            urlRows.forEach(row => {
+                const isLink = row.url.startsWith('http');
+                const el = document.createElement('div');
+                el.style.cssText = 'background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.55rem 0.75rem; display: flex; align-items: center; gap: 0.65rem; cursor: pointer; transition: all 0.15s ease;';
+                el.onmouseenter = () => { el.style.background = 'rgba(255,255,255,0.06)'; };
+                el.onmouseleave = () => { el.style.background = 'rgba(0,0,0,0.2)'; };
+                el.innerHTML = `
+                    <span class="material-symbols-rounded" style="font-size: 1.15rem; color: ${info.color}; flex-shrink: 0;">${row.icon}</span>
+                    <div style="min-width: 0; flex: 1;">
+                        <div style="font-size: 0.74rem; font-weight: 700; color: #fff;">${row.label}</div>
+                        <div style="font-size: 0.68rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${row.url}">${row.url}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0;">
+                        <span style="font-size: 0.62rem; color: #64748b;">${row.note}</span>
+                        <span class="material-symbols-rounded" style="font-size: 0.9rem; color: #64748b;">${isLink ? 'content_copy' : 'info'}</span>
+                    </div>
+                `;
+                el.onclick = () => {
+                    if (isLink) {
+                        try {
+                            navigator.clipboard.writeText(row.url);
+                            showToast('URL copiada: ' + row.url, 'content_copy');
+                        } catch(e) {
+                            showToast(row.url, 'info');
+                        }
+                    }
+                };
+                box.appendChild(el);
+            });
+
+            // Backend-specific instructions
+            const instrBox = document.getElementById('boxConnInstructions');
+            const instrTxt = document.getElementById('txtConnInstructions');
+            if (backend === 'vnc') {
+                instrBox.style.display = 'block';
+                instrTxt.innerText = 'Clientes VNC recomendados:\n  - Android: bVNC Free, MultiVNC\n  - PC: TigerVNC Viewer, RealVNC Viewer\n  - macOS: Screen Sharing (integrado)\nSin contrasena (SecurityTypes=None)';
+            } else if (backend === 'rdp') {
+                instrBox.style.display = 'block';
+                instrTxt.innerText = 'Clientes RDP recomendados:\n  - Android: Microsoft Remote Desktop\n  - Windows: mstsc.exe (integrado)\n  - Linux: Remmina, FreeRDP\n  - macOS: Microsoft Remote Desktop\nUsuario: na  |  Sin contrasena';
+            } else if (backend === 'termux-x11') {
+                instrBox.style.display = 'block';
+                instrTxt.innerText = 'La app Termux:X11 se inicia automaticamente.\nSi no se abrio, ejecuta en Termux:\n  am start -n com.termux.x11/.MainActivity\n\nPara monitorizacion remota puedes usar el Panel Web.';
+            } else {
+                instrBox.style.display = 'none';
+            }
+
+            // Show/hide "Abrir Visor Web" button
+            const btnViewer = document.getElementById('btnConnOpenViewer');
+            if (btnViewer) {
+                btnViewer.style.display = (backend === 'novnc') ? 'inline-flex' : 'none';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeConnectionInfoModal() {
+            const modal = document.getElementById('connectionInfoModal');
+            if (modal) modal.classList.remove('active');
         }
 
         async function fetchVersion() {
