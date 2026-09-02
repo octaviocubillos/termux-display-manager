@@ -1,93 +1,139 @@
-# 🖥️ Termux Display Manager (TDM)
+# Termux Display Manager (TDM)
 
-> **Gestor de Pantallas, Servidores Gráficos y PWA para Entornos de Escritorio en Termux y Android.**
-
----
-
-## 📌 Resumen del Proyecto
-
-**Termux Display Manager (`TDM`)** permite proyectar y gestionar entornos de escritorio Linux nativos (KDE Plasma, MATE, XFCE4, LXQt, Openbox, i3, etc.) hacia múltiples servidores gráficos:
-
-1. ⚡ **Termux:X11:** App nativa de Android con aceleración GPU (VirGL) a 60/120 FPS.
-2. 🌐 **noVNC (Web HTML5):** Visor web interactivo embebido directamente en la PWA (Puerto `19052` / `19050`).
-3. 📡 **Microsoft Remote Desktop (XRDP):** Servidor RDP estándar para conectar tablets, PC o iPad (Puerto por defecto `3389`).
-4. 🖥️ **TigerVNC:** Servidor VNC RFB tradicional para clientes dedicados como bVNC (Puerto por defecto `5900`).
-5. 🔊 **PulseAudio Sink:** Servidor de audio bidireccional TCP (Puerto `19055`).
+> Gestor de Pantallas, Servidores Gráficos y PWA para Entornos de Escritorio en Termux y Android.
 
 ---
 
-## 🚀 Instalación Rápida en 1 Comando
+## Resumen del Proyecto
 
-Ejecuta en tu terminal de Termux:
+**Termux Display Manager (TDM)** permite proyectar y gestionar entornos de escritorio Linux nativos (KDE Plasma, MATE, XFCE4, LXQt, Openbox, i3, etc.) hacia múltiples servidores gráficos y protocolos:
+
+1. **Termux:X11:** Aplicación nativa de Android con aceleración GPU (VirGL) a 60/120 FPS.
+2. **noVNC (Web HTML5):** Visor interactivo en navegador embebido directamente en la PWA (Puerto `19052` / `19050`).
+3. **Microsoft Remote Desktop (XRDP):** Servidor RDP estándar para conectar tablets, PC o iPad (Puerto por defecto `3389`).
+4. **TigerVNC:** Servidor VNC RFB tradicional para clientes dedicados como bVNC (Puerto por defecto `5900`).
+5. **PulseAudio Sink:** Servidor de audio bidireccional TCP (Puerto `19055`).
+
+---
+
+## Instalación y Limpieza en 1 Comando
+
+### Instalación Rápida
+Ejecuta en la consola de Termux:
 ```bash
-curl -sSL https://tdm.oton.cl/install | bash
+curl -fsSL https://tdm.oton.cl/install | bash
 ```
-*(O usa el alias corto: `curl -sSL https://tdm.oton.cl/go | bash`)*
+*(O mediante el alias corto: `curl -fsSL https://tdm.oton.cl/go | bash`)*
 
----
-
-## 🌟 Arquitectura 100% Local y Autónoma en Termux
-
-TDM funciona completamente de manera local y soberana dentro de Termux (sin necesidad de servidores públicos en la nube):
-
-### 1. 📱 Panel Web PWA y API REST Local
-El servidor corre directamente en Termux en el puerto `19050`:
+### Limpiador Total y Reseteo a Cero
+Para purgar procesos, dependencias huérfanas, escritorios y restaurar Termux a su estado inicial:
 ```bash
-# Iniciar servidor local
-tdm server --port 19050
-
-# O iniciar como servicio en segundo plano con Wake-Lock
-tdm service start
-```
-- **Local:** Accede a `http://localhost:19050` desde Chrome/Brave/Firefox o la app de Android.
-- **Red Local (LAN):** Accede desde cualquier PC o tablet en la misma red Wi-Fi (`http://<IP_LOCAL>:19050`).
-- **Remoto Seguro (Tailscale):** Accede desde cualquier lugar del mundo mediante tu red privada Mesh VPN (`http://<IP_TAILSCALE>:19050`).
-- Pulsa **"PWA / Instalar App"** para añadir TDM a tu pantalla de inicio como aplicación nativa independiente.
-
----
-
-## 🛠️ Comandos CLI Disponibles
-
-```bash
-tdm status                                    # Muestra el estado de la pantalla y escritorio instalado
-tdm start --backend [termux-x11|novnc|rdp|vnc]# Inicia la salida gráfica
-tdm stop                                      # Apaga la pantalla activa y purga procesos
-tdm doctor                                    # Diagnóstico de paquetes y componentes
-tdm server [--port 19050]                     # Inicia servidor HTTP REST y PWA local
-tdm service [start|stop|status]               # Daemon en segundo plano con wake-lock
-tdm install --desktop [xfce|kde|openbox]      # Instalación modular bajo demanda
-tdm uninstall                                 # Desinstalación selectiva y limpia (SQLite audit)
-tdm agy [start|web|attach|qr|status|stop]     # Terminal dinámico persistente agy con tmux (PC/Móvil/Tablet)
+curl -fsSL https://tdm.oton.cl/clean | bash
 ```
 
 ---
 
-## 📁 Estructura del Repositorio
+## Identificador Único y Acceso Web Centralizado (HTTPS)
+
+Durante la instalación o al ejecutar `tdm register`, TDM genera un identificador único de **8 letras minúsculas** (`[a-z]{8}`, ej. `kxpmqrvw`) almacenado de forma persistente en SQLite. Este código habilita el acceso web seguro a través del Hub central:
+
+```text
+https://tdm.oton.cl/<hash>/
+```
+
+### Beneficios del Acceso Central HTTPS
+- **Conexión Cifrada SSL/TLS:** Elimina las advertencias de "Sitio no seguro" mostradas por navegadores al acceder por IP plana.
+- **Soporte Completo PWA:** Permite instalar el panel web de TDM como una aplicación de escritorio nativa e independiente en PC, Mac o Tablet mediante Service Workers.
+- **Portapapeles Bidireccional:** Habilita el uso de la API segura `navigator.clipboard` para copiar y pegar texto sin restricciones entre el navegador y el dispositivo Android.
+- **Experiencia Inmersiva:** Desbloquea las APIs de bloqueo de puntero (Pointer Lock), captura de teclado completo y pantalla completa para el control fluido de sesiones de escritorio remoto.
+
+### Privacidad Total y Cero Recolección
+- **Procesamiento 100% Local:** Todos los escritorios gráficos, archivos, credenciales y procesos residen exclusivamente dentro de tu dispositivo Android en Termux.
+- **Cero Telemetría:** Ninguna información personal, archivo, pulsación de teclas ni historial de navegación se envía ni se almacena en servidores externos.
+- **Túnel Seguro:** El dominio público actúa exclusivamente como un puente seguro TLS hacia las IPs locales de tu red privada.
+
+> [!IMPORTANT]
+> **Condición de Conectividad para el Acceso Web Central**:
+> Para acceder a `https://tdm.oton.cl/<hash>/`, tu cliente (computador o tablet) debe encontrarse conectado a la **misma red Wi-Fi/local** de tu teléfono o tener activa tu red privada **Tailscale**.
+
+---
+
+## Modos de Conectividad Soportados
+
+| Tipo de Acceso | URL / Destino | Descripción |
+| :--- | :--- | :--- |
+| **Local** | `http://127.0.0.1:19050` | Acceso directo en el propio dispositivo Android. |
+| **Red Local (LAN)** | `http://<IP_LOCAL>:19050` | Acceso vía Wi-Fi o Ethernet en tu red doméstica. |
+| **Tailscale VPN** | `http://<IP_TAILSCALE>:19050` | Acceso remoto cifrado punto a punto vía Tailscale Mesh. |
+| **Acceso Central HTTPS** | `https://tdm.oton.cl/<hash>/` | Acceso seguro con certificado TLS y soporte PWA completo. |
+
+---
+
+## Arquitectura de Persistencia con SQLite
+
+TDM no utiliza dependencias externas para almacenamiento ni archivos JSON concurrentes expuestos a corrupción:
+- **Dispositivo (Termux):** Registro de identidad (`device_identity`) y auditoría de paquetes instalados en `~/.tdm/manifest.sqlite3`.
+- **Servidor Hub (Landing):** Registro de dispositivos y sondeo de IP activa en `landing/devices.sqlite3` en modo WAL (`Write-Ahead Logging`).
+- **Desinstalación Cero Residuos:** `tdm uninstall` consulta el manifiesto SQLite para desinstalar única y exclusivamente los paquetes que TDM instaló, respetando herramientas previas del usuario.
+
+---
+
+## Comandos CLI Disponibles
+
+```bash
+tdm register                                  # Registra el dispositivo en el Hub y proyecta el banner de accesos
+tdm status                                    # Muestra estado de pantalla, backends y URLs de conectividad
+tdm start --backend [termux-x11|novnc|rdp|vnc]# Inicia la salida gráfica con el entorno configurado
+tdm stop                                      # Apaga el servidor gráfico y detiene procesos asociados
+tdm novnc [start|stop|status|url|open]        # Control directo del visor web HTML5 noVNC
+tdm doctor                                    # Diagnóstico de paquetes, aceleración 3D e interfaces de red
+tdm server [--port 19050]                     # Servidor HTTP REST y panel Web Dashboard/PWA
+tdm service [start|stop|restart|status]       # Gestor de servicio en segundo plano con wake-lock
+tdm install --desktop [xfce|kde|openbox]      # Instalación modular de escritorios bajo demanda
+tdm uninstall                                 # Desinstalación selectiva auditada por SQLite
+tdm permissions                               # Solicita en pantalla el permiso "Mostrar sobre otras apps"
+```
+
+---
+
+## Estructura del Repositorio
 
 ```
 termux-display-manager/
 ├── docs/                      # Documentación técnica y guías de arquitectura
 │   ├── ARCHITECTURE.md        # Diagramas de capas y ciclo de vida
 │   ├── DESKTOP_ENVIRONMENTS.md# Entornos de escritorio soportados
-│   ├── MODULAR_INSTALLATION.md# Sistema de instalación bajo demanda
+│   ├── MODULAR_INSTALLATION.md# Sistema de instalación modular
 │   ├── ROADMAP.md             # Línea de ruta del proyecto
 │   ├── SCREENS_AND_BACKENDS.md# Backends gráficos y resoluciones
 │   └── TAILSCALE_AND_SECURITY.md # Conectividad segura LAN y Tailscale Mesh
-├── plans/                     # Especificaciones de API y arquitectura
+├── landing/                   # Landing Page y Reverse Proxy Dinámico
+│   ├── db.py                  # Gestor de persistencia SQLite (modo WAL)
+│   ├── server.py              # Servidor HTTP y Reverse Proxy con autodetección de IP
+│   ├── index.html             # Landing Page pública oficial
+│   ├── install.sh             # Script de instalación bootstrap
+│   ├── clean.sh               # Script de limpieza total a cero
+│   ├── go                     # Script alias corto de instalación
+│   ├── nginx.conf             # Plantilla de proxy inverso Nginx / OpenResty
+│   └── Caddyfile              # Plantilla de proxy Caddy
 ├── tdm/                       # Paquete Python del núcleo de TDM (Zero-Dependencies)
-│   ├── agent/                 # Agente WebSocket cliente para Termux
-│   ├── backends/              # Adaptadores de Termux:X11, noVNC, XRDP, VNC
-│   ├── cli/                   # Interfaz CLI de comandos `tdm`
-│   ├── core/                  # Supervisor de pantallas, manifest SQLite e instalador
+│   ├── backends/              # Controladores de Termux:X11, noVNC, XRDP y VNC
+│   ├── cli/                   # Interfaz de línea de comandos `tdm`
+│   ├── core/                  # Identidad de dispositivo, supervisor y SQLite manifest
+│   │   ├── device.py          # Hash de 8 letras, IPs locales, Tailscale y banner
+│   │   ├── manifest.py        # Registro de auditoría SQLite
+│   │   └── uninstaller.py     # Desinstalador limpio selectivo
 │   ├── discovery/             # Detección de entornos, backends y red
 │   ├── runners/               # Generador de scripts de sesión y variables D-Bus
-│   ├── scripts/               # Scripts oficiales de instalación, arranque y limpieza en runtime
-│   ├── server/                # Servidor HTTP REST, WebSocket RFC 6455 y Hub Relay
-│   └── web/                   # PWA (HTML5, CSS, JS, manifest.json, sw.js, noVNC, terminal xterm.js)
+│   ├── scripts/               # Scripts de instalación y configuración de entornos
+│   ├── server/                # Servidor HTTP REST y WebSockets RFC 6455
+│   └── web/                   # Panel Web PWA (HTML5, JS, noVNC, terminal xterm.js)
 ├── tests/                     # Suite de pruebas automatizadas
-├── install.sh                 # Instalador bootstrap directo
-├── uninstall.sh               # Desinstalador limpio auditado directo
-├── pyproject.toml             # Empaquetado pip estándar (Zero dependencias)
-├── MEMORY.md                  # Memoria técnica del proyecto y decisiones de diseño
+│   ├── test_device_hash.py    # Pruebas de hash, SQLite y proxy dinámico
+│   └── test_cli.py            # Pruebas de comandos CLI
+├── install.sh                 # Instalador bootstrap del sistema
+├── clean.sh                   # Limpiador total del sistema
+├── uninstall.sh               # Desinstalador auditado directo
+├── pyproject.toml             # Configuración de paquete Python
 └── README.md
 ```
