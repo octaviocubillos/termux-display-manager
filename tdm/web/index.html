@@ -11,10 +11,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TDM">
     <script>
-        // Normalizar sub-rutas proxy (ej. /aabbcc -> /aabbcc/) para resolución exacta de assets relativos
-        if (window.location.pathname === '/aabbcc') {
-            window.location.replace('/aabbcc/' + window.location.search + window.location.hash);
-        }
+        // Normalizar sub-rutas proxy (ej. /<hash> -> /<hash>/) para resolución exacta de assets relativos
+        (function() {
+            var p = window.location.pathname;
+            var m = p.match(/^\/([a-z]{8}|aabbcc)$/);
+            if (m) {
+                window.location.replace('/' + m[1] + '/' + window.location.search + window.location.hash);
+            }
+        })();
     </script>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a8c7fa'><path d='M4 6h16v10H4V6zm-2 0a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-6v2h2a1 1 0 110 2H8a1 1 0 110-2h2v-2H4a2 2 0 01-2-2V6z'/></svg>" type="image/svg+xml">
@@ -1915,10 +1919,13 @@
 
     <!-- JAVASCRIPT CORE -->
     <script>
-        // Prefijo base dinámico para soporte transparente de Reverse Proxy (/aabbcc/) y acceso directo (/)
+        // Prefijo base dinámico para soporte transparente de Reverse Proxy (/<hash>/, /aabbcc/) y acceso directo (/)
         const BASE_PATH = (() => {
             const p = window.location.pathname;
-            if (p === '/aabbcc' || p.startsWith('/aabbcc/')) return '/aabbcc';
+            const match = p.match(/^\/([a-z]{8}|aabbcc)(?:\/|$)/);
+            if (match) {
+                return '/' + match[1];
+            }
             return '';
         })();
 

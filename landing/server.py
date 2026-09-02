@@ -164,6 +164,18 @@ class LandingProxyServer:
                     self.send_response(writer, 404, "application/json", b'{"success": false, "error": "device_not_found"}')
                 return
 
+            if path == "/api/version" and method in ("GET", "HEAD"):
+                try:
+                    from tdm.version import get_version_info
+                    vdata = get_version_info()
+                except Exception:
+                    vdata = {"version": "0.0.86", "version_code": 86}
+                vdata["download_url"] = "https://tdm.oton.cl/tdm-bundle.tar.gz"
+                vdata["hub_url"] = "https://tdm.oton.cl"
+                resp = json.dumps(vdata).encode("utf-8")
+                self.send_response(writer, 200, "application/json", resp)
+                return
+
             # -------------------------------------------------------------
             # 2. Reverse Proxy Dinámico por Hash de 8 letras (/<hash>/...)
             # -------------------------------------------------------------
@@ -175,7 +187,7 @@ class LandingProxyServer:
                 # Redirigir /<hash> a /<hash>/ para mantener consistencia de rutas relativas
                 if sub_path_raw is None:
                     target_redirect = f"/{device_hash}/" + (f"?{query}" if query else "")
-                    self.send_redirect(writer, target_redirect)
+                    self.send_redirect(writer, target_redirect, cookie_device=device_hash)
                     return
 
                 device = self.db.get_device(device_hash)
@@ -197,6 +209,50 @@ class LandingProxyServer:
                 else:
                     await self.proxy_http(target_host, target_port, method, target_path, query, headers, body_bytes, writer, device_hash=device_hash)
                 return
+
+            # -------------------------------------------------------------
+            # 2.5 Fallback Inteligente: Enrutar llamadas a /api, /ws, /novnc, etc. al dispositivo según Referer o Cookie
+            # -------------------------------------------------------------
+            fallback_hash = None
+            cookie_hdr = headers.get("cookie", "")
+            if "tdm_device=" in cookie_hdr:
+                for c in cookie_hdr.split(";"):
+                    c = c.strip()
+                    if c.startswith("tdm_device="):
+                        val = c.split("=", 1)[1].strip().lower()
+                        if HASH_REGEX.match(val) and self.db.get_device(val):
+                            fallback_hash = val
+                            break
+
+            if not fallback_hash and headers.get("referer"):
+                ref = headers["referer"]
+                ref_candidates = re.findall(r"/([a-z]{8})(?:/|$|\?)", ref)
+                for cand in ref_candidates:
+                    if self.db.get_device(cand.lower()):
+                        fallback_hash = cand.lower()
+                        break
+
+            if fallback_hash and not path.startswith("/api/register") and not path.startswith("/api/devices") and not path.startswith("/api/device/"):
+                if (
+                    path.startswith("/api/")
+                    or path.startswith("/ws/")
+                    or path.startswith("/novnc/")
+                    or path.startswith("/terminal/")
+                    or path.startswith("/websockify")
+                    or path in ("/sw.js", "/manifest.json")
+                ):
+                    device = self.db.get_device(fallback_hash)
+                    if device:
+                        target = await self.find_active_target(device)
+                        if target:
+                            target_host, target_port = target
+                            target_path = path
+                            is_ws = headers.get("upgrade", "").lower() == "websocket"
+                            if is_ws:
+                                await self.proxy_websocket(target_host, target_port, target_path, query, headers, reader, writer)
+                            else:
+                                await self.proxy_http(target_host, target_port, method, target_path, query, headers, body_bytes, writer, device_hash=fallback_hash)
+                            return
 
             # -------------------------------------------------------------
             # 3. Reverse Proxy Legacy (/aabbcc y /aabbcc/*)
@@ -552,16 +608,17 @@ class LandingProxyServer:
         ]
         writer.write("\r\n".join(resp).encode("utf-8") + body)
 
-    def send_redirect(self, writer: asyncio.StreamWriter, location: str):
+    def send_redirect(self, writer: asyncio.StreamWriter, location: str, cookie_device: Optional[str] = None):
         resp = [
             "HTTP/1.1 301 Moved Permanently",
             f"Location: {location}",
             "Content-Length: 0",
             "Access-Control-Allow-Origin: *",
             "Connection: close",
-            "",
-            ""
         ]
+        if cookie_device:
+            resp.append(f"Set-Cookie: tdm_device={cookie_device}; Path=/; SameSite=Lax; Max-Age=86400")
+        resp.extend(["", ""])
         writer.write("\r\n".join(resp).encode("utf-8"))
 
     async def start(self):
