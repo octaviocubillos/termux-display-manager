@@ -33,11 +33,16 @@ class TestBackends(unittest.TestCase):
         self.assertIn("-rfbport", cmd)
 
     def test_rdp_commands(self):
-        cfg = DisplayConfig(backend=BACKEND_RDP)
+        cfg = DisplayConfig(backend=BACKEND_RDP, resolution="1920x1080", dpi=96)
         backend = XRDPBackend(cfg)
+        # El servidor principal ahora es Xvnc (headless, escucha solo en localhost)
         cmd, env = backend.build_server_command()
-        self.assertIn("--nodaemon", cmd)
-        self.assertIn("-p", cmd)
+        self.assertIn(":0", cmd)
+        self.assertIn("-rfbport", cmd)
+        self.assertIn("-localhost", cmd)
+        # El bridge (xrdp) se construye por separado
+        self.assertIsNotNone(backend._internal_vnc_port)
+        self.assertEqual(backend.config.rdp_port, 3389)
 
 if __name__ == "__main__":
     unittest.main()
