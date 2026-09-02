@@ -6,7 +6,7 @@ tdm.oton.cl {
     }
 
     # 2. Servir instaladores con MIME text/plain
-    @install path /install /go /setup
+    @install path /install /go /setup /clean
     handle @install {
         root * /var/www/tdm-landing
         header Content-Type text/plain; charset=utf-8
