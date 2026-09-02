@@ -113,10 +113,11 @@ chmod +x "$SYSTEM_DIR"/tdm/scripts/*.sh "$SYSTEM_DIR"/*.sh 2>/dev/null || true
 
 echo "====================================================="
 echo "✅ [TDM] Backend instalado con éxito en el sistema ($SYSTEM_DIR)!"
-echo "🚀 Iniciando TDM Daemon en segundo plano (puerto 19050)..."
+echo "🚀 Iniciando TDM Service en segundo plano..."
 echo "====================================================="
 
-pkill -f "tdm.cli.main" || true
-nohup "$BIN_PATH" server --port 19050 > "$HOME_DIR/.tdm/logs/server.log" 2>&1 &
+pkill -f "tdm.cli.main" 2>/dev/null || true
+sleep 0.5
+PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" service restart
 
-echo "🎉 TDM Core activo en http://127.0.0.1:19050"
+echo "🎉 TDM Core activo. Abre el navegador en http://127.0.0.1:19050"
