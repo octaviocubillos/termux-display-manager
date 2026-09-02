@@ -148,13 +148,20 @@ termux-display-manager/
 ├── MEMORY.md                   # Esta especificación técnica y de arquitectura
 ├── README.md                   # Documentación principal para usuarios
 ├── pyproject.toml              # Definición del paquete Python y dependencias
-├── scripts/
-│   ├── install.sh              # Instalador bootstrap one-liner
-│   ├── install_desktop.sh      # Instalador de escritorios (XFCE, KDE, MATE, LXQt, etc.)
-│   ├── launch_x11.sh           # Lanzador optimizado para Termux:X11
-│   ├── stop_x11.sh             # Script de purga total y detención de pantalla
-│   └── setup_dependencies.sh   # Configuración de repositorios y paquetes base
+├── install.sh                  # Instalador bootstrap del sistema
+├── uninstall.sh                # Desinstalador y purga completa
 ├── tdm/
+│   ├── scripts/
+│   │   ├── detect_desktop.sh   # Detección rápida de entornos instalados
+│   │   ├── install_server.sh   # Instalador modular de backends gráficos
+│   │   ├── package_bundle.sh   # Empaquetador de release
+│   │   ├── xfce/               # Scripts modulares de XFCE4 (install, config, launch, uninstall)
+│   │   ├── kde/                # Scripts modulares de KDE Plasma
+│   │   ├── mate/               # Scripts modulares de MATE
+│   │   ├── lxqt/               # Scripts modulares de LXQt
+│   │   ├── i3/                 # Scripts modulares de i3 WM
+│   │   ├── openbox/            # Scripts modulares de Openbox
+│   │   └── terminal/           # Scripts modulares de Modo Terminal X11
 │   ├── __init__.py
 │   ├── constants.py            # Puertos (1905x), displays y constantes globales
 │   ├── config.py               # Gestión de configuración persistente (~/.tdm)
