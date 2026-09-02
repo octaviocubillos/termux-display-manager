@@ -87,20 +87,7 @@ def build_session_script(display_num: int, desktop_id: str, custom_command: Opti
             lines.append("export GSETTINGS_BACKEND=keyfile")
             lines.append("exec mate-session")
         elif desktop_id in ["xfce", "xfce4"]:
-            lines.append(f"# Configurar escalado de interfaz según DPI ({dpi}) y logo en panel XFCE")
-            lines.append("LOGO_PATH=\"$PREFIX/opt/termux-display-manager/tdm/web/assets/logos/xfce.svg\"")
-            lines.append("if [ ! -f \"$LOGO_PATH\" ]; then LOG_PATH=\"$HOME/.tdm/assets/xfce.svg\"; fi")
-            scale_val = 2 if dpi > 120 else 1
-            panel_sz = 48 if dpi > 120 else 26
-            cursor_sz = 36 if dpi > 120 else 24
-            lines.append("if command -v xfconf-query >/dev/null 2>&1; then")
-            lines.append(f"    (sleep 1 && \\")
-            lines.append(f"     xfconf-query -c xsettings -p /Gdk/WindowScalingFactor -s {scale_val} --create -t int >/dev/null 2>&1 || true; \\")
-            lines.append(f"     xfconf-query -c xfce4-panel -p /panels/panel-1/size -s {panel_sz} --create -t int >/dev/null 2>&1 || true; \\")
-            lines.append(f"     xfconf-query -c xsettings -p /Gtk/CursorThemeSize -s {cursor_sz} --create -t int >/dev/null 2>&1 || true; \\")
-            lines.append("     if [ -f \"$LOGO_PATH\" ]; then xfconf-query -c xfce4-panel -p /plugins/plugin-1/button-icon -s \"$LOGO_PATH\" --create -t string >/dev/null 2>&1; fi) &")
-            lines.append("fi")
-            lines.append("# Ejecutar XFCE4")
+            lines.append("# Ejecutar XFCE4 en modo nativo")
             lines.append("if command -v xfce4-session >/dev/null 2>&1; then")
             lines.append("    exec xfce4-session")
             lines.append("else")

@@ -476,32 +476,6 @@ async def handle_update(args):
     print(f"✅ TDM actualizado y operativo en versión v{new_ver}.")
     print("=====================================================")
 
-async def handle_scale(args):
-    scale_factor = getattr(args, "scale_factor", None) or getattr(args, "scale", None) or 1
-    try:
-        scale_factor = int(scale_factor)
-    except Exception:
-        scale_factor = 1
-    if scale_factor not in [1, 2]:
-        print(f"⚠️ Factor de escala {scale_factor} no soportado. Usa 1 (PC) o 2 (Móvil/HiDPI).")
-        return {"success": False, "error": f"Factor {scale_factor} no soportado"}
-
-    panel_size = 48 if scale_factor >= 2 else 26
-    cursor_size = 36 if scale_factor >= 2 else 24
-    print(f"🎛️ [TDM Scale] Aplicando escala de escritorio {scale_factor}x (Panel: {panel_size}px, Cursor: {cursor_size}px)...")
-    env = os.environ.copy()
-    env["DISPLAY"] = ":0"
-    prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
-    env["PATH"] = f"{prefix}/bin:" + env.get("PATH", "")
-    try:
-        subprocess.run(["xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor", "-s", str(scale_factor)], env=env, timeout=2, capture_output=True)
-        subprocess.run(["xfconf-query", "-c", "xfce4-panel", "-p", "/panels/panel-1/size", "-s", str(panel_size)], env=env, timeout=2, capture_output=True)
-        subprocess.run(["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeSize", "-s", str(cursor_size)], env=env, timeout=2, capture_output=True)
-    except Exception:
-        pass
-    print(f"✅ Escala {scale_factor}x configurada correctamente.")
-    return {"success": True, "scale": scale_factor, "panel_size": panel_size}
-
 async def handle_3d(args):
     from tdm.core.gpu_manager import gpu_manager
     info = gpu_manager.get_gpu_info()
@@ -596,11 +570,6 @@ def build_cli_parser():
     gpu_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
     gpu_parser.add_argument("--install", "-i", action="store_true", help="Instala el controlador 3D para la GPU detectada")
     gpu_parser.add_argument("--force", "-f", action="store_true", help="Fuerza la reinstalación")
-
-    # tdm scale [1|2]
-    scale_parser = subparsers.add_parser("scale", help="Ajusta la escala de interfaz del escritorio (1 para PC, 2 para Móvil/HiDPI)")
-    scale_parser.add_argument("scale_factor", nargs="?", type=int, choices=[1, 2], default=1, help="Factor de escala (1 o 2)")
-    scale_parser.add_argument("--scale", "-s", type=int, choices=[1, 2], help="Alias de factor de escala")
 
     # tdm logs
     logs_parser = subparsers.add_parser("logs", help="Muestra los registros y eventos de TDM")
@@ -746,9 +715,6 @@ async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
     elif args.command in ["permissions", "perms"]:
         handle_permissions()
         return {"success": True, "message": "Permisos solicitados en Android"}
-    elif args.command == "scale":
-        res = await handle_scale(args)
-        return res
     elif args.command == "start":
         res = await handle_start(args)
         return {"success": res.get("status") == "running", "data": res}
@@ -823,8 +789,6 @@ def main():
         handle_brightness(args)
     elif args.command == "status":
         asyncio.run(handle_status(args))
-    elif args.command == "scale":
-        asyncio.run(handle_scale(args))
     elif args.command == "permissions" or args.command == "perms":
         handle_permissions()
     elif args.command == "logs":

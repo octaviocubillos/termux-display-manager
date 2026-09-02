@@ -344,18 +344,6 @@ class AsyncHTTPServer:
                     st = display_manager.get_status()
                     await ws.send_json({"type": "status_update", "data": st})
 
-                # 6. Cambiar factor de escala del escritorio (Delegado al CLI: tdm scale)
-                elif req_type in ["set_desktop_scale", "scale_desktop"]:
-                    payload = msg.get("payload") or msg.get("data") or {}
-                    scale_factor = str(payload.get("scale", 2))
-                    res = await execute_cli_command(["scale", scale_factor])
-                    await ws.send_json({
-                        "type": "action_result",
-                        "action": "set_desktop_scale",
-                        "id": req_id,
-                        **res
-                    })
-
                 # 7. Instalar Entorno de Escritorio (Delegado al CLI: tdm install --desktop)
                 elif req_type in ["install_desktop", "install"]:
                     payload = msg.get("payload") or msg.get("data") or {}
@@ -723,13 +711,6 @@ class AsyncHTTPServer:
                 self.send_json_response(writer, res.get("data", {}))
             else:
                 self.send_json_response(writer, {"error": res.get("error", "Error al iniciar noVNC")}, status_code=400)
-            return
-
-        if path == "/api/screen/scale" and method == "POST":
-            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
-            scale_factor = str(req_data.get("scale", 2))
-            res = await execute_cli_command(["scale", scale_factor])
-            self.send_json_response(writer, res)
             return
 
         if path == "/api/novnc/stop" and method == "POST":

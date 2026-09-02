@@ -35,25 +35,16 @@ def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, v
     env["XDG_DATA_DIRS"] = f"{PREFIX}/share:/usr/local/share:/usr/share"
     env["XDG_CONFIG_DIRS"] = f"{PREFIX}/etc/xdg:/etc/xdg"
     
-    # 3. Toolkits gráficos en modo X11 puro y escalado adaptativo (PC vs Móvil)
+    # 3. Toolkits gráficos en modo X11 nativo
     env["GDK_BACKEND"] = "x11"
     env["QT_QPA_PLATFORM"] = "xcb"
     env["CLUTTER_BACKEND"] = "x11"
     env["SDL_VIDEODRIVER"] = "x11"
-
-    # Si DPI > 120 (Smartphones / HiDPI), activar UI 2x y cursor grande. Si es PC (DPI <= 120), escala 1x estándar
-    if dpi > 120:
-        env["GDK_SCALE"] = "2"
-        env["GDK_DPI_SCALE"] = "1"
-        env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-        env["QT_SCALE_FACTOR"] = "2"
-        env["XCURSOR_SIZE"] = "36"
-    else:
-        env["GDK_SCALE"] = "1"
-        env["GDK_DPI_SCALE"] = "1"
-        env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
-        env["QT_SCALE_FACTOR"] = "1"
-        env["XCURSOR_SIZE"] = "24"
+    env["GDK_SCALE"] = "1"
+    env["GDK_DPI_SCALE"] = "1"
+    env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
+    env["QT_SCALE_FACTOR"] = "1"
+    env["XCURSOR_SIZE"] = "24"
 
     # 4. Soporte de Audio (PulseAudio TCP)
     if audio:

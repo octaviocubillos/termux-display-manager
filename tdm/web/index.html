@@ -1054,7 +1054,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.65</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.66</span>
                                 <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
                                     <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
                                     <span id="txtBatteryVal">--%</span>
@@ -1572,10 +1572,6 @@
                 <button class="vnc-menu-item" onclick="sendIframeVncAction('toggle_resize'); closeVncDropdown();">
                     <span class="material-symbols-rounded">aspect_ratio</span>
                     <span>Resolución Dinámica</span>
-                </button>
-                <button class="vnc-menu-item" onclick="toggleDesktopUiScale(); closeVncDropdown();">
-                    <span class="material-symbols-rounded">format_size</span>
-                    <span>Escalar UI Escritorio (1x / 2x)</span>
                 </button>
                 <button class="vnc-menu-item" onclick="sendIframeVncAction('ctrl_alt_del'); closeVncDropdown();">
                     <span class="material-symbols-rounded">keyboard</span>
@@ -2822,34 +2818,14 @@
             sendIframeVncAction('set_scale', { scale: scaleVal });
         }
 
-        let currentUiScale = 2;
-        async function toggleDesktopUiScale() {
-            currentUiScale = (currentUiScale === 2) ? 1 : 2;
-            showToast(`Cambiando tamaño de interfaz a ${currentUiScale}x...`, 'aspect_ratio');
-            try {
-                if (localWs && localWs.readyState === WebSocket.OPEN) {
-                    await sendWsRpc('set_desktop_scale', { scale: currentUiScale });
-                } else {
-                    await fetch(apiPath('/api/screen/scale'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ scale: currentUiScale })
-                    });
-                }
-                showToast(`Interfaz escalada a ${currentUiScale}x con éxito`, 'check_circle');
-            } catch(e) {
-                showToast('Error al escalar UI de escritorio', 'error');
-            }
-        }
-
         async function switchDisplayProfile(profile) {
             closeVncDropdown();
             if (profile === 'pc') {
-                showToast('Cambiando a Perfil PC (1920x1080 @ UI 1x)...', 'computer');
+                showToast('Cambiando a Perfil PC (1920x1080 Nativo)...', 'computer');
                 await apiStartScreenWithOptions('1920x1080', 96);
             } else if (profile === 'mobile') {
-                showToast('Cambiando a Perfil Móvil (1080x2400 @ UI 2x)...', 'smartphone');
-                await apiStartScreenWithOptions('1080x2400', 160);
+                showToast('Cambiando a Perfil Móvil (1080x2400 Nativo)...', 'smartphone');
+                await apiStartScreenWithOptions('1080x2400', 96);
             }
         }
 
@@ -3117,21 +3093,6 @@
                 selScale.value = isMobile ? 'fill' : 'dynamic';
             }
 
-            // Si es PC, asegurar que la UI del escritorio esté en 1x para máxima nitidez y espacio
-            if (!isMobile) {
-                try {
-                    if (localWs && localWs.readyState === WebSocket.OPEN) {
-                        sendWsRpc('set_desktop_scale', { scale: 1 });
-                    } else {
-                        fetch(apiPath('/api/screen/scale'), {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ scale: 1 })
-                        });
-                    }
-                } catch(e){}
-            }
-
             const ifr = document.getElementById('novncIframe');
             ifr.onload = () => {
                 const sel = document.getElementById('selVncScale');
@@ -3353,7 +3314,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.65';
+                    const curVer = res.version || '0.0.66';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

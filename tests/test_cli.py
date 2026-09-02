@@ -39,10 +39,15 @@ class TestCLI(unittest.TestCase):
         self.assertIn("http://", res.stdout)
         self.assertIn("/novnc/vnc.html", res.stdout)
 
-    def test_cli_scale(self):
-        res = subprocess.run([sys.executable, "-m", "tdm.cli.main", "scale", "1"], capture_output=True, text=True)
+    def test_cli_device(self):
+        res = subprocess.run([sys.executable, "-m", "tdm.cli.main", "device", "--json"], capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
-        self.assertIn("TDM Scale", res.stdout)
+        self.assertIn("battery", res.stdout)
+
+    def test_cli_3d(self):
+        res = subprocess.run([sys.executable, "-m", "tdm.cli.main", "3d", "--json"], capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("gpu_model", res.stdout)
 
     def test_cli_status_json(self):
         res = subprocess.run([sys.executable, "-m", "tdm.cli.main", "status", "--json"], capture_output=True, text=True)
