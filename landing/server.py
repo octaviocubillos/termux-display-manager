@@ -130,15 +130,19 @@ class LandingProxyServer:
             up_writer.close()
             await up_writer.wait_closed()
         except Exception as e:
-            msg = (
-                f"<html><body style='background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:2rem;text-align:center;'>"
-                f"<h2>⚠️ TDM HTTP-Proxy Gateway (/aabbcc)</h2>"
-                f"<p>No se pudo conectar al runtime TDM en <code>http://{self.target_host}:{self.target_port}</code></p>"
-                f"<p style='color:#94a3b8;font-size:0.85rem;'>Asegúrate de que TDM esté activo en el dispositivo y dentro de tu red.</p>"
-                f"<p style='color:#ef4444;font-size:0.8rem;'>Detalle: {e}</p>"
-                f"</body></html>"
-            ).encode("utf-8")
-            self.send_response(writer, 502, "text/html; charset=utf-8", msg)
+            if target_path.startswith("/api") or "application/json" in headers.get("accept", ""):
+                json_msg = f'{{"error":"bad_gateway","message":"No se pudo conectar al runtime TDM en http://{self.target_host}:{self.target_port}","detail":"{str(e)}"}}'.encode("utf-8")
+                self.send_response(writer, 502, "application/json", json_msg)
+            else:
+                msg = (
+                    f"<html><body style='background:#0f172a;color:#f8fafc;font-family:sans-serif;padding:2rem;text-align:center;'>"
+                    f"<h2>⚠️ TDM HTTP-Proxy Gateway (/aabbcc)</h2>"
+                    f"<p>No se pudo conectar al runtime TDM en <code>http://{self.target_host}:{self.target_port}</code></p>"
+                    f"<p style='color:#94a3b8;font-size:0.85rem;'>Asegúrate de que TDM esté activo en el dispositivo y accesible desde este servidor.</p>"
+                    f"<p style='color:#ef4444;font-size:0.8rem;'>Detalle: {e}</p>"
+                    f"</body></html>"
+                ).encode("utf-8")
+                self.send_response(writer, 502, "text/html; charset=utf-8", msg)
 
     async def proxy_websocket(self, path: str, query: str, headers: dict, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         """Reenvío bidireccional de WebSockets (noVNC websockify / Terminal PTY)."""
