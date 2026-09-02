@@ -1054,7 +1054,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.66</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.67</span>
                                 <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
                                     <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
                                     <span id="txtBatteryVal">--%</span>
@@ -1675,6 +1675,7 @@
         let clientPingMs = null;
         let wsPendingRequests = new Map();
         let wsReqCounter = 0;
+        const isLocalHost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
         // Iniciar
         document.addEventListener('DOMContentLoaded', () => {
@@ -1682,15 +1683,27 @@
             initPwa();
             initIndexFloatingVncDragging();
             
-            // Sondeo periódico de ping / estado cada 3s
-            if (pingInterval) clearInterval(pingInterval);
-            pingInterval = setInterval(() => {
-                if (localWs && localWs.readyState === WebSocket.OPEN) {
-                    measureWsPing();
-                } else {
-                    refreshStatus();
-                }
-            }, 3000);
+            // Carga inicial obligatoria de estado
+            refreshStatus();
+
+            // Telemetría y sondeo en tiempo real SOLO cuando NO se ingresa mediante localhost o 127.0.0.1
+            if (!isLocalHost) {
+                if (pingInterval) clearInterval(pingInterval);
+                pingInterval = setInterval(() => {
+                    if (localWs && localWs.readyState === WebSocket.OPEN) {
+                        measureWsPing();
+                    } else {
+                        refreshStatus();
+                    }
+                }, 3000);
+
+                // Heartbeat / Latido activo para medir latencia y telemetría remota
+                setInterval(() => {
+                    if (localWs && localWs.readyState === WebSocket.OPEN) {
+                        measureWsPing();
+                    }
+                }, 5000);
+            }
 
             // Cargar versión
             setTimeout(() => fetchVersion(), 1200);
@@ -1722,13 +1735,6 @@
             });
         }
 
-        // Heartbeat / Latido activo para mantener la conexión viva y medir latencia
-        setInterval(() => {
-            if (localWs && localWs.readyState === WebSocket.OPEN) {
-                measureWsPing();
-            }
-        }, 5000);
-
         function measureWsPing() {
             if (localWs && localWs.readyState === WebSocket.OPEN) {
                 localWs.send(JSON.stringify({ type: 'ping', t0: performance.now() }));
@@ -1740,18 +1746,18 @@
             const txtClientPing = document.getElementById('txtClientPing');
             const txtNetValCompact = document.getElementById('txtNetValCompact');
             const barPing = document.getElementById('barPing');
+            const displayStr = isLocalHost ? '0 ms (Local)' : `${rtt} ms`;
             if (txtClientPing) {
-                txtClientPing.innerText = `${rtt} ms`;
-                txtClientPing.style.color = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
+                txtClientPing.innerText = displayStr;
+                txtClientPing.style.color = '#22c55e';
             }
             if (txtNetValCompact) {
-                txtNetValCompact.innerText = `${rtt} ms`;
-                txtNetValCompact.style.color = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
+                txtNetValCompact.innerText = isLocalHost ? 'Local' : `${rtt} ms`;
+                txtNetValCompact.style.color = '#22c55e';
             }
             if (barPing) {
-                barPing.style.background = rtt < 50 ? '#22c55e' : rtt < 120 ? '#eab308' : '#ef4444';
-                const quality = Math.max(15, Math.min(100, 100 - Math.round(rtt / 2)));
-                barPing.style.width = `${quality}%`;
+                barPing.style.background = '#22c55e';
+                barPing.style.width = '100%';
             }
         }
 
@@ -1984,7 +1990,18 @@
                 if (txtDevModelName) txtDevModelName.innerText = dev.os_details || `${dev.brand || 'Android'} ${dev.model || ''}`;
 
                 if (txtClientPing) {
-                    if (clientPingMs !== null) {
+                    if (isLocalHost) {
+                        txtClientPing.innerText = '0 ms (Local)';
+                        txtClientPing.style.color = '#22c55e';
+                        if (txtNetValCompact) {
+                            txtNetValCompact.innerText = 'Local';
+                            txtNetValCompact.style.color = '#22c55e';
+                        }
+                        if (barPing) {
+                            barPing.style.background = '#22c55e';
+                            barPing.style.width = '100%';
+                        }
+                    } else if (clientPingMs !== null) {
                         txtClientPing.innerText = `${clientPingMs} ms`;
                         txtClientPing.style.color = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
                         if (txtNetValCompact) {
@@ -1999,6 +2016,8 @@
                     } else {
                         txtClientPing.innerText = '-- ms';
                         if (txtNetValCompact) txtNetValCompact.innerText = net.lan_ip ? 'Online' : '--';
+                    }
+                }
                 // 5. BATERÍA Y DISPOSITIVO FÍSICO
                 const bat = data.battery || (data.device_status && data.device_status.battery) || {};
                 const batPct = (bat.percentage !== undefined) ? bat.percentage : 100;
@@ -3314,7 +3333,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.66';
+                    const curVer = res.version || '0.0.67';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

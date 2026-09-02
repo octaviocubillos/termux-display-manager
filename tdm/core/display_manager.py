@@ -454,7 +454,14 @@ class DisplayManager:
         if not success:
             session.status = DisplayStatus.FAILED
             session.error_message = f"Fallo al iniciar el servidor {backend}"
-            log_event("display", f"ERROR: Fallo al iniciar servidor {backend}", level="ERROR")
+        # Iniciar servicio de audio PulseAudio si está habilitado
+        if config.audio:
+            try:
+                from tdm.core.audio_manager import audio_manager
+                await audio_manager.start_audio_server()
+            except Exception as e:
+                log_event("display", f"Aviso al iniciar PulseAudio: {e}")
+
         # Iniciar servicio de aceleración 3D VirGL si está habilitado
         if config.virgl:
             try:
@@ -571,10 +578,15 @@ class DisplayManager:
             except Exception:
                 pass
 
-        # 4. Detener servicios de aceleración 3D VirGL
+        # 4. Detener servicios de aceleración 3D VirGL y Audio PulseAudio
         try:
             from tdm.core.gpu_manager import gpu_manager
             await gpu_manager.stop_3d_services()
+        except Exception:
+            pass
+        try:
+            from tdm.core.audio_manager import audio_manager
+            await audio_manager.stop_audio_server()
         except Exception:
             pass
 
