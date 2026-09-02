@@ -838,8 +838,8 @@ class AsyncHTTPServer:
             return
 
         if path == "/api/install/minimal" and method == "POST":
-            success = await installer_service.run_script("setup_minimal.sh")
-            self.send_json_response(writer, {"success": success, "message": "Instalación mínima ejecutada"})
+            res = await execute_cli_command(["install", "--minimal"])
+            self.send_json_response(writer, res)
             return
 
         # 7. Endpoint de Versionado y Actualización

@@ -255,21 +255,18 @@ async def handle_agent(args):
     await agent.run()
 
 async def handle_install(args):
-    if args.minimal or args.dependencies:
-        print("⚡ [TDM] Ejecutando instalación mínima fundamental...")
-        success = await installer_service.run_script("setup_minimal.sh")
-        print("✅ Dependencias mínimas listas." if success else "❌ Error en dependencias mínimas.")
-    elif args.server:
+    if getattr(args, "minimal", False) or getattr(args, "dependencies", False) or getattr(args, "full", False):
+        print("⚡ [TDM] Instalando dependencias y servidores gráficos...")
+        success = await installer_service.run_script("install_server.sh", ["all"])
+        print("✅ Dependencias listas." if success else "❌ Error instalando dependencias.")
+    elif getattr(args, "server", None):
         print(f"🖥️ [TDM] Instalando servidor gráfico '{args.server}' bajo demanda...")
         success = await installer_service.run_script("install_server.sh", [args.server])
         print(f"✅ Servidor {args.server} instalado con éxito." if success else f"❌ Error instalando servidor {args.server}.")
-    elif args.desktop:
+    elif getattr(args, "desktop", None):
         print(f"🎨 [TDM] Instalando entorno de escritorio '{args.desktop}' bajo demanda...")
         success = await installer_service.run_script("install_desktop.sh", [args.desktop])
         print(f"✅ {args.desktop} instalado con éxito." if success else f"❌ Error instalando {args.desktop}.")
-    elif args.full:
-        print("📦 [TDM] Ejecutando instalación completa de todos los servidores...")
-        success = await installer_service.run_script("setup_dependencies.sh")
 
 async def handle_uninstall(args):
     desktop = getattr(args, "desktop", None)

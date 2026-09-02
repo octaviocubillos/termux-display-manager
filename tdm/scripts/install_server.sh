@@ -82,9 +82,13 @@ case "$SERVER" in
         echo "🔊 [TDM] Instalando Soporte de Audio (PulseAudio)..."
         PKGS="pulseaudio"
         ;;
+    all|dependencies)
+        echo "📦 [TDM] Instalando todos los servidores y dependencias..."
+        PKGS="termux-x11-nightly tigervnc xorg-xauth xorg-xsetroot pulseaudio dbus procps"
+        ;;
     *)
         echo "❌ Servidor desconocido: $SERVER"
-        echo "Opciones válidas: termux-x11, novnc, vnc, rdp, audio"
+        echo "Opciones válidas: termux-x11, novnc, vnc, rdp, audio, all"
         exit 1
         ;;
 esac
