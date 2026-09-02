@@ -60,22 +60,32 @@ class LandingProxyServer:
             return (cached["host"], cached["port"])
 
         port = int(device.get("port", 19050))
-        candidates: List[str] = ["127.0.0.1"]
+        candidates: List[str] = []
 
+        # 1. Prioridad: IPs reales reportadas por el dispositivo en su red local
         for ip in device.get("ips", []):
             if ip and ip not in candidates:
                 candidates.append(ip)
 
+        # 2. IP de Tailscale (si está disponible)
         ts_ip = device.get("tailscale_ip")
         if ts_ip and ts_ip not in candidates:
             candidates.append(ts_ip)
 
+        # 3. Fallback a 127.0.0.1 solo si no hay IPs o como último recurso
+        if "127.0.0.1" not in candidates:
+            candidates.append("127.0.0.1")
+
         async def probe(h: str, p: int) -> bool:
             try:
-                _, w = await asyncio.wait_for(asyncio.open_connection(h, p), timeout=0.35)
+                r, w = await asyncio.wait_for(asyncio.open_connection(h, p), timeout=0.6)
+                # Enviar sondeo HTTP para verificar que el servidor TDM realmente responde
+                w.write(b"HEAD / HTTP/1.0\r\nHost: probe\r\n\r\n")
+                await w.drain()
+                resp = await asyncio.wait_for(r.read(16), timeout=0.6)
                 w.close()
                 await w.wait_closed()
-                return True
+                return bool(resp and resp.startswith(b"HTTP/"))
             except Exception:
                 return False
 
