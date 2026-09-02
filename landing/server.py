@@ -56,33 +56,38 @@ class LandingProxyServer:
         dev_hash = device["device_hash"]
         now = time.time()
         cached = self.active_targets.get(dev_hash)
-        if cached and (now - cached["ts"] < 15.0):
+        if cached and (now - cached["ts"] < 60.0):
             return (cached["host"], cached["port"])
 
         port = int(device.get("port", 19050))
         candidates: List[str] = []
 
-        # 1. Prioridad: IPs reales reportadas por el dispositivo en su red local
+        # 1. Prioridad: Última IP activa conocida (para resolución inmediata)
+        last_ip = device.get("last_active_ip")
+        if last_ip and last_ip != "127.0.0.1":
+            candidates.append(last_ip)
+
+        # 2. IPs reportadas por el dispositivo en su red local
         for ip in device.get("ips", []):
-            if ip and ip not in candidates:
+            if ip and ip not in candidates and ip != "127.0.0.1":
                 candidates.append(ip)
 
-        # 2. IP de Tailscale (si está disponible)
+        # 3. IP de Tailscale (si está disponible)
         ts_ip = device.get("tailscale_ip")
         if ts_ip and ts_ip not in candidates:
             candidates.append(ts_ip)
 
-        # 3. Fallback a 127.0.0.1 solo si no hay IPs o como último recurso
+        # 4. Fallback a 127.0.0.1 solo como último recurso
         if "127.0.0.1" not in candidates:
             candidates.append("127.0.0.1")
 
         async def probe(h: str, p: int) -> bool:
             try:
-                r, w = await asyncio.wait_for(asyncio.open_connection(h, p), timeout=0.6)
+                r, w = await asyncio.wait_for(asyncio.open_connection(h, p), timeout=1.8)
                 # Enviar sondeo HTTP para verificar que el servidor TDM realmente responde
                 w.write(b"HEAD / HTTP/1.0\r\nHost: probe\r\n\r\n")
                 await w.drain()
-                resp = await asyncio.wait_for(r.read(16), timeout=0.6)
+                resp = await asyncio.wait_for(r.read(16), timeout=1.5)
                 w.close()
                 await w.wait_closed()
                 return bool(resp and resp.startswith(b"HTTP/"))
