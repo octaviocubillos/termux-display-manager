@@ -44,9 +44,10 @@ for entry in os.listdir('/proc'):
 " 2>/dev/null || true
 fi
 
-# 2. Respaldo por patrones con pkill y killall
-pkill -9 -f "xfce4|wrapper-2.0|thunar|startplasma|mate-|lxqt|openbox|i3|termux-x11|Xvnc|virgl_test_server" 2>/dev/null || true
-killall -9 termux-x11 Xvnc xfce4-session xfce4-panel 2>/dev/null || true
+# 2. Respaldo por nombres exactos con pkill y killall
+for proc in xfce4-session xfce4-panel xfwm4 xfdesktop thunar wrapper-2.0 xfsettingsd plasmashell startplasma-x11 kwin_x11 mate-session mate-panel marco caja startlxqt lxqt-session pcmanfm-qt lxqt-panel openbox i3 i3bar i3status termux-x11 Xvnc xrdp websockify virgl_test_server pulseaudio aterm; do
+    pkill -9 -x "$proc" 2>/dev/null || true
+done
 
 # 3. Cerrar la app Android Termux:X11
 if command -v am >/dev/null 2>&1; then

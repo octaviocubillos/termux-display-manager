@@ -16,7 +16,7 @@ class VNCBackend(BaseDisplayBackend):
             self.config.vnc_port = PORT_VNC_DEFAULT + self.config.display_num
 
     def build_server_command(self) -> Tuple[list, Dict[str, str]]:
-        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
+        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl, dpi=self.config.dpi)
         display_str = f":{self.config.display_num}"
         
         xvnc = find_binary("Xvnc") or find_binary("vncserver") or f"{PREFIX}/bin/Xvnc"

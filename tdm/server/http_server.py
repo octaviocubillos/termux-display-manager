@@ -17,7 +17,7 @@ import urllib.parse
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from tdm.constants import PORT_TDM_SERVER
+from tdm.constants import PORT_TDM_SERVER, PORT_VNC_DEFAULT
 from tdm.server.websocket import WebSocketConnection
 from tdm.server.hub import hub_manager
 from tdm.core.display_manager import display_manager
@@ -25,6 +25,8 @@ from tdm.core.installer import installer_service
 from tdm.core.uninstaller import uninstaller_service
 from tdm.discovery.network import network_discovery
 from tdm.version import get_version_info
+from tdm.cli.main import execute_cli_command
+from tdm.config import get_user_shell
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web"
@@ -54,6 +56,8 @@ class AsyncHTTPServer:
         print(f"  • Local:        http://localhost:{self.port}")
         if net_info.get("lan_ip"):
             print(f"  • Red LAN:      http://{net_info['lan_ip']}:{self.port}")
+        if net_info.get("web"):
+            print(f"  • Web:          {net_info['web']}")
         if net_info.get("tailscale_ip"):
             print(f"  • Tailscale:    http://{net_info['tailscale_ip']}:{self.port} 🔒")
         print("=" * 55 + "\n")
@@ -279,164 +283,132 @@ class AsyncHTTPServer:
 
                 # 2. Consultar Estado
                 elif req_type in ["get_status", "status"]:
-                    st = display_manager.get_status()
+                    res = await execute_cli_command(["status"])
                     await ws.send_json({
                         "type": "status_response",
                         "id": req_id,
-                        "data": st
+                        "data": res.get("data", display_manager.get_status())
                     })
 
-                # 3. Iniciar Pantalla
+                # 3. Iniciar Pantalla (Delegado al CLI: tdm start)
                 elif req_type in ["start_screen", "screen_start"]:
                     payload = msg.get("payload") or msg.get("data") or {}
-                    try:
-                        session_dict = await display_manager.start_screen(
-                            backend=payload.get("backend", "termux-x11"),
-                            mode=payload.get("mode", "desktop"),
-                            desktop_id=payload.get("desktop"),
-                            resolution=payload.get("resolution", "1080x2400"),
-                            dpi=payload.get("dpi", 96),
-                            audio=payload.get("audio", True),
-                            virgl=payload.get("virgl", True)
-                        )
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "start_screen",
-                            "id": req_id,
-                            "success": True,
-                            "data": session_dict
-                        })
-                        # Emitir estado actualizado inmediatamente
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "start_screen",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    cmd_args = ["start", "--backend", payload.get("backend", "termux-x11"), "--mode", payload.get("mode", "desktop")]
+                    if payload.get("desktop"):
+                        cmd_args.extend(["--desktop", payload.get("desktop")])
+                    if payload.get("resolution"):
+                        cmd_args.extend(["--resolution", payload.get("resolution")])
+                    if payload.get("dpi"):
+                        cmd_args.extend(["--dpi", str(payload.get("dpi"))])
+                    if not payload.get("audio", True):
+                        cmd_args.append("--no-audio")
+                    if not payload.get("virgl", False):
+                        cmd_args.append("--no-virgl")
 
-                # 4. Apagar Pantalla (detener display/entorno gráfico)
+                    res = await execute_cli_command(cmd_args)
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "start_screen",
+                        "id": req_id,
+                        "success": res.get("success", False),
+                        "data": res.get("data"),
+                        "error": res.get("error")
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
+
+                # 4. Apagar Pantalla (Delegado al CLI: tdm stop)
                 elif req_type in ["stop_screen", "screen_stop"]:
-                    try:
-                        stopped = await display_manager.stop_screen()
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "stop_screen",
-                            "id": req_id,
-                            "success": stopped,
-                            "stopped": stopped,
-                            "message": "Pantalla apagada correctamente"
-                        })
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "stop_screen",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    res = await execute_cli_command(["stop"])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "stop_screen",
+                        "id": req_id,
+                        "success": res.get("success", False),
+                        "stopped": res.get("stopped", True),
+                        "message": "Pantalla apagada correctamente"
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
 
-                # 5. Apagar Todo (detener todos los procesos gráficos y entornos en Termux, manteniendo TDM activo)
+                # 5. Apagar Todo (Delegado al CLI: tdm service stop)
                 elif req_type in ["stop_service", "shutdown", "stop_all"]:
-                    try:
-                        stopped = await display_manager.stop_screen()
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "stop_service",
-                            "id": req_id,
-                            "success": True,
-                            "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
-                        })
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "stop_service",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    res = await execute_cli_command(["service", "stop"])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "stop_service",
+                        "id": req_id,
+                        "success": True,
+                        "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
 
-                # 6. Instalar Entorno de Escritorio
+                # 6. Cambiar factor de escala del escritorio (Delegado al CLI: tdm scale)
+                elif req_type in ["set_desktop_scale", "scale_desktop"]:
+                    payload = msg.get("payload") or msg.get("data") or {}
+                    scale_factor = str(payload.get("scale", 2))
+                    res = await execute_cli_command(["scale", scale_factor])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "set_desktop_scale",
+                        "id": req_id,
+                        **res
+                    })
+
+                # 7. Instalar Entorno de Escritorio (Delegado al CLI: tdm install --desktop)
                 elif req_type in ["install_desktop", "install"]:
                     payload = msg.get("payload") or msg.get("data") or {}
                     target = payload.get("desktop") or payload.get("target") or msg.get("desktop")
-                    try:
-                        success = await installer_service.install_desktop(target)
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "install_desktop",
-                            "id": req_id,
-                            "success": success,
-                            "target": target,
-                            "message": f"Instalación de {target} finalizada"
-                        })
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "install_desktop",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    res = await execute_cli_command(["install", "--desktop", str(target)])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "install_desktop",
+                        "id": req_id,
+                        "success": res.get("success", False),
+                        "target": target,
+                        "message": f"Instalación de {target} finalizada"
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
 
-                # 7. Desinstalar Entorno de Escritorio Completo
+                # 8. Desinstalar Entorno de Escritorio (Delegado al CLI: tdm uninstall --desktop)
                 elif req_type in ["uninstall_desktop", "uninstall_de", "purge_desktop"]:
                     payload = msg.get("payload") or msg.get("data") or {}
                     target = payload.get("desktop") or payload.get("target") or msg.get("desktop") or "all"
-                    try:
-                        success = await installer_service.uninstall_desktop(target)
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "uninstall_desktop",
-                            "id": req_id,
-                            "success": success,
-                            "target": target,
-                            "message": f"Desinstalación de entorno finalizada"
-                        })
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "uninstall_desktop",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    res = await execute_cli_command(["uninstall", "--desktop", str(target)])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "uninstall_desktop",
+                        "id": req_id,
+                        "success": res.get("success", False),
+                        "target": target,
+                        "message": f"Desinstalación de entorno finalizada"
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
 
-                # 8. Cancelar / Abortar Instalación y Revertir
+                # 9. Cancelar / Abortar Instalación (Delegado al CLI: tdm cancel-install)
                 elif req_type in ["cancel_install", "install_cancel", "abort_install"]:
-                    try:
-                        res = await installer_service.cancel_and_revert()
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "cancel_install",
-                            "id": req_id,
-                            "success": True,
-                            "data": res
-                        })
-                        st = display_manager.get_status()
-                        await ws.send_json({"type": "status_update", "data": st})
-                    except Exception as e:
-                        await ws.send_json({
-                            "type": "action_result",
-                            "action": "cancel_install",
-                            "id": req_id,
-                            "success": False,
-                            "error": str(e)
-                        })
+                    res = await execute_cli_command(["cancel-install"])
+                    await ws.send_json({
+                        "type": "action_result",
+                        "action": "cancel_install",
+                        "id": req_id,
+                        "success": True,
+                        "data": res.get("data")
+                    })
+                    st = display_manager.get_status()
+                    await ws.send_json({"type": "status_update", "data": st})
 
-                # 9. Obtener Versión
+                # 10. Obtener Versión (Delegado al CLI: tdm version)
                 elif req_type in ["get_version", "version"]:
+                    res = await execute_cli_command(["version"])
+                    await ws.send_json({
+                        "type": "version_response",
+                        "id": req_id,
+                        "data": res.get("data", get_version_info())
+                    })
                     await ws.send_json({
                         "type": "version_response",
                         "id": req_id,
@@ -449,7 +421,7 @@ class AsyncHTTPServer:
             installer_service.unsubscribe_progress(on_local_progress)
             await ws.close()
 
-    async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = 19053):
+    async def handle_vnc_bridge(self, ws: WebSocketConnection, target_host: str = "127.0.0.1", target_port: int = PORT_VNC_DEFAULT):
         """Puente nativo asíncrono WebSocket (noVNC RFC 6455) a TCP (TigerVNC RFB) sin dependencias externas."""
         try:
             if display_manager.active_session and display_manager.active_session.config.vnc_port:
@@ -521,37 +493,8 @@ class AsyncHTTPServer:
         prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
         home = os.environ.get("HOME", "/data/data/com.termux/files/home")
 
-        # 1. Verificar si el usuario configuró un shell personalizado en Termux (~/.termux/shell)
-        custom_shell = None
-        custom_shell_file = Path(home) / ".termux" / "shell"
-        if custom_shell_file.exists():
-            try:
-                candidate = custom_shell_file.read_text(encoding="utf-8").strip()
-                if candidate and os.path.exists(candidate) and os.access(candidate, os.X_OK):
-                    custom_shell = candidate
-            except Exception:
-                pass
-
-        # 2. Variable de entorno SHELL (si es un shell válido de Termux o Linux que no sea /bin/sh genérico)
-        env_shell = os.environ.get("SHELL", "").strip()
-        if env_shell and (not os.path.exists(env_shell) or not os.access(env_shell, os.X_OK) or env_shell == "/bin/sh"):
-            env_shell = None
-
-        # 3. Lista priorizada de candidatos (bash por defecto en Termux)
-        shell_candidates = [
-            custom_shell,
-            env_shell,
-            f"{prefix}/bin/bash",
-            f"{prefix}/bin/login",
-            f"{prefix}/bin/zsh",
-            f"{prefix}/bin/sh",
-            "/bin/bash",
-            "/bin/sh"
-        ]
-        shell_bin = next(
-            (s for s in shell_candidates if s and os.path.exists(s) and os.access(s, os.X_OK)),
-            f"{prefix}/bin/bash" if os.path.exists(f"{prefix}/bin/bash") else "/bin/sh"
-        )
+        # Determinar el shell del usuario (bash por defecto a menos que se haya configurado otro)
+        shell_bin = get_user_shell()
 
         env = {
             **os.environ,
@@ -698,17 +641,17 @@ class AsyncHTTPServer:
             return
 
         # 4. Endpoints de Estado y Red
-        if path == "/api/status" and method == "GET":
+        if path == "/api/status" and method in ["GET", "HEAD"]:
             status_data = display_manager.get_status()
             self.send_json_response(writer, status_data)
             return
 
-        if path == "/api/system/network" and method == "GET":
+        if path == "/api/system/network" and method in ["GET", "HEAD"]:
             net_data = network_discovery.get_all_interfaces(self.port)
             self.send_json_response(writer, net_data)
             return
 
-        if path in ["/api/system/check", "/api/system/stats"] and method == "GET":
+        if path in ["/api/system/check", "/api/system/stats"] and method in ["GET", "HEAD"]:
             from tdm.discovery.desktops import discover_desktops
             from tdm.discovery.backends import discover_backends
             from tdm.core.telemetry import get_full_system_telemetry
@@ -723,31 +666,79 @@ class AsyncHTTPServer:
             self.send_json_response(writer, check_data)
             return
 
-        # 5. Control de Pantalla: /api/screen/start y /api/screen/stop
+        # 5. Control de Pantalla (Delegado al CLI: tdm start / tdm stop / tdm scale)
         if path == "/api/screen/start" and method == "POST":
-            try:
-                req_data = json.loads(body_bytes.decode("utf-8") or "{}")
-                session_dict = await display_manager.start_screen(
-                    backend=req_data.get("backend", "termux-x11"),
-                    mode=req_data.get("mode", "desktop"),
-                    desktop_id=req_data.get("desktop"),
-                    resolution=req_data.get("resolution", "1080x2400"),
-                    dpi=req_data.get("dpi", 96),
-                    audio=req_data.get("audio", True),
-                    virgl=req_data.get("virgl", True)
-                )
-                self.send_json_response(writer, session_dict)
-            except Exception as e:
-                self.send_json_response(writer, {"error": str(e)}, status_code=400)
+            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+            cmd_args = ["start", "--backend", req_data.get("backend", "termux-x11"), "--mode", req_data.get("mode", "desktop")]
+            if req_data.get("desktop"):
+                cmd_args.extend(["--desktop", req_data.get("desktop")])
+            if req_data.get("resolution"):
+                cmd_args.extend(["--resolution", req_data.get("resolution")])
+            if req_data.get("dpi"):
+                cmd_args.extend(["--dpi", str(req_data.get("dpi"))])
+            if not req_data.get("audio", True):
+                cmd_args.append("--no-audio")
+            if not req_data.get("virgl", False):
+                cmd_args.append("--no-virgl")
+
+            res = await execute_cli_command(cmd_args)
+            if res.get("success"):
+                self.send_json_response(writer, res.get("data", {}))
+            else:
+                self.send_json_response(writer, {"error": res.get("error", "Error al iniciar pantalla")}, status_code=400)
             return
 
         if path == "/api/screen/stop" and method == "POST":
-            stopped = await display_manager.stop_screen()
-            self.send_json_response(writer, {"stopped": stopped, "message": "Pantalla apagada correctamente"})
+            res = await execute_cli_command(["stop"])
+            self.send_json_response(writer, {"stopped": res.get("stopped", True), "message": "Pantalla apagada correctamente"})
+            return
+
+        # Endpoints específicos para noVNC Web
+        if path == "/api/novnc/status" and method == "GET":
+            info = display_manager.get_novnc_info()
+            self.send_json_response(writer, info)
+            return
+
+        if path == "/api/novnc/url" and method == "GET":
+            info = display_manager.get_novnc_info()
+            self.send_json_response(writer, {"url": info["urls"]["direct"], "urls": info["urls"]})
+            return
+
+        if path == "/api/novnc/start" and method == "POST":
+            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+            cmd_args = ["start", "--backend", "novnc", "--mode", req_data.get("mode", "desktop")]
+            if req_data.get("desktop"):
+                cmd_args.extend(["--desktop", req_data.get("desktop")])
+            if req_data.get("resolution"):
+                cmd_args.extend(["--resolution", req_data.get("resolution")])
+            if req_data.get("dpi"):
+                cmd_args.extend(["--dpi", str(req_data.get("dpi"))])
+            if not req_data.get("audio", True):
+                cmd_args.append("--no-audio")
+            if not req_data.get("virgl", False):
+                cmd_args.append("--no-virgl")
+
+            res = await execute_cli_command(cmd_args)
+            if res.get("success"):
+                self.send_json_response(writer, res.get("data", {}))
+            else:
+                self.send_json_response(writer, {"error": res.get("error", "Error al iniciar noVNC")}, status_code=400)
+            return
+
+        if path == "/api/screen/scale" and method == "POST":
+            req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+            scale_factor = str(req_data.get("scale", 2))
+            res = await execute_cli_command(["scale", scale_factor])
+            self.send_json_response(writer, res)
+            return
+
+        if path == "/api/novnc/stop" and method == "POST":
+            res = await execute_cli_command(["stop"])
+            self.send_json_response(writer, {"stopped": res.get("stopped", True), "message": "Sesión noVNC apagada correctamente"})
             return
 
         if path in ["/api/service/stop", "/api/system/shutdown"] and method == "POST":
-            stopped = await display_manager.stop_screen()
+            res = await execute_cli_command(["service", "stop"])
             self.send_json_response(writer, {
                 "stopped": True,
                 "message": "Entorno y procesos gráficos apagados al 100%. Gestor TDM activo."
@@ -767,36 +758,30 @@ class AsyncHTTPServer:
                 pass
             return
 
-        # 6. Instalador de Componentes
+        # 6. Instalador de Componentes (Delegado al CLI: tdm install / uninstall / cancel)
         if path == "/api/install/desktop" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")
-            target = req_data.get("desktop") or req_data.get("target")
-            success = await installer_service.install_desktop(target)
-            self.send_json_response(writer, {"success": success, "target": target, "message": f"Instalación de {target} iniciada"})
+            target = str(req_data.get("desktop") or req_data.get("target"))
+            res = await execute_cli_command(["install", "--desktop", target])
+            self.send_json_response(writer, {"success": res.get("success", False), "target": target, "message": f"Instalación de {target} iniciada"})
+            return
+
+        if path in ["/api/install/cancel", "/api/install/abort"] and method == "POST":
+            res = await execute_cli_command(["cancel-install"])
+            self.send_json_response(writer, {"success": True, "data": res.get("data")})
             return
 
         if path == "/api/uninstall/desktop" and method == "POST":
             req_data = json.loads(body_bytes.decode("utf-8") or "{}")
-            target = req_data.get("desktop") or req_data.get("target") or "all"
-            success = await installer_service.uninstall_desktop(target)
-            self.send_json_response(writer, {"success": success, "target": target, "message": f"Desinstalación de {target} finalizada"})
+            target = str(req_data.get("desktop") or req_data.get("target") or "all")
+            res = await execute_cli_command(["uninstall", "--desktop", target])
+            self.send_json_response(writer, {"success": res.get("success", False), "target": target, "message": f"Desinstalación de {target} finalizada"})
             return
 
-        # 7. Permisos de Android para Termux:X11
+        # 7. Permisos de Android para Termux:X11 (Delegado al CLI: tdm permissions)
         if path in ["/api/system/permissions", "/api/permissions"] and method in ["POST", "GET"]:
-            success = False
-            msg = ""
-            if os.path.exists("/data/data/com.termux"):
-                import subprocess
-                subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                res = subprocess.run(["pm", "list", "packages"], capture_output=True, text=True)
-                if "com.termux.x11" in res.stdout:
-                    subprocess.run(["am", "start", "-a", "android.settings.action.MANAGE_OVERLAY_PERMISSION", "-d", "package:com.termux.x11"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                success = True
-                msg = "Pantalla de configuración de permisos de Android abierta en tu móvil."
-            else:
-                msg = "No estás en un entorno nativo de Android/Termux."
-            self.send_json_response(writer, {"success": success, "message": msg})
+            res = await execute_cli_command(["permissions"])
+            self.send_json_response(writer, res)
             return
 
         # 8. Diagnóstico y Depuración del Sistema
@@ -858,12 +843,12 @@ class AsyncHTTPServer:
             return
 
         # 7. Endpoint de Versionado y Actualización
-        if path == "/api/version" and method == "GET":
+        if path == "/api/version" and method in ["GET", "HEAD"]:
             from tdm.version import get_version_info
             self.send_json_response(writer, get_version_info())
             return
 
-        if path in ["/api/update/check", "/api/update"] and method == "GET":
+        if path in ["/api/update/check", "/api/update"] and method in ["GET", "HEAD"]:
             from tdm.core.updater import check_for_updates
             self.send_json_response(writer, check_for_updates())
             return
@@ -893,8 +878,11 @@ class AsyncHTTPServer:
                 resolved_file = target_file.resolve()
                 resolved_web_dir = WEB_DIR.resolve()
                 if resolved_web_dir in resolved_file.parents or resolved_file == resolved_web_dir:
-                    if resolved_file.is_dir() and (resolved_file / "index.html").is_file():
-                        resolved_file = resolved_file / "index.html"
+                    if resolved_file.is_dir():
+                        if (resolved_file / "index.html").is_file():
+                            resolved_file = resolved_file / "index.html"
+                        elif (resolved_file / "vnc.html").is_file():
+                            resolved_file = resolved_file / "vnc.html"
                     if resolved_file.is_file():
                         ext = resolved_file.suffix.lower()
                         mime_map = {

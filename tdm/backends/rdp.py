@@ -16,7 +16,7 @@ class XRDPBackend(BaseDisplayBackend):
             self.config.rdp_port = PORT_RDP_DEFAULT
 
     def build_server_command(self) -> Tuple[list, Dict[str, str]]:
-        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
+        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl, dpi=self.config.dpi)
         xrdp_bin = find_binary("xrdp") or f"{PREFIX}/bin/xrdp"
         
         cmd = [

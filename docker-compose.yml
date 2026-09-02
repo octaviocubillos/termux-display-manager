@@ -10,11 +10,11 @@ services:
       - .:/data/data/com.termux/files/termux-display-manager
     ports:
       - "8022:8022"
+      - "3389:3389"
+      - "5900:5900"
       - "19050:19050"
       - "19051:19051"
       - "19052:19052"
-      - "19053:19053"
-      - "19054:19054"
       - "19055:19055"
     restart: unless-stopped
     stdin_open: true

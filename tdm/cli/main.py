@@ -10,11 +10,11 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Dict, Any, Optional
 
 from tdm import __version__
 from tdm.core.display_manager import display_manager
 from tdm.core.installer import installer_service
-from tdm.server.http_server import AsyncHTTPServer
 from tdm.discovery.desktops import discover_desktops
 from tdm.discovery.backends import discover_backends
 from tdm.discovery.network import discover_network_interfaces
@@ -35,8 +35,13 @@ def print_banner():
 ╚══════════════════════════════════════════════════════════════╝
 """)
 
-async def handle_status():
+async def handle_status(args=None):
     status = display_manager.get_status()
+    if args and getattr(args, "json", False):
+        import json
+        print(json.dumps(status, indent=2))
+        return status
+
     de = status["installed_desktop"]
     net = status.get("network", discover_network_interfaces())
     
@@ -61,29 +66,118 @@ async def handle_status():
         print(f"  • Red LAN:      {net['access_urls']['lan']}")
     if net.get("tailscale_ip"):
         print(f"  • Tailscale:    {net['access_urls']['tailscale']}")
+    return status
 
 async def handle_start(args):
-    print(f"🚀 [TDM] Iniciando pantalla en backend '{args.backend}'...")
+    backend = getattr(args, "backend", BACKEND_TERMUX_X11)
+    mode = getattr(args, "mode", SESSION_MODE_DESKTOP)
+    desktop = getattr(args, "desktop", None)
+    resolution = getattr(args, "resolution", DEFAULT_RESOLUTION)
+    dpi = getattr(args, "dpi", DEFAULT_DPI)
+    audio = not getattr(args, "no_audio", False)
+    virgl = not getattr(args, "no_virgl", True)
+
+    print(f"🚀 [TDM] Iniciando pantalla en backend '{backend}'...")
     result = await display_manager.start_screen(
-        backend=args.backend,
-        mode=args.mode,
-        resolution=args.resolution,
-        dpi=args.dpi,
-        audio=not args.no_audio,
-        virgl=not args.no_virgl
+        backend=backend,
+        mode=mode,
+        desktop_id=desktop,
+        resolution=resolution,
+        dpi=dpi,
+        audio=audio,
+        virgl=virgl
     )
     if result.get("status") == "running":
-        print(f"✅ Pantalla iniciada con éxito en {args.backend} (:0)")
+        print(f"✅ Pantalla iniciada con éxito en {backend} (:0)")
         if result.get("urls"):
             for k, v in result["urls"].items():
                 print(f"   {k}: {v}")
     else:
         print(f"❌ Error iniciando pantalla: {result.get('error_message')}")
+    return result
 
 async def handle_stop():
     print("🛑 [TDM] Deteniendo pantalla activa...")
-    await display_manager.stop_screen()
+    stopped = await display_manager.stop_screen()
     print("✅ Pantalla detenida y sockets X11 liberados.")
+    return stopped
+
+async def handle_novnc(args):
+    action = getattr(args, "action", None) or "start"
+
+    if action == "status":
+        info = display_manager.get_novnc_info()
+        print("=====================================================")
+        print("🌐 [TDM noVNC] Estado del Servidor Web HTML5 / RFB")
+        print("=====================================================")
+        if info["is_running"]:
+            sess = info["active_session"] or {}
+            print(f"🟢 Estado: ACTIVO (Sesión :0 en ejecución)")
+            print(f"  • Entorno:        {sess.get('desktop_id', 'N/A')}")
+            print(f"  • Resolución:     {sess.get('resolution', 'N/A')}")
+            print(f"  • Puerto VNC RFB: {info['port_rfb']}")
+            print(f"  • Puerto Web:     {info['port_web']}")
+            print(f"  • PID Servidor:   #{sess.get('server_pid')}")
+            print(f"  • URL Directa:    {info['urls']['direct']}")
+        else:
+            print("🔴 Estado: INACTIVO (El backend activo no es noVNC o la pantalla está apagada)")
+            print("\n📌 URLs preparadas para cuando se inicie:")
+            print(f"  • Local:   {info['urls']['local']}")
+            if info['urls']['lan'] != info['urls']['local']:
+                print(f"  • Red LAN: {info['urls']['lan']}")
+        print("=====================================================")
+        return
+
+    elif action == "stop":
+        print("🛑 [TDM noVNC] Deteniendo sesión gráfica...")
+        await display_manager.stop_screen()
+        print("✅ Sesión noVNC detenida correctamente.")
+        return
+
+    elif action == "url":
+        info = display_manager.get_novnc_info()
+        print(info["urls"]["direct"])
+        return
+
+    elif action in ["start", "open"]:
+        print(f"🚀 [TDM noVNC] Iniciando entorno gráfico con salida Web HTML5 (noVNC)...")
+        result = await display_manager.start_screen(
+            backend="novnc",
+            mode=getattr(args, "mode", "desktop"),
+            desktop_id=getattr(args, "desktop", None),
+            resolution=getattr(args, "resolution", DEFAULT_RESOLUTION),
+            dpi=getattr(args, "dpi", DEFAULT_DPI),
+            audio=not getattr(args, "no_audio", False),
+            virgl=not getattr(args, "no_virgl", False)
+        )
+        if result.get("status") == "running":
+            info = display_manager.get_novnc_info()
+            print("=====================================================")
+            print("🎉 [TDM noVNC] ¡Sesión HTML5 iniciada con éxito!")
+            print("=====================================================")
+            print(f"🖥️  Entorno:     {result.get('desktop_id')}")
+            print(f"📐 Resolución:  {result.get('resolution')} (DPI {result.get('dpi')})")
+            print(f"🔌 Puerto RFB:  {info['port_rfb']} (TigerVNC / Xvnc)")
+            print(f"🌐 Puerto Web:  {info['port_web']} (Servidor HTTP + WebSocket Bridge)")
+            print("\n🔗 URLs de Acceso Directo al Escritorio:")
+            print(f"  • Local (este dispositivo): {info['urls']['local']}")
+            if info['urls']['lan'] != info['urls']['local']:
+                print(f"  • Red LAN (otros disp.):    {info['urls']['lan']}")
+            if info['urls']['tailscale']:
+                print(f"  • Tailscale (remoto):      {info['urls']['tailscale']}")
+            print("=====================================================")
+
+            if action == "open" or getattr(args, "open_browser", False):
+                for opener in ["termux-open-url", "xdg-open"]:
+                    if shutil.which(opener):
+                        try:
+                            subprocess.Popen([opener, info['urls']['local']])
+                            print(f"🌐 Navegador abierto con {opener}")
+                            break
+                        except Exception:
+                            pass
+        else:
+            print(f"❌ Error al iniciar noVNC: {result.get('error_message')}")
 
 def handle_permissions():
     print("=====================================================")
@@ -151,6 +245,7 @@ async def handle_doctor():
         print(f"  [i] Tailscale Mesh VPN:    No detectado (Opcional para acceso fuera de casa)")
 
 async def handle_server(args, is_hub=False):
+    from tdm.server.http_server import AsyncHTTPServer
     server = AsyncHTTPServer(host=args.host, port=args.port, is_hub=is_hub)
     await server.start()
 
@@ -380,25 +475,50 @@ async def handle_update(args):
     print(f"✅ TDM actualizado y operativo en versión v{new_ver}.")
     print("=====================================================")
 
-async def handle_agy(args):
-    """Gestiona el terminal dinámico multidispositivo con agy y tmux."""
-    script = Path(__file__).resolve().parent.parent.parent / "scripts" / "agy-dynamic-terminal.sh"
-    if not script.exists():
-        print(f"❌ Error: Script {script} no encontrado.")
-        return
-    cmd = [str(script)]
-    if getattr(args, "agy_command", None):
-        cmd.append(args.agy_command)
-    if getattr(args, "extra", None):
-        cmd.extend(args.extra)
-    subprocess.run(cmd)
+async def handle_scale(args):
+    scale_factor = getattr(args, "scale_factor", None) or getattr(args, "scale", None) or 1
+    try:
+        scale_factor = int(scale_factor)
+    except Exception:
+        scale_factor = 1
+    if scale_factor not in [1, 2]:
+        print(f"⚠️ Factor de escala {scale_factor} no soportado. Usa 1 (PC) o 2 (Móvil/HiDPI).")
+        return {"success": False, "error": f"Factor {scale_factor} no soportado"}
 
-def main():
+    panel_size = 48 if scale_factor >= 2 else 26
+    cursor_size = 36 if scale_factor >= 2 else 24
+    print(f"🎛️ [TDM Scale] Aplicando escala de escritorio {scale_factor}x (Panel: {panel_size}px, Cursor: {cursor_size}px)...")
+    env = os.environ.copy()
+    env["DISPLAY"] = ":0"
+    prefix = os.environ.get("PREFIX", "/data/data/com.termux/files/usr")
+    env["PATH"] = f"{prefix}/bin:" + env.get("PATH", "")
+    try:
+        subprocess.run(["xfconf-query", "-c", "xsettings", "-p", "/Gdk/WindowScalingFactor", "-s", str(scale_factor)], env=env, timeout=2, capture_output=True)
+        subprocess.run(["xfconf-query", "-c", "xfce4-panel", "-p", "/panels/panel-1/size", "-s", str(panel_size)], env=env, timeout=2, capture_output=True)
+        subprocess.run(["xfconf-query", "-c", "xsettings", "-p", "/Gtk/CursorThemeSize", "-s", str(cursor_size)], env=env, timeout=2, capture_output=True)
+    except Exception:
+        pass
+    print(f"✅ Escala {scale_factor}x configurada correctamente.")
+    return {"success": True, "scale": scale_factor, "panel_size": panel_size}
+
+async def handle_cancel_install():
+    print("🛑 [TDM] Cancelando instalación y revirtiendo paquetes...")
+    res = await installer_service.cancel_and_revert()
+    print("✅ Cancelación y reversión finalizada.")
+    return res
+
+def build_cli_parser():
     parser = argparse.ArgumentParser(prog="tdm", description="Termux Display Manager CLI")
     subparsers = parser.add_subparsers(dest="command", help="Comando a ejecutar")
 
     # tdm status
-    subparsers.add_parser("status", help="Muestra el estado de la pantalla y el entorno activo")
+    status_parser = subparsers.add_parser("status", help="Muestra el estado de la pantalla y el entorno activo")
+    status_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
+    # tdm scale [1|2]
+    scale_parser = subparsers.add_parser("scale", help="Ajusta la escala de interfaz del escritorio (1 para PC, 2 para Móvil/HiDPI)")
+    scale_parser.add_argument("scale_factor", nargs="?", type=int, choices=[1, 2], default=1, help="Factor de escala (1 o 2)")
+    scale_parser.add_argument("--scale", "-s", type=int, choices=[1, 2], help="Alias de factor de escala")
 
     # tdm logs
     logs_parser = subparsers.add_parser("logs", help="Muestra los registros y eventos de TDM")
@@ -417,11 +537,23 @@ def main():
     # tdm start
     start_parser = subparsers.add_parser("start", help="Inicia o conmuta la salida de pantalla")
     start_parser.add_argument("--backend", "-b", choices=["termux-x11", "novnc", "rdp", "vnc"], default=BACKEND_TERMUX_X11, help="Servidor de pantalla")
+    start_parser.add_argument("--desktop", "-d", help="Entorno de escritorio (ej: i3, openbox, xfce, mate, lxqt, kde)")
     start_parser.add_argument("--mode", "-m", choices=[SESSION_MODE_DESKTOP, SESSION_MODE_TERMINAL], default=SESSION_MODE_DESKTOP, help="Modo de sesión")
     start_parser.add_argument("--resolution", "-r", default=DEFAULT_RESOLUTION, help="Resolución (ej: 1920x1080)")
     start_parser.add_argument("--dpi", type=int, default=DEFAULT_DPI, help="Densidad DPI (ej: 96, 120)")
     start_parser.add_argument("--no-audio", action="store_true", help="Desactiva PulseAudio")
     start_parser.add_argument("--no-virgl", action="store_true", help="Desactiva VirGL 3D")
+
+    # tdm novnc [start|stop|status|url|open]
+    novnc_parser = subparsers.add_parser("novnc", aliases=["vnc-web", "webvnc"], help="Inicia, detiene o consulta el servidor Web HTML5 noVNC")
+    novnc_parser.add_argument("action", choices=["start", "stop", "status", "url", "open"], default="start", nargs="?", help="Acción a realizar")
+    novnc_parser.add_argument("--desktop", "-d", help="Entorno de escritorio (ej: kde, xfce, mate, lxqt, i3, openbox)")
+    novnc_parser.add_argument("--mode", "-m", choices=[SESSION_MODE_DESKTOP, SESSION_MODE_TERMINAL], default=SESSION_MODE_DESKTOP, help="Modo de sesión")
+    novnc_parser.add_argument("--resolution", "-r", default=DEFAULT_RESOLUTION, help="Resolución (ej: 1920x1080)")
+    novnc_parser.add_argument("--dpi", type=int, default=DEFAULT_DPI, help="Densidad DPI (ej: 96, 120)")
+    novnc_parser.add_argument("--open", "-o", dest="open_browser", action="store_true", help="Abre automáticamente el navegador")
+    novnc_parser.add_argument("--no-audio", action="store_true", help="Desactiva PulseAudio")
+    novnc_parser.add_argument("--no-virgl", action="store_true", help="Desactiva VirGL 3D")
 
     # tdm stop
     subparsers.add_parser("stop", help="Detiene la pantalla activa")
@@ -439,12 +571,12 @@ def main():
     web_parser.add_argument("--host", default="0.0.0.0", help="Host de escucha")
     web_parser.add_argument("--port", "-p", type=int, default=PORT_TDM_SERVER, help="Puerto de escucha")
 
-    # tdm hub (Servidor Central Relay en dominio ej: tdm.oton.cl)
+    # tdm hub
     hub_parser = subparsers.add_parser("hub", help="Inicia el Hub Central para conectar Termux de forma remota")
     hub_parser.add_argument("--host", default="0.0.0.0", help="Host de escucha")
     hub_parser.add_argument("--port", "-p", type=int, default=PORT_TDM_SERVER, help="Puerto de escucha")
 
-    # tdm agent (Ejecutado en Termux para conectarse a un Hub remoto)
+    # tdm agent
     agent_parser = subparsers.add_parser("agent", help="Inicia el agente en Termux y se conecta a un Hub remoto")
     agent_parser.add_argument("--hub", "-H", required=True, help="URL del servidor Hub (ej. https://tdm.oton.cl)")
     agent_parser.add_argument("--token", "-t", required=True, help="Token de emparejamiento")
@@ -456,15 +588,14 @@ def main():
     install_parser.add_argument("--server", "-s", choices=["termux-x11", "novnc", "vnc", "rdp", "audio"], help="Instala un servidor gráfico específico")
     install_parser.add_argument("--desktop", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox"], help="Instala un escritorio específico")
     install_parser.add_argument("--full", "-f", action="store_true", help="Instala todos los servidores y utilidades")
+    install_parser.add_argument("--cancel", "-c", action="store_true", help="Cancela y revierte la instalación en curso")
+
+    # tdm cancel-install
+    subparsers.add_parser("cancel-install", help="Cancela y revierte la instalación en curso")
 
     # tdm service [start|stop|restart|status|enable|disable]
     service_parser = subparsers.add_parser("service", help="Gestiona los servicios de TDM con el Gestor de Servicios de Termux (termux-services / sv)")
     service_parser.add_argument("action", choices=["start", "stop", "restart", "status", "enable", "disable"], default="status", nargs="?", help="Acción a realizar")
-
-    # tdm agy [start|attach|web|qr|status|stop]
-    agy_parser = subparsers.add_parser("agy", help="Terminal dinámico multidispositivo con agy y tmux")
-    agy_parser.add_argument("agy_command", nargs="?", default="", help="Subcomando agy (start, attach, web, qr, status, stop, send)")
-    agy_parser.add_argument("extra", nargs=argparse.REMAINDER, help="Argumentos adicionales")
 
     # tdm uninstall
     uninstall_parser = subparsers.add_parser("uninstall", help="Desinstala un entorno o TDM completo")
@@ -480,9 +611,71 @@ def main():
 
     # tdm version
     subparsers.add_parser("version", help="Muestra la versión de TDM y esquema de manifest")
-
     parser.add_argument("--version", "-v", action="store_true", help="Muestra la versión de TDM")
 
+    return parser
+
+async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
+    """
+    Despachador central de comandos CLI para ejecución unificada (Web / API / RPC).
+    Toda acción web se ejecuta invocando este despachador CLI.
+    """
+    parser = build_cli_parser()
+    try:
+        args = parser.parse_args(cmd_args)
+    except SystemExit:
+        return {"success": False, "error": f"Argumentos CLI inválidos: {' '.join(cmd_args)}"}
+
+    if getattr(args, "version", False) or args.command == "version":
+        info = get_version_info()
+        return {"success": True, "data": info}
+    elif args.command in ["desktop", "env", "de"]:
+        de = display_manager.get_installed_desktop()
+        return {"success": True, "data": de}
+    elif args.command == "status":
+        st = display_manager.get_status()
+        return {"success": True, "data": st}
+    elif args.command in ["permissions", "perms"]:
+        handle_permissions()
+        return {"success": True, "message": "Permisos solicitados en Android"}
+    elif args.command == "scale":
+        res = await handle_scale(args)
+        return res
+    elif args.command == "start":
+        res = await handle_start(args)
+        return {"success": res.get("status") == "running", "data": res}
+    elif args.command in ["novnc", "vnc-web", "webvnc"]:
+        res = await handle_novnc(args)
+        return {"success": True, "data": res}
+    elif args.command == "stop":
+        stopped = await display_manager.stop_screen()
+        return {"success": True, "stopped": stopped}
+    elif args.command == "install":
+        if getattr(args, "cancel", False):
+            res = await handle_cancel_install()
+            return {"success": True, "data": res}
+        res = await handle_install(args)
+        return {"success": res}
+    elif args.command == "cancel-install":
+        res = await handle_cancel_install()
+        return {"success": True, "data": res}
+    elif args.command == "uninstall":
+        res = await handle_uninstall(args)
+        return {"success": res}
+    elif args.command == "update":
+        res = await handle_update(args)
+        return {"success": True, "data": res}
+    elif args.command == "service":
+        await handle_service(args.action)
+        return {"success": True, "action": args.action}
+    elif args.command == "doctor":
+        await handle_doctor()
+        return {"success": True}
+    else:
+        return {"success": False, "error": f"Comando CLI desconocido: {args.command}"}
+
+def main():
+    parser = build_cli_parser()
     args = parser.parse_args()
 
     if getattr(args, "version", False) or args.command == "version":
@@ -499,11 +692,11 @@ def main():
     if args.command in ["desktop", "env", "de"]:
         handle_desktop(args)
     elif args.command == "status":
-        asyncio.run(handle_status())
+        asyncio.run(handle_status(args))
+    elif args.command == "scale":
+        asyncio.run(handle_scale(args))
     elif args.command == "permissions" or args.command == "perms":
         handle_permissions()
-    elif args.command == "agy":
-        asyncio.run(handle_agy(args))
     elif args.command == "logs":
         asyncio.run(handle_logs(args))
     elif args.command == "update":
@@ -512,6 +705,8 @@ def main():
         asyncio.run(handle_service(args.action))
     elif args.command == "start":
         asyncio.run(handle_start(args))
+    elif args.command in ["novnc", "vnc-web", "webvnc"]:
+        asyncio.run(handle_novnc(args))
     elif args.command == "stop":
         asyncio.run(handle_stop())
     elif args.command == "doctor":
@@ -523,7 +718,12 @@ def main():
     elif args.command == "agent":
         asyncio.run(handle_agent(args))
     elif args.command == "install":
-        asyncio.run(handle_install(args))
+        if getattr(args, "cancel", False):
+            asyncio.run(handle_cancel_install())
+        else:
+            asyncio.run(handle_install(args))
+    elif args.command == "cancel-install":
+        asyncio.run(handle_cancel_install())
     elif args.command == "uninstall":
         asyncio.run(handle_uninstall(args))
 

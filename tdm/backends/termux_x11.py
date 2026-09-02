@@ -12,7 +12,7 @@ class TermuxX11Backend(BaseDisplayBackend):
     """Adaptador para el servidor gráfico nativo Termux:X11 en Android."""
     
     def build_server_command(self) -> Tuple[list, Dict[str, str]]:
-        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl)
+        env = prepare_environment(self.config.display_num, self.config.desktop_id, self.config.audio, self.config.virgl, dpi=self.config.dpi)
         display_str = f":{self.config.display_num}"
         
         termux_x11_bin = find_binary("termux-x11") or f"{PREFIX}/bin/termux-x11"

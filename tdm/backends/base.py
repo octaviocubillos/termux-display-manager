@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, Tuple, List
 from pathlib import Path
 from tdm.core.models import DisplayConfig, DisplaySession, DisplayStatus
 from tdm.constants import PREFIX, find_binary
+from tdm.config import HOME
 
 class BaseDisplayBackend(ABC):
     """Clase base abstracta para los servidores de pantalla (Termux:X11, VNC, noVNC, RDP)."""
@@ -76,6 +77,7 @@ class BaseDisplayBackend(ABC):
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 env=merged_env,
+                cwd=HOME if os.path.exists(HOME) else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT
             )
@@ -84,6 +86,9 @@ class BaseDisplayBackend(ABC):
             return False
 
         # Verificar si el proceso murió inmediatamente tras iniciar
+        if not self.process:
+            return False
+
         await asyncio.sleep(0.4)
         if self.process.returncode is not None:
             output = ""
@@ -101,6 +106,7 @@ class BaseDisplayBackend(ABC):
             try:
                 self.bridge_process = await asyncio.create_subprocess_exec(
                     *bridge_cmd,
+                    cwd=HOME if os.path.exists(HOME) else None,
                     stdout=asyncio.subprocess.DEVNULL,
                     stderr=asyncio.subprocess.DEVNULL
                 )

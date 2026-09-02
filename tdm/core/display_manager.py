@@ -13,7 +13,8 @@ from tdm.discovery.backends import discover_backends
 from tdm.discovery.network import discover_network_interfaces
 from tdm.backends import create_backend, BaseDisplayBackend
 from tdm.runners.session_builder import build_session_script
-from tdm.config import TDM_LOGS_DIR
+from tdm.runners.env_helper import prepare_environment
+from tdm.config import TDM_LOGS_DIR, HOME
 from tdm.logger import log_event
 from tdm.constants import (
     DEFAULT_DISPLAY_NUM,
@@ -22,10 +23,10 @@ from tdm.constants import (
     BACKEND_TERMUX_X11,
     SESSION_MODE_DESKTOP,
     SESSION_MODE_TERMINAL,
+    PORT_VNC_DEFAULT,
+    PORT_RDP_DEFAULT,
+    PORT_TDM_SERVER,
 )
-
-class DisplayManager:
-    """Gestor principal de pantallas de TDM (Controlador de Sesión Única Nativa :0)."""
 
 def get_memory_info() -> Dict[str, Any]:
     """Obtiene la telemetría de memoria RAM del sistema en tiempo real (/proc/meminfo)."""
@@ -53,8 +54,25 @@ def get_memory_info() -> Dict[str, Any]:
     except Exception:
         return {"total_mb": 0, "used_mb": 0, "available_mb": 0, "percent": 0, "formatted": "N/A"}
 
+def detect_native_android_resolution() -> tuple:
+    """Detecta la resolución física y densidad nativa de Android vía 'wm size' y 'wm density'."""
+    try:
+        import subprocess, re
+        res_out = subprocess.run(["wm", "size"], capture_output=True, text=True, timeout=2).stdout
+        match = re.search(r'(?:Physical|Override)\s+size:\s*(\d+x\d+)', res_out)
+        if match:
+            res_str = match.group(1)
+            dpi_out = subprocess.run(["wm", "density"], capture_output=True, text=True, timeout=2).stdout
+            dpi_match = re.search(r'(?:Physical|Override)\s+density:\s*(\d+)', dpi_out)
+            density = int(dpi_match.group(1)) if dpi_match else 440
+            x11_dpi = 160 if density >= 400 else 140 if density >= 300 else 96
+            return res_str, x11_dpi
+    except Exception:
+        pass
+    return "1920x1080", 96
+
 class DisplayManager:
-    """Orquestador principal de pantalla y ciclo de vida de escritorios."""
+    """Orquestador principal de pantalla y ciclo de vida de escritorios (Sesión Única Nativa :0)."""
 
     def __init__(self):
         self.active_session: Optional[DisplaySession] = None
@@ -302,7 +320,8 @@ class DisplayManager:
                 "id": f"detected-screen-{detected['display'].replace(':', '')}",
                 "status": "running",
                 "backend": detected["backend"],
-                "desktop": detected["desktop_id"],
+                "desktop_id": detected.get("desktop") or detected.get("desktop_id"),
+                "desktop": detected.get("desktop") or detected.get("desktop_id"),
                 "desktop_name": detected["desktop_name"],
                 "display": detected["display"],
                 "resolution": "Nativo / Detectado",
@@ -310,7 +329,12 @@ class DisplayManager:
                 "audio": True,
                 "virgl": True,
                 "process_count": detected["process_count"],
-                "processes": detected["processes"]
+                "processes": detected["processes"],
+                "ports": {
+                    "vnc": PORT_VNC_DEFAULT if detected["backend"] in ["vnc", "novnc"] else None,
+                    "novnc": PORT_TDM_SERVER if detected["backend"] in ["vnc", "novnc"] else None,
+                    "rdp": PORT_RDP_DEFAULT if detected["backend"] == "rdp" else None
+                }
             }
 
         from tdm.version import get_version_info
@@ -335,6 +359,36 @@ class DisplayManager:
             "update": update_info
         }
 
+    def get_novnc_info(self, host: Optional[str] = None) -> Dict[str, Any]:
+        """Devuelve el estado, configuración y URLs de acceso para noVNC."""
+        status = self.get_status()
+        net = status.get("network", discover_network_interfaces())
+        lan_ip = net.get("lan_ip") or "127.0.0.1"
+        target_host = host or lan_ip
+        port = PORT_TDM_SERVER
+
+        active_screen = status.get("active_screen")
+        is_running = bool(active_screen and active_screen.get("backend") in ["novnc", "vnc"])
+
+        local_url = f"http://127.0.0.1:{port}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify"
+        lan_url = f"http://{lan_ip}:{port}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify"
+        tail_url = f"http://{net['tailscale_ip']}:{port}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify" if net.get("tailscale_ip") else None
+
+        return {
+            "is_running": is_running,
+            "port_rfb": PORT_VNC_DEFAULT,
+            "port_web": port,
+            "websocket_path": "/websockify",
+            "active_session": active_screen if is_running else None,
+            "urls": {
+                "local": local_url,
+                "lan": lan_url if lan_ip != "127.0.0.1" else local_url,
+                "tailscale": tail_url,
+                "direct": f"http://{target_host}:{port}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify",
+                "lite": f"http://{target_host}:{port}/novnc/vnc_lite.html?autoconnect=true"
+            }
+        }
+
     async def start_screen(
         self,
         backend: str = BACKEND_TERMUX_X11,
@@ -350,7 +404,14 @@ class DisplayManager:
         """Inicia o conmuta la salida de pantalla para el escritorio nativo."""
         backend = backend_id or backend
 
-        # 1. Si hay una pantalla activa, detenerla primero limpiamente
+        # 1. Auto-detección inteligente si se solicita 'auto' o se omite
+        if not resolution or resolution in ["auto", "detect", "native"]:
+            detected_res, detected_dpi = detect_native_android_resolution()
+            resolution = detected_res
+            if dpi == DEFAULT_DPI:
+                dpi = detected_dpi
+
+        # 2. Si hay una pantalla activa, detenerla primero limpiamente
         await self.stop_screen()
 
         if not desktop_id:
@@ -389,8 +450,9 @@ class DisplayManager:
             return session.to_dict()
 
         # 4. Construir y lanzar la sesión de escritorio (ej. openbox o xfce4) sobre el Display
-        session_script = build_session_script(config.display_num, config.desktop_id, config.custom_command, backend=config.backend)
-        session_proc = await self._launch_desktop_session(session_script, session.log_file)
+        session_script = build_session_script(config.display_num, config.desktop_id, config.custom_command, backend=config.backend, dpi=config.dpi)
+        session_env = prepare_environment(config.display_num, config.desktop_id, audio=config.audio, virgl=config.virgl, dpi=config.dpi)
+        session_proc = await self._launch_desktop_session(session_script, session.log_file, env=session_env)
 
         session.server_pid = backend_obj.process.pid if backend_obj.process else os.getpid()
         session.session_pid = session_proc.pid if session_proc else None
@@ -495,16 +557,17 @@ class DisplayManager:
             except Exception:
                 pass
 
-        # 4. Barrido de respaldo con pkill por patrones
-        patterns = [
-            "xfce4", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd",
-            "plasmashell", "startplasma", "kwin", "mate-session", "mate-panel", "startlxqt", "lxqt",
-            "openbox", "i3", "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server",
-            "pulseaudio", "session-display"
+        # 4. Barrido de respaldo con pkill por nombres exactos de proceso (-x)
+        exact_procs = [
+            "xfce4-session", "xfce4-panel", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd",
+            "plasmashell", "startplasma-x11", "kwin_x11", "mate-session", "mate-panel", "marco", "caja",
+            "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel", "openbox", "i3", "i3bar", "i3status",
+            "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server", "pulseaudio", "xsetroot",
+            "aterm", "xterm", "qterminal", "mate-terminal", "xfce4-terminal", "konsole"
         ]
-        for pat in patterns:
+        for proc in exact_procs:
             try:
-                subprocess.run(["pkill", "-9", "-f", pat], capture_output=True)
+                subprocess.run(["pkill", "-9", "-x", proc], capture_output=True)
             except Exception:
                 pass
 
@@ -538,15 +601,17 @@ class DisplayManager:
         log_event("display", "Apagado total completado. Termux quedó completamente limpio de procesos gráficos.")
         return True
 
-    async def _launch_desktop_session(self, script_path: Path, log_file: str) -> Optional[asyncio.subprocess.Process]:
+    async def _launch_desktop_session(self, script_path: Path, log_file: str, env: Optional[Dict[str, str]] = None) -> Optional[asyncio.subprocess.Process]:
         """Ejecuta el script runner en segundo plano para inicializar D-Bus y el gestor de ventanas."""
         try:
             with open(log_file, "a") as f_out:
                 bash_bin = shutil.which("bash") or "/data/data/com.termux/files/usr/bin/bash" or "sh"
                 proc = await asyncio.create_subprocess_exec(
                     bash_bin, str(script_path),
+                    cwd=HOME if os.path.exists(HOME) else None,
                     stdout=f_out,
                     stderr=asyncio.subprocess.STDOUT,
+                    env=env,
                     preexec_fn=os.setsid if hasattr(os, "setsid") else None
                 )
                 # Breve pausa para asegurar arranque del WM

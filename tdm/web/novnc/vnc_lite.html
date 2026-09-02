@@ -20,50 +20,83 @@
             color: #e2e8f0;
             display: flex;
             flex-direction: column;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
+        /* BARRA SUPERIOR MINIMALISTA (36px) */
         #top_bar {
-            background-color: #161b22;
+            background-color: #0f141c;
             color: #e2e8f0;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
-            padding: 6px 12px;
+            padding: 0 10px;
+            height: 36px;
+            min-height: 36px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             z-index: 100;
             flex-shrink: 0;
-            flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
         }
 
         body.is-embedded #top_bar {
             display: none !important;
         }
 
+        /* Cuando está en pantalla completa, la barra fija se oculta */
+        body.is-fullscreen #top_bar,
+        :fullscreen #top_bar,
+        :-webkit-full-screen #top_bar {
+            display: none !important;
+        }
+
         #status {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #statusText {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+            font-weight: 700;
+            color: #cbd5e1;
         }
 
         .status-badge {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
+            min-width: 7px;
             border-radius: 50%;
             background: #eab308;
         }
-        .status-badge.online { background: #22c55e; }
+        .status-badge.online { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
         .status-badge.offline { background: #ef4444; }
 
+        .top-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
         .btn-action {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 6px;
-            padding: 4px 9px;
+            padding: 4px 8px;
+            height: 28px;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
@@ -73,12 +106,166 @@
             gap: 4px;
         }
         .btn-action:hover {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.2);
         }
         .btn-action.active {
             background: #3b82f6;
             border-color: #60a5fa;
             color: #fff;
+        }
+
+        .btn-icon-only {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        @media (max-width: 600px) {
+            .btn-label-desktop {
+                display: none;
+            }
+        }
+
+        /* PASTILLA FLOTANTE EN PANTALLA COMPLETA */
+        #floatingPill {
+            position: fixed;
+            top: 14px;
+            right: 0;
+            z-index: 999999;
+            background: rgba(15, 20, 28, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 9999px;
+            padding: 3px 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
+            touch-action: none;
+            cursor: grab;
+            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease, border-radius 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #floatingPill:active {
+            cursor: grabbing;
+        }
+
+        /* ESTADO "GOTA": ACOPLADO Y ESCONDIDO EN EL BORDE DERECHO */
+        #floatingPill.docked-right {
+            transform: translateX(calc(100% - 16px));
+            opacity: 0.45;
+            border-radius: 16px 0 0 16px;
+            border-right: none;
+            background: rgba(15, 20, 28, 0.65);
+        }
+
+        /* ESTADO "GOTA": ACOPLADO Y ESCONDIDO EN EL BORDE IZQUIERDO */
+        #floatingPill.docked-left {
+            transform: translateX(calc(-100% + 16px));
+            opacity: 0.45;
+            border-radius: 0 16px 16px 0;
+            border-left: none;
+            background: rgba(15, 20, 28, 0.65);
+        }
+
+        /* EXPANDIDO (AL TOCAR, ARRASTRAR O PASAR EL RATÓN) */
+        #floatingPill.expanded,
+        #floatingPill.docked-right:hover,
+        #floatingPill.docked-right:active,
+        #floatingPill.docked-left:hover,
+        #floatingPill.docked-left:active {
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+            border-radius: 9999px !important;
+            background: rgba(15, 20, 28, 0.92) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        }
+
+        .pill-drag-handle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 28px;
+            color: #a8c7fa;
+            font-size: 13px;
+            cursor: grab;
+            user-select: none;
+            padding: 0 2px;
+        }
+
+        .pill-btn {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            border: none;
+            border-radius: 9999px;
+            padding: 4px 8px;
+            height: 28px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+        .pill-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .pill-btn-icon {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* MENÚ POPOVER */
+        .lite-menu-popover {
+            position: fixed;
+            top: 42px;
+            right: 10px;
+            background: rgba(22, 27, 34, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 6px;
+            min-width: 200px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+            z-index: 1000000;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .lite-menu-item {
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            transition: background 0.15s;
+        }
+        .lite-menu-item:hover, .lite-menu-item:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 3px 0;
         }
 
         #screen {
@@ -104,33 +291,139 @@
         #screen canvas {
             display: block;
         }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #connectingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 14, 20, 0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            z-index: 50;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .spinner-ring {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(168, 199, 250, 0.2);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
     </style>
 </head>
 
 <body>
-    <div id="top_bar">
+    <!-- BARRA SUPERIOR MÍNIMA (SOLO MODO NORMAL) -->
+    <header id="top_bar">
         <div id="status">
             <span class="status-badge" id="statusDot"></span>
-            <span id="statusText">Iniciando visor...</span>
+            <span id="statusText">Conectando...</span>
         </div>
-        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-            <button class="btn-action" id="btnFullscreen" onclick="window.toggleFullscreen()">⛶ Pantalla Completa</button>
-            <button class="btn-action active" id="btnResize" onclick="window.toggleDynamicResize()">📐 Dimensión Dinámica</button>
-            <button class="btn-action active" id="btnScale" onclick="window.toggleScale()">🔍 Auto-Escalar</button>
-            <button class="btn-action" onclick="window.sendCtrlAltDel()">⌨️ Ctrl+Alt+Del</button>
-            <button class="btn-action" onclick="window.openFullVersion()">🎛️ Versión Completa</button>
-            <button class="btn-action" onclick="window.reconnectVnc()">🔄 Reconectar</button>
+        <div class="top-actions">
+            <button class="btn-action" id="btnKeyboard" onclick="window.toggleMobileKeyboard()" title="Teclado Táctil">
+                <span>⌨️</span>
+                <span class="btn-label-desktop">Teclado</span>
+            </button>
+            <button class="btn-action" id="btnFullscreen" onclick="window.toggleFullscreen()" title="Pantalla Completa">
+                <span>⛶</span>
+                <span class="btn-label-desktop">Completa</span>
+            </button>
+            <button class="btn-action btn-icon-only" id="btnMoreMenu" onclick="window.toggleLiteMenu(event)" title="Más opciones">
+                <span>⋮</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- PASTILLA FLOTANTE EN PANTALLA COMPLETA (ARRASTRABLE Y SNAP A BORDES) -->
+    <div id="floatingPill" style="display: none;">
+        <div class="pill-drag-handle" id="pillDragHandle" title="Arrastrar para mover">
+            <span>⠿</span>
+        </div>
+        <button class="pill-btn" onclick="window.toggleFullscreen()" title="Salir de Pantalla Completa">
+            <span>🗗</span>
+            <span>Salir</span>
+        </button>
+        <button class="pill-btn pill-btn-icon" onclick="window.toggleMobileKeyboard()" title="Teclado Táctil">
+            <span>⌨️</span>
+        </button>
+        <button class="pill-btn pill-btn-icon" id="btnFloatingMenu" onclick="window.toggleLiteMenu(event)" title="Opciones">
+            <span>⋮</span>
+        </button>
+    </div>
+
+    <!-- MENÚ EMERGENTE DE OPCIONES (AUTO-ESCALA, CTRL+ALT+DEL, ETC) -->
+    <div id="liteDropdownMenu" class="lite-menu-popover" style="display: none;" onclick="event.stopPropagation();">
+        <button class="lite-menu-item" onclick="window.toggleScale(); window.closeLiteMenu();">
+            <span>🔍</span>
+            <span id="lblMenuScale">Auto-Escalar (Activo)</span>
+        </button>
+        <button class="lite-menu-item" onclick="window.toggleDynamicResize(); window.closeLiteMenu();">
+            <span>📐</span>
+            <span id="lblMenuResize">Resolución Dinámica (Activo)</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="lite-menu-item" onclick="window.sendCtrlAltDel(); window.closeLiteMenu();">
+            <span>⌨️</span>
+            <span>Enviar Ctrl+Alt+Del</span>
+        </button>
+        <button class="lite-menu-item" onclick="window.reconnectVnc(); window.closeLiteMenu();">
+            <span>🔄</span>
+            <span>Reconectar</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="lite-menu-item" onclick="window.openFullVersion(); window.closeLiteMenu();">
+            <span>🎛️</span>
+            <span>Versión Completa noVNC</span>
+        </button>
+    </div>
+
+    <!-- INPUT OCULTO PARA LEVANTAR EL TECLADO EN ANDROID / IOS -->
+    <input id="mobileKeyboardInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position: fixed; top: -100px; left: -100px; opacity: 0; pointer-events: none; width: 1px; height: 1px; font-size: 16px;">
+
+    <!-- PANTALLA DE CARGA Y ESTADO DEL VISOR -->
+    <div id="connectingOverlay">
+        <div class="spinner-ring" id="overlaySpinner"></div>
+        <div style="font-size: 1.05rem; font-weight: 700; color: #ffffff;" id="overlayTitle">Iniciando Visor noVNC...</div>
+        <div style="font-size: 0.82rem; color: #94a3b8; max-width: 340px; line-height: 1.4;" id="overlaySub">Estableciendo canal WebSocket con el escritorio gráfico :0...</div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <button id="btnOverlayReconnect" onclick="window.reconnectVnc()" style="display: none; background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                🔄 Reconectar
+            </button>
+            <button id="btnOverlayFull" onclick="window.openFullVersion()" style="display: none; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+                🎛️ Abrir Versión Completa
+            </button>
         </div>
     </div>
+
     <div id="screen"></div>
 
     <script type="module">
         import RFB from './core/rfb.js';
 
+        function isMobileClient() {
+            return /Android|iPhone|iPad|iPod|Mobile|webOS/i.test(navigator.userAgent) ||
+                   (navigator.maxTouchPoints > 1 && window.innerWidth <= 1024);
+        }
+
         let rfb = null;
         let desktopName = "Termux Desktop";
-        let isDynamicResize = true;
-        let isAutoScaling = true;
+        const _urlResize = readQueryVariable('resize', null);
+        let isDynamicResize = (_urlResize !== null) ? (_urlResize === 'true' || _urlResize === 'remote') : !isMobileClient();
+        let isAutoScaling = isMobileClient();
+        let currentScaleSetting = readQueryVariable('scale_mode', (!isMobileClient() ? 'dynamic' : 'fill'));
 
         function setStatus(text, state = "connecting") {
             const el = document.getElementById('statusText');
@@ -155,13 +448,32 @@
 
         function connectedToServer(e) {
             setStatus("Conectado: " + desktopName, "online");
-            if (currentScaleSetting && currentScaleSetting !== 'auto') {
-                setCustomScale(currentScaleSetting);
-            }
+            const overlay = document.getElementById('connectingOverlay');
+            if (overlay) overlay.style.display = 'none';
+
+            setTimeout(() => {
+                applyCanvasScaling();
+            }, 100);
         }
 
         function disconnectedFromServer(e) {
-            setStatus(e.detail.clean ? "Desconectado" : "Conexión cerrada. Pulsa Reconectar.", "offline");
+            const isClean = e && e.detail && e.detail.clean;
+            const msg = isClean ? "Desconectado" : "Conexión cerrada. El servidor gráfico no está respondiendo.";
+            setStatus(msg, "offline");
+
+            const overlay = document.getElementById('connectingOverlay');
+            const spinner = document.getElementById('overlaySpinner');
+            const title = document.getElementById('overlayTitle');
+            const sub = document.getElementById('overlaySub');
+            const btnRec = document.getElementById('btnOverlayReconnect');
+            const btnFull = document.getElementById('btnOverlayFull');
+
+            if (overlay) overlay.style.display = 'flex';
+            if (spinner) spinner.style.display = 'none';
+            if (title) title.innerText = "Sesión noVNC Desconectada";
+            if (sub) sub.innerText = "No se detectó un servidor gráfico activo en el display :0. Asegúrate de iniciar la pantalla desde el panel.";
+            if (btnRec) btnRec.style.display = 'inline-block';
+            if (btnFull) btnFull.style.display = 'inline-block';
         }
 
         function credentialsAreRequired(e) {
@@ -170,7 +482,7 @@
         }
 
         function updateDesktopName(e) {
-            desktopName = e.detail.name || "Termux Desktop";
+            desktopName = (e && e.detail && e.detail.name) ? e.detail.name : "Termux Desktop";
             setStatus("Conectado: " + desktopName, "online");
         }
 
@@ -224,17 +536,35 @@
             const screenElem = document.getElementById('screen');
             if (!screenElem) return;
 
+            const overlay = document.getElementById('connectingOverlay');
+            const spinner = document.getElementById('overlaySpinner');
+            const title = document.getElementById('overlayTitle');
+            const sub = document.getElementById('overlaySub');
+            const btnRec = document.getElementById('btnOverlayReconnect');
+            const btnFull = document.getElementById('btnOverlayFull');
+
+            if (overlay) overlay.style.display = 'flex';
+            if (spinner) spinner.style.display = 'block';
+            if (btnRec) btnRec.style.display = 'none';
+            if (btnFull) btnFull.style.display = 'none';
+
             screenElem.innerHTML = '';
 
             const host = readQueryVariable('host', window.location.hostname || '127.0.0.1');
-            let port = readQueryVariable('port', window.location.port || '19050');
+            let port = readQueryVariable('port', window.location.port || (window.location.protocol === 'https:' ? '' : '19050'));
+            if (window.location.protocol === 'https:' && !readQueryVariable('port', '')) {
+                port = window.location.port || '';
+            }
             const password = readQueryVariable('password', undefined);
             const path = readQueryVariable('path', 'websockify');
 
-            setStatus("Conectando a " + host + ":" + port + "/" + path + "...", "connecting");
+            const portPart = port ? (":" + port) : "";
+            setStatus("Conectando a " + host + portPart + "/" + path + "...", "connecting");
+            if (title) title.innerText = "Conectando al visor gráfico...";
+            if (sub) sub.innerText = "Negociando conexión WebSocket en " + host + portPart + "/" + path + "...";
 
             let proto = (window.location.protocol === "https:") ? "wss" : "ws";
-            let url = proto + "://" + host + (port ? ":" + port : "") + "/" + path;
+            let url = proto + "://" + host + portPart + "/" + path;
 
             try {
                 if (rfb) {
@@ -242,7 +572,8 @@
                 }
 
                 rfb = new RFB(screenElem, url, {
-                    credentials: { password: password }
+                    credentials: { password: password },
+                    wsProtocols: ['binary', 'base64']
                 });
 
                 rfb.addEventListener("connect", connectedToServer);
@@ -255,11 +586,16 @@
                 rfb.resizeSession = isDynamicResize;
             } catch (err) {
                 setStatus("Error de inicialización: " + err.message, "offline");
+                if (spinner) spinner.style.display = 'none';
+                if (title) title.innerText = "Error al conectar";
+                if (sub) sub.innerText = err.message || "No se pudo iniciar el protocolo noVNC.";
+                if (btnRec) btnRec.style.display = 'inline-block';
+                if (btnFull) btnFull.style.display = 'inline-block';
             }
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 const el = document.documentElement;
                 if (el.requestFullscreen) {
                     el.requestFullscreen().catch(() => {});
@@ -275,34 +611,436 @@
             }
         }
 
-        document.addEventListener('fullscreenchange', () => {
-            const btn = document.getElementById('btnFullscreen');
-            const isFs = !!document.fullscreenElement;
-            if (btn) {
-                btn.innerHTML = isFs ? '🗗 Salir Pantalla Completa' : '⛶ Pantalla Completa';
-                btn.className = 'btn-action ' + (isFs ? 'active' : '');
+        // AUTO-DIM DE PASTILLA FLOTANTE
+        let dimTimer = null;
+        function resetPillDimmer() {
+            const pill = document.getElementById('floatingPill');
+            if (!pill) return;
+            pill.classList.remove('dimmed');
+            clearTimeout(dimTimer);
+            dimTimer = setTimeout(() => {
+                pill.classList.add('dimmed');
+            }, 3500);
+        }
+
+        window.addEventListener('mousemove', resetPillDimmer);
+        window.addEventListener('touchstart', resetPillDimmer);
+        window.addEventListener('pointerdown', resetPillDimmer);
+
+        function handleFullscreenChange() {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            document.body.classList.toggle('is-fullscreen', isFs);
+
+            const pill = document.getElementById('floatingPill');
+            const btnFs = document.getElementById('btnFullscreen');
+
+            if (pill) {
+                pill.style.display = isFs ? 'flex' : 'none';
+                if (isFs) {
+                    expandPill();
+                    schedulePillDock(4000);
+                } else {
+                    pill.classList.remove('docked-left', 'docked-right', 'expanded');
+                }
             }
+
+            if (btnFs) {
+                btnFs.className = 'btn-action ' + (isFs ? 'active' : '');
+            }
+
+            closeLiteMenu();
+
             setTimeout(() => {
                 if (rfb && isDynamicResize) {
                     try { rfb._requestRemoteResize(); } catch(e){}
                 }
             }, 250);
+        }
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        window.addEventListener('resize', () => {
+            if (rfb) {
+                if (isDynamicResize) {
+                    try { rfb._requestRemoteResize(); } catch(e){}
+                }
+                if (isAutoScaling) {
+                    try { rfb._updateScale(); } catch(e){}
+                }
+            }
+        });
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                if (rfb) {
+                    if (isDynamicResize) {
+                        try { rfb._requestRemoteResize(); } catch(e){}
+                    }
+                    if (isAutoScaling) {
+                        try { rfb._updateScale(); } catch(e){}
+                    }
+                }
+            }, 300);
         });
 
-        let currentScaleSetting = 'auto';
+        // TECLADO TÁCTIL EN MÓVIL
+        function toggleMobileKeyboard() {
+            const input = document.getElementById('mobileKeyboardInput');
+            if (!input) return;
+
+            if (document.activeElement === input) {
+                input.blur();
+            } else {
+                input.focus();
+            }
+        }
+
+        const keyboardInput = document.getElementById('mobileKeyboardInput');
+        if (keyboardInput) {
+            keyboardInput.addEventListener('keydown', (e) => {
+                if (!rfb) return;
+                let keysym = 0;
+                if (e.key === 'Backspace') keysym = 0xff08;
+                else if (e.key === 'Tab') keysym = 0xff09;
+                else if (e.key === 'Enter') keysym = 0xff0d;
+                else if (e.key === 'Escape') keysym = 0xff1b;
+                else if (e.key === 'ArrowLeft') keysym = 0xff51;
+                else if (e.key === 'ArrowUp') keysym = 0xff52;
+                else if (e.key === 'ArrowRight') keysym = 0xff53;
+                else if (e.key === 'ArrowDown') keysym = 0xff54;
+                else if (e.key.length === 1) {
+                    keysym = e.key.charCodeAt(0);
+                }
+
+                if (keysym) {
+                    try {
+                        rfb.sendKey(keysym, null, true);
+                        setTimeout(() => rfb.sendKey(keysym, null, false), 50);
+                    } catch(err){}
+                }
+            });
+
+            keyboardInput.addEventListener('input', (e) => {
+                keyboardInput.value = '';
+            });
+        }
+
+        // DRAG & SNAP Y ACOPLAMIENTO EN GOTA EN EL BORDE
+        let isDraggingPill = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+        let pillMoved = false;
+        let currentPillEdge = 'right';
+        let pillDockTimer = null;
+
+        function expandPill() {
+            const pill = document.getElementById('floatingPill');
+            if (!pill) return;
+            clearTimeout(pillDockTimer);
+            pill.classList.remove('docked-left', 'docked-right');
+            pill.classList.add('expanded');
+        }
+
+        function schedulePillDock(delay = 3500) {
+            clearTimeout(pillDockTimer);
+            const menu = document.getElementById('liteDropdownMenu');
+            if (menu && menu.style.display === 'flex') return;
+
+            pillDockTimer = setTimeout(() => {
+                const pill = document.getElementById('floatingPill');
+                if (!pill) return;
+                const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                if (!isFs) return;
+
+                pill.classList.remove('expanded');
+                if (currentPillEdge === 'left') {
+                    pill.classList.add('docked-left');
+                } else {
+                    pill.classList.add('docked-right');
+                }
+            }, delay);
+        }
+
+        function initPillDragging() {
+            const pill = document.getElementById('floatingPill');
+            if (!pill) return;
+
+            function onStart(e) {
+                isDraggingPill = true;
+                pillMoved = false;
+                expandPill();
+                pill.style.transition = 'none';
+
+                const pt = e.touches ? e.touches[0] : e;
+                startX = pt.clientX;
+                startY = pt.clientY;
+
+                const rect = pill.getBoundingClientRect();
+                origX = rect.left;
+                origY = rect.top;
+            }
+
+            function onMove(e) {
+                if (!isDraggingPill) return;
+                const pt = e.touches ? e.touches[0] : e;
+                const dx = pt.clientX - startX;
+                const dy = pt.clientY - startY;
+
+                if (Math.hypot(dx, dy) > 8) {
+                    pillMoved = true;
+                }
+
+                if (pillMoved) {
+                    if (e.cancelable) e.preventDefault();
+                    let curX = origX + dx;
+                    let curY = origY + dy;
+
+                    const pillW = pill.offsetWidth;
+                    const pillH = pill.offsetHeight;
+                    curX = Math.max(0, Math.min(window.innerWidth - pillW, curX));
+                    curY = Math.max(4, Math.min(window.innerHeight - pillH - 4, curY));
+
+                    pill.style.left = curX + 'px';
+                    pill.style.top = curY + 'px';
+                    pill.style.right = 'auto';
+                    pill.style.bottom = 'auto';
+                }
+            }
+
+            function onEnd(e) {
+                if (!isDraggingPill) return;
+                isDraggingPill = false;
+
+                const rect = pill.getBoundingClientRect();
+                const pillW = pill.offsetWidth;
+                const pillH = pill.offsetHeight;
+                const centerX = rect.left + pillW / 2;
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+
+                pill.style.transition = 'left 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), top 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease';
+
+                let targetX;
+                if (centerX < screenW / 2) {
+                    targetX = 0;
+                    currentPillEdge = 'left';
+                } else {
+                    targetX = screenW - pillW;
+                    currentPillEdge = 'right';
+                }
+
+                let targetY = Math.max(8, Math.min(screenH - pillH - 8, rect.top));
+                pill.style.left = targetX + 'px';
+                pill.style.top = targetY + 'px';
+                pill.style.right = 'auto';
+                pill.style.bottom = 'auto';
+
+                schedulePillDock(3500);
+
+                setTimeout(() => { pillMoved = false; }, 50);
+            }
+
+            pill.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove, { passive: false });
+            window.addEventListener('mouseup', onEnd);
+
+            pill.addEventListener('touchstart', onStart, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+            window.addEventListener('touchcancel', onEnd);
+
+            pill.addEventListener('mouseenter', expandPill);
+            pill.addEventListener('mouseleave', () => schedulePillDock(2500));
+        }
+
+        // MENÚ DESPLEGABLE LITE (POSICIONAMIENTO INTELIGENTE)
+        function toggleLiteMenu(e) {
+            if (pillMoved) return;
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            expandPill();
+            clearTimeout(pillDockTimer);
+
+            const menu = document.getElementById('liteDropdownMenu');
+            if (!menu) return;
+
+            const isShown = (menu.style.display === 'flex');
+            if (isShown) {
+                menu.style.display = 'none';
+                schedulePillDock(3000);
+            } else {
+                const lblScale = document.getElementById('lblMenuScale');
+                if (lblScale) lblScale.textContent = isAutoScaling ? 'Auto-Escalar (Activo)' : 'Auto-Escalar (Inactivo)';
+                const lblResize = document.getElementById('lblMenuResize');
+                if (lblResize) lblResize.textContent = isDynamicResize ? 'Resolución Dinámica (Activo)' : 'Resolución Dinámica (Inactivo)';
+
+                const btn = (e && e.currentTarget) ? e.currentTarget : (document.getElementById('btnFloatingMenu') || document.getElementById('btnMoreMenu'));
+                const rect = btn ? btn.getBoundingClientRect() : { right: window.innerWidth - 10, left: 10, top: 20, bottom: 50 };
+                const menuW = 210;
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+
+                menu.style.display = 'flex';
+                const menuH = menu.offsetHeight || 220;
+
+                if (rect.right + menuW > screenW) {
+                    menu.style.left = Math.max(8, rect.right - menuW) + 'px';
+                } else if (rect.left < 8) {
+                    menu.style.left = '8px';
+                } else {
+                    menu.style.left = Math.max(8, rect.left) + 'px';
+                }
+                menu.style.right = 'auto';
+
+                if (rect.bottom + menuH > screenH) {
+                    menu.style.top = Math.max(8, rect.top - menuH - 4) + 'px';
+                } else {
+                    menu.style.top = (rect.bottom + 6) + 'px';
+                }
+            }
+        }
+
+        function closeLiteMenu() {
+            const menu = document.getElementById('liteDropdownMenu');
+            if (menu) menu.style.display = 'none';
+            schedulePillDock(3000);
+        }
+
+        document.addEventListener('click', (e) => {
+            const menu = document.getElementById('liteDropdownMenu');
+            if (menu && menu.style.display === 'flex' && !menu.contains(e.target)) {
+                closeLiteMenu();
+            }
+        });
+
+        function applyCanvasScaling() {
+            const canvas = document.querySelector('#screen canvas');
+            const screenElem = document.getElementById('screen');
+            if (!screenElem) return;
+
+            // Asegurar que el contenedor pantalla siempre ocupe el 100% del viewport
+            screenElem.style.width = '100%';
+            screenElem.style.height = '100%';
+            screenElem.style.display = 'flex';
+
+            if (canvas && canvas.parentElement) {
+                canvas.parentElement.style.width = '100%';
+                canvas.parentElement.style.height = '100%';
+                canvas.parentElement.style.display = 'flex';
+                canvas.parentElement.style.alignItems = 'center';
+                canvas.parentElement.style.justifyContent = 'center';
+            }
+
+            if (currentScaleSetting === 'dynamic') {
+                if (rfb) {
+                    rfb.scaleViewport = false;
+                    rfb.resizeSession = true;
+                }
+                screenElem.style.overflow = 'hidden';
+                screenElem.style.alignItems = 'stretch';
+                screenElem.style.justifyContent = 'stretch';
+                if (canvas) {
+                    canvas.style.width = '';
+                    canvas.style.height = '';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxHeight = '100%';
+                    canvas.style.objectFit = '';
+                    if (canvas.parentElement) {
+                        canvas.parentElement.style.alignItems = 'stretch';
+                        canvas.parentElement.style.justifyContent = 'stretch';
+                    }
+                }
+                if (rfb && typeof rfb._requestRemoteResize === 'function') {
+                    try { rfb._requestRemoteResize(); } catch(e){}
+                }
+            } else if (currentScaleSetting === 'fill' || currentScaleSetting === 'stretch') {
+                if (rfb) {
+                    rfb.scaleViewport = false;
+                    rfb.resizeSession = false;
+                }
+                screenElem.style.overflow = 'hidden';
+                screenElem.style.alignItems = 'stretch';
+                screenElem.style.justifyContent = 'stretch';
+                if (canvas) {
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxHeight = '100%';
+                    canvas.style.objectFit = 'fill';
+                    if (canvas.parentElement) {
+                        canvas.parentElement.style.alignItems = 'stretch';
+                        canvas.parentElement.style.justifyContent = 'stretch';
+                    }
+                }
+            } else if (currentScaleSetting === 'fit-width') {
+                if (rfb) {
+                    rfb.scaleViewport = false;
+                    rfb.resizeSession = false;
+                }
+                screenElem.style.overflow = 'auto';
+                screenElem.style.alignItems = 'flex-start';
+                screenElem.style.justifyContent = 'center';
+                if (canvas) {
+                    canvas.style.width = '100%';
+                    canvas.style.height = 'auto';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxHeight = 'none';
+                    canvas.style.objectFit = 'contain';
+                }
+            } else if (currentScaleSetting === 'fit-height') {
+                if (rfb) {
+                    rfb.scaleViewport = false;
+                    rfb.resizeSession = false;
+                }
+                screenElem.style.overflow = 'auto';
+                screenElem.style.alignItems = 'center';
+                screenElem.style.justifyContent = 'center';
+                if (canvas) {
+                    canvas.style.width = 'auto';
+                    canvas.style.height = '100%';
+                    canvas.style.maxWidth = 'none';
+                    canvas.style.maxHeight = '100%';
+                    canvas.style.objectFit = 'contain';
+                }
+            } else if (currentScaleSetting === 'auto' || currentScaleSetting === 'contain') {
+                if (rfb) {
+                    rfb.resizeSession = false;
+                    rfb.scaleViewport = true;
+                }
+                screenElem.style.overflow = 'hidden';
+                screenElem.style.alignItems = 'center';
+                screenElem.style.justifyContent = 'center';
+                if (canvas) {
+                    canvas.style.width = '';
+                    canvas.style.height = '';
+                    canvas.style.maxWidth = '100%';
+                    canvas.style.maxHeight = '100%';
+                    canvas.style.objectFit = '';
+                }
+                if (rfb && typeof rfb._updateScale === 'function') {
+                    try { rfb._updateScale(); } catch(e){}
+                }
+            } else {
+                if (rfb) {
+                    rfb.resizeSession = false;
+                    rfb.scaleViewport = false;
+                    const factor = parseFloat(currentScaleSetting) || 1.0;
+                    rfb.scale = factor;
+                }
+                screenElem.style.overflow = 'auto';
+                screenElem.style.alignItems = 'center';
+                screenElem.style.justifyContent = 'center';
+                if (canvas) {
+                    canvas.style.maxWidth = 'none';
+                    canvas.style.maxHeight = 'none';
+                    canvas.style.objectFit = '';
+                }
+            }
+        }
 
         function setCustomScale(scaleFactor) {
             currentScaleSetting = scaleFactor || 'auto';
-            if (!rfb) return;
-
-            if (currentScaleSetting === 'auto') {
-                isAutoScaling = true;
-                rfb.scaleViewport = true;
-            } else {
-                isAutoScaling = false;
-                const factor = parseFloat(currentScaleSetting) || 1.0;
-                rfb.scale = factor;
-            }
+            applyCanvasScaling();
         }
 
         // Escuchar acciones desde el contenedor padre (TDM Single Top Bar)
@@ -326,13 +1064,21 @@
         window.toggleScale = toggleScale;
         window.toggleDynamicResize = toggleDynamicResize;
         window.toggleFullscreen = toggleFullscreen;
+        window.toggleMobileKeyboard = toggleMobileKeyboard;
+        window.toggleLiteMenu = toggleLiteMenu;
+        window.closeLiteMenu = closeLiteMenu;
         window.openFullVersion = openFullVersion;
         window.reconnectVnc = startConnection;
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', startConnection);
-        } else {
+        function initApp() {
+            initPillDragging();
             startConnection();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
         }
     </script>
 </body>

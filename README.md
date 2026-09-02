@@ -9,9 +9,9 @@
 **Termux Display Manager (`TDM`)** permite proyectar y gestionar entornos de escritorio Linux nativos (KDE Plasma, MATE, XFCE4, LXQt, Openbox, i3, etc.) hacia múltiples servidores gráficos:
 
 1. ⚡ **Termux:X11:** App nativa de Android con aceleración GPU (VirGL) a 60/120 FPS.
-2. 🌐 **noVNC (Web HTML5):** Visor web interactivo embebido directamente en la PWA (Puerto `19052`).
-3. 📡 **Microsoft Remote Desktop (XRDP):** Servidor RDP para conectar tablets, PC o iPad (Puerto `19054`).
-4. 🖥️ **TigerVNC:** Servidor VNC RFB tradicional para clientes dedicados como bVNC (Puerto `19053`).
+2. 🌐 **noVNC (Web HTML5):** Visor web interactivo embebido directamente en la PWA (Puerto `19052` / `19050`).
+3. 📡 **Microsoft Remote Desktop (XRDP):** Servidor RDP estándar para conectar tablets, PC o iPad (Puerto por defecto `3389`).
+4. 🖥️ **TigerVNC:** Servidor VNC RFB tradicional para clientes dedicados como bVNC (Puerto por defecto `5900`).
 5. 🔊 **PulseAudio Sink:** Servidor de audio bidireccional TCP (Puerto `19055`).
 
 ---

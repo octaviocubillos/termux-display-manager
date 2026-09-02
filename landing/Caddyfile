@@ -1,0 +1,21 @@
+# Configuración Caddy para Landing Page de TDM con Reverse Proxy HTTP/WS en /aabbcc
+tdm.oton.cl {
+    # 1. Reverse Proxy a la App Web TDM en /aabbcc
+    handle_path /aabbcc/* {
+        reverse_proxy 192.168.1.197:19050
+    }
+
+    # 2. Servir instaladores con MIME text/plain
+    @install path /install /go /setup
+    handle @install {
+        root * /var/www/tdm-landing
+        header Content-Type text/plain; charset=utf-8
+        file_server
+    }
+
+    # 3. Archivos Estáticos de la Landing Page
+    handle {
+        root * /var/www/tdm-landing
+        file_server
+    }
+}

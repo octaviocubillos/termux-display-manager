@@ -16,6 +16,6 @@ COPY --chown=1000:1000 entrypoint-termux.sh /entrypoint-termux.sh
 
 WORKDIR /data/data/com.termux/files/home
 
-EXPOSE 8022 19050 19051 19052 19053 19054 19055
+EXPOSE 8022 3389 5900 19050 19051 19052 19055
 
 ENTRYPOINT ["/entrypoint-termux.sh"]

@@ -24,8 +24,8 @@ class TestConstants(unittest.TestCase):
         self.assertEqual(PORT_TDM_SERVER, 19050)
         self.assertEqual(PORT_TDM_SERVER_ALT, 19051)
         self.assertEqual(PORT_NOVNC_DEFAULT, 19052)
-        self.assertEqual(PORT_VNC_DEFAULT, 19053)
-        self.assertEqual(PORT_RDP_DEFAULT, 19054)
+        self.assertEqual(PORT_VNC_DEFAULT, 5900)
+        self.assertEqual(PORT_RDP_DEFAULT, 3389)
         self.assertEqual(PORT_PULSEAUDIO, 19055)
 
     def test_backends_names(self):
@@ -47,6 +47,12 @@ class TestConstants(unittest.TestCase):
         self.assertEqual(info["version"], __version__)
         self.assertIn("version_code", info)
         self.assertIn("manifest_schema", info)
+
+    def test_get_user_shell(self):
+        from tdm.config import get_user_shell
+        shell = get_user_shell()
+        self.assertTrue(bool(shell))
+        self.assertTrue("sh" in shell or "bash" in shell or "zsh" in shell)
 
 if __name__ == "__main__":
     unittest.main()

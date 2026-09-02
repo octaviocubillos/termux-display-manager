@@ -2,7 +2,7 @@
 
 > **Termux Display Manager (TDM)**
 > Motor unificado de entornos gráficos nativos, servidor REST asíncrono, WebSockets locales y PWA para Android/Termux y Linux.
-> **Versión**: `v0.0.60` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
+> **Versión**: `v0.0.63` | **Puertos**: `19050 - 19055` | **Licencia**: MIT
 
 ---
 
@@ -53,17 +53,15 @@ El sistema elimina la complejidad de configurar scripts dispersos, gestionar soc
 
 ---
 
-## 🔌 2. Matriz de Puertos y Servicios (Rango `1905x`)
-
-Todos los servicios y protocolos de comunicación operan en el bloque `19050 - 19055`:
-
+## 🔌 2. Matriz de Puertos y Servicios
+ 
 | Puerto | Protocolo | Servicio / Componente | Descripción |
 | :--- | :---: | :--- | :--- |
 | **`19050`** | `HTTP / WSS` | **TDM Hub & Web API** | Panel Web PWA, API REST y Router de WebSockets. |
 | **`19051`** | `HTTP` | **TDM Server Secundario** | Puerto alternativo configurable para APIs secundarias. |
 | **`19052`** | `HTTP / WS` | **noVNC (Web Viewer)** | Servidor WebSockets puente (`websockify`) + visor HTML5. |
-| **`19053`** | `RFB` | **TigerVNC / Xvnc** | Servidor de pantalla remota para clientes VNC nativos. |
-| **`19054`** | `RDP` | **XRDP (Remote Desktop)** | Servidor Microsoft RDP de alta compresión. |
+| **`5900`** | `RFB` | **TigerVNC / Xvnc** | Puerto estándar VNC para clientes nativos (bVNC, AVNC, RealVNC). |
+| **`3389`** | `RDP` | **XRDP (Remote Desktop)** | Puerto estándar Microsoft RDP (RD Client Windows/iOS/macOS). |
 | **`19055`** | `TCP` | **PulseAudio Sound Sink** | Servidor de transmisión de audio bidireccional. |
 
 ---

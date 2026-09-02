@@ -1783,7 +1783,9 @@ window.addEventListener('message', (e) => {
             if (data.scale === 'auto') {
                 UI.rfb.scaleViewport = true;
             } else {
-                UI.rfb.scale = parseFloat(data.scale) || 1.0;
+                UI.rfb.scaleViewport = false;
+                const factor = parseFloat(data.scale) || 1.0;
+                UI.rfb.scale = factor;
             }
         }
         else if (data.action === 'reconnect') UI.reconnect();

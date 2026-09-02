@@ -3,11 +3,11 @@ import shutil
 import subprocess
 from typing import Dict, Any, Optional
 from pathlib import Path
-from tdm.config import IS_TERMUX, PREFIX, HOME, TDM_RUN_DIR
+from tdm.config import IS_TERMUX, PREFIX, HOME, TDM_RUN_DIR, get_user_shell
 from tdm.core.registry import get_desktop_entry
 from tdm.constants import PORT_PULSEAUDIO
 
-def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, virgl: bool = False) -> Dict[str, str]:
+def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, virgl: bool = False, dpi: int = 96) -> Dict[str, str]:
     """Genera y prepara las variables de entorno necesarias para la sesión gráfica."""
     env = os.environ.copy()
     
@@ -15,11 +15,16 @@ def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, v
     display_str = f":{display_num}"
     runtime_dir = TDM_RUN_DIR / f"user-{os.getuid()}-display-{display_num}"
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(runtime_dir, 0o700)
+    except Exception:
+        pass
     
     env["DISPLAY"] = display_str
     env["XDG_RUNTIME_DIR"] = str(runtime_dir)
     env["HOME"] = HOME
-    env["SHELL"] = env.get("SHELL", "/bin/sh" if not IS_TERMUX else f"{PREFIX}/bin/bash")
+    env["PWD"] = HOME
+    env["SHELL"] = get_user_shell()
     
     # 2. Configuración de PATH y XDG Base Directory
     current_path = env.get("PATH", "")
@@ -30,11 +35,25 @@ def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, v
     env["XDG_DATA_DIRS"] = f"{PREFIX}/share:/usr/local/share:/usr/share"
     env["XDG_CONFIG_DIRS"] = f"{PREFIX}/etc/xdg:/etc/xdg"
     
-    # 3. Toolkits gráficos en modo X11 puro
+    # 3. Toolkits gráficos en modo X11 puro y escalado adaptativo (PC vs Móvil)
     env["GDK_BACKEND"] = "x11"
     env["QT_QPA_PLATFORM"] = "xcb"
     env["CLUTTER_BACKEND"] = "x11"
     env["SDL_VIDEODRIVER"] = "x11"
+
+    # Si DPI > 120 (Smartphones / HiDPI), activar UI 2x y cursor grande. Si es PC (DPI <= 120), escala 1x estándar
+    if dpi > 120:
+        env["GDK_SCALE"] = "2"
+        env["GDK_DPI_SCALE"] = "1"
+        env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
+        env["QT_SCALE_FACTOR"] = "2"
+        env["XCURSOR_SIZE"] = "36"
+    else:
+        env["GDK_SCALE"] = "1"
+        env["GDK_DPI_SCALE"] = "1"
+        env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
+        env["QT_SCALE_FACTOR"] = "1"
+        env["XCURSOR_SIZE"] = "24"
 
     # 4. Soporte de Audio (PulseAudio TCP)
     if audio:

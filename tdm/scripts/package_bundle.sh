@@ -46,8 +46,9 @@ tar -czf "$DIST_DIR/$BUNDLE_NAME" \
 
 cp -f "$DIST_DIR/$BUNDLE_NAME" "$DIST_DIR/$LATEST_BUNDLE"
 cp -f "$DIST_DIR/$BUNDLE_NAME" "$DIST_DIR/tdm-bundle.tar.gz"
+cp -f "$DIST_DIR/$BUNDLE_NAME" "$ROOT_DIR/landing/tdm-bundle.tar.gz" 2>/dev/null || true
 
-chmod 644 "$DIST_DIR/$BUNDLE_NAME" "$DIST_DIR/$LATEST_BUNDLE" "$DIST_DIR/tdm-bundle.tar.gz"
+chmod 644 "$DIST_DIR/$BUNDLE_NAME" "$DIST_DIR/$LATEST_BUNDLE" "$DIST_DIR/tdm-bundle.tar.gz" 2>/dev/null || true
 
 echo "✅ Paquetes generados con éxito en:"
 echo "   • $DIST_DIR/$BUNDLE_NAME"

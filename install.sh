@@ -69,6 +69,7 @@ echo "[3/4] Instalando dependencias base (Python, x11-repo, TigerVNC, D-Bus)..."
 pkg install -y x11-repo || true
 apt-get update -y || pkg update -y || true
 pkg install -y python dbus tigervnc xorg-xauth xorg-xsetroot procps tmux || true
+apt-get --only-upgrade install -y libc++ >/dev/null 2>&1 || true
 
 echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
 apt-get autoremove -y --purge >/dev/null 2>&1 || true

@@ -23,7 +23,7 @@ find_exec() {
 }
 
 # 1. XFCE4
-for bin in xfce4-session startxfce4 xfdesktop; do
+for bin in xfce4-session startxfce4; do
     if EXEC_PATH="$(find_exec "$bin")"; then
         echo "xfce4|XFCE4 Desktop|$EXEC_PATH|true"
         exit 0
@@ -31,7 +31,7 @@ for bin in xfce4-session startxfce4 xfdesktop; do
 done
 
 # 2. i3 Window Manager
-for bin in i3 i3status; do
+for bin in i3; do
     if EXEC_PATH="$(find_exec "$bin")"; then
         echo "i3|i3 Window Manager|$EXEC_PATH|true"
         exit 0
@@ -39,7 +39,7 @@ for bin in i3 i3status; do
 done
 
 # 3. KDE Plasma
-for bin in startplasma-x11 plasma-session startplasma-wayland; do
+for bin in startplasma-x11 plasma-session; do
     if EXEC_PATH="$(find_exec "$bin")"; then
         echo "kde|KDE Plasma|$EXEC_PATH|true"
         exit 0
@@ -47,7 +47,7 @@ for bin in startplasma-x11 plasma-session startplasma-wayland; do
 done
 
 # 4. MATE Desktop
-for bin in mate-session mate-panel; do
+for bin in mate-session; do
     if EXEC_PATH="$(find_exec "$bin")"; then
         echo "mate|MATE Desktop|$EXEC_PATH|true"
         exit 0
@@ -63,9 +63,17 @@ for bin in startlxqt lxqt-session; do
 done
 
 # 6. Openbox
-for bin in openbox openbox-session; do
+for bin in openbox-session openbox; do
     if EXEC_PATH="$(find_exec "$bin")"; then
         echo "openbox|Openbox Window Manager|$EXEC_PATH|true"
+        exit 0
+    fi
+done
+
+# 7. Terminal Mode
+for bin in aterm xfce4-terminal mate-terminal qterminal konsole xterm st; do
+    if EXEC_PATH="$(find_exec "$bin")"; then
+        echo "terminal|Modo Terminal X11|$EXEC_PATH|true"
         exit 0
     fi
 done

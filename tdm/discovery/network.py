@@ -7,8 +7,8 @@ el acceso por red local y VPN privada sin configuración manual.
 import os
 import re
 import socket
-import subprocess
 from typing import Dict, List, Any, Optional
+from tdm.constants import PORT_NOVNC_DEFAULT, PORT_VNC_DEFAULT, PORT_RDP_DEFAULT, PORT_PULSEAUDIO
 
 def get_primary_lan_ip() -> Optional[str]:
     """Obtiene la IP principal de la red local mediante socket UDP."""
@@ -55,7 +55,8 @@ def discover_network_interfaces(port: int = 19050) -> Dict[str, Any]:
 
     access_urls = {
         "local": f"http://localhost:{port}",
-        "lan": f"http://{lan_ip}:{port}"
+        "lan": f"http://{lan_ip}:{port}",
+        "web": f"https://tdm.oton.cl/aabbcc/"
     }
 
     if tailscale_ip:
@@ -69,10 +70,10 @@ def discover_network_interfaces(port: int = 19050) -> Dict[str, Any]:
         "access_urls": access_urls,
         "ports": {
             "pwa_server": port,
-            "novnc": 19052,
-            "vnc": 19053,
-            "rdp": 19054,
-            "pulseaudio": 19055
+            "novnc": PORT_NOVNC_DEFAULT,
+            "vnc": PORT_VNC_DEFAULT,
+            "rdp": PORT_RDP_DEFAULT,
+            "pulseaudio": PORT_PULSEAUDIO
         }
     }
 

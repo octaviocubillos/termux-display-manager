@@ -10,7 +10,13 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="TDM">
-    <link rel="manifest" href="/manifest.json">
+    <script>
+        // Normalizar sub-rutas proxy (ej. /aabbcc -> /aabbcc/) para resolución exacta de assets relativos
+        if (window.location.pathname === '/aabbcc') {
+            window.location.replace('/aabbcc/' + window.location.search + window.location.hash);
+        }
+    </script>
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a8c7fa'><path d='M4 6h16v10H4V6zm-2 0a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-6v2h2a1 1 0 110 2H8a1 1 0 110-2h2v-2H4a2 2 0 01-2-2V6z'/></svg>" type="image/svg+xml">
 
     <!-- Google Fonts: Inter & Material Symbols Rounded -->
@@ -783,17 +789,66 @@
 
         .vnc-menu-popover {
             display: none;
-            position: absolute;
-            top: calc(100% + 6px);
-            right: 0;
-            background: #1a202c;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            position: fixed;
+            background: rgba(22, 27, 34, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: var(--md-shape-corner-md);
-            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.75);
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85);
             padding: 0.35rem 0;
-            min-width: 185px;
-            z-index: 50;
+            min-width: 200px;
+            z-index: 1000000;
             flex-direction: column;
+        }
+
+        #floatingVncControl {
+            position: fixed;
+            top: 14px;
+            right: 0;
+            z-index: 999999;
+            background: rgba(17, 24, 39, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: var(--md-shape-corner-full);
+            padding: 4px 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease, border-radius 0.3s ease;
+        }
+
+        #floatingVncControl.docked-right {
+            transform: translateX(calc(100% - 16px));
+            opacity: 0.45;
+            border-radius: 16px 0 0 16px;
+            border-right: none;
+            background: rgba(17, 24, 39, 0.65);
+        }
+
+        #floatingVncControl.docked-left {
+            transform: translateX(calc(-100% + 16px));
+            opacity: 0.45;
+            border-radius: 0 16px 16px 0;
+            border-left: none;
+            background: rgba(17, 24, 39, 0.65);
+        }
+
+        #floatingVncControl.expanded,
+        #floatingVncControl.docked-right:hover,
+        #floatingVncControl.docked-right:active,
+        #floatingVncControl.docked-left:hover,
+        #floatingVncControl.docked-left:active {
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+            border-radius: var(--md-shape-corner-full) !important;
+            background: rgba(17, 24, 39, 0.92) !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
         }
 
         .vnc-menu-item {
@@ -999,7 +1054,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.60</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.63</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -1398,12 +1453,15 @@
                     <div style="position: relative; display: flex; align-items: center;">
                         <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #94a3b8; position: absolute; left: 6px; pointer-events: none;">zoom_in</span>
                         <select id="selVncScale" onchange="changeVncScale(this.value)" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: var(--md-shape-corner-sm); padding: 0.25rem 0.45rem 0.25rem 1.4rem; font-size: 0.76rem; font-weight: 600; outline: none; cursor: pointer;">
-                            <option value="auto">📐 Auto</option>
+                            <option value="dynamic">🖥️ Dinámica (PC)</option>
+                            <option value="fill">📱 Llenar (Móvil)</option>
+                            <option value="fit-width">↔️ Ajustar Ancho</option>
+                            <option value="auto">📐 Proporcional</option>
                             <option value="1.0">1.0x (100%)</option>
                             <option value="1.25">1.25x</option>
                             <option value="1.5">1.5x</option>
                             <option value="1.75">1.75x</option>
-                            <option value="2.0">2.0x (200%)</option>
+                            <option value="2.0">2.0x</option>
                         </select>
                     </div>
 
@@ -1413,40 +1471,9 @@
                     </button>
 
                     <!-- DESPLEGABLE MÁS OPCIONES (⋮) -->
-                    <div style="position: relative;">
-                        <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" id="btnVncMoreMenu" onclick="toggleVncDropdownMenu()" title="Más opciones">
-                            <span class="material-symbols-rounded">more_vert</span>
-                        </button>
-                        <!-- MENÚ FLOTANTE M3 -->
-                        <div id="vncDropdownMenu" class="vnc-menu-popover">
-                            <button class="vnc-menu-item" onclick="switchViewerMode('lite'); closeVncDropdown();">
-                                <span class="material-symbols-rounded">bolt</span>
-                                <span>Modo Lite</span>
-                            </button>
-                            <button class="vnc-menu-item" onclick="switchViewerMode('full'); closeVncDropdown();">
-                                <span class="material-symbols-rounded">tune</span>
-                                <span>Modo Completo</span>
-                            </button>
-                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
-                            <button class="vnc-menu-item" onclick="sendIframeVncAction('toggle_resize'); closeVncDropdown();">
-                                <span class="material-symbols-rounded">aspect_ratio</span>
-                                <span>Resolución Dinámica</span>
-                            </button>
-                            <button class="vnc-menu-item" onclick="sendIframeVncAction('ctrl_alt_del'); closeVncDropdown();">
-                                <span class="material-symbols-rounded">keyboard</span>
-                                <span>Enviar Ctrl+Alt+Del</span>
-                            </button>
-                            <button class="vnc-menu-item" onclick="sendIframeVncAction('reconnect'); closeVncDropdown();">
-                                <span class="material-symbols-rounded">refresh</span>
-                                <span>Reconectar noVNC</span>
-                            </button>
-                            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
-                            <a id="lnkOpenNewTab" href="#" target="_blank" class="vnc-menu-item" onclick="closeVncDropdown();" style="text-decoration: none;">
-                                <span class="material-symbols-rounded">open_in_new</span>
-                                <span>Abrir en Pestaña</span>
-                            </a>
-                        </div>
-                    </div>
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" id="btnVncMoreMenu" onclick="toggleVncDropdownMenu(event)" title="Más opciones">
+                        <span class="material-symbols-rounded">more_vert</span>
+                    </button>
 
                     <!-- CERRAR -->
                     <button class="btn-m3 btn-m3-error btn-m3-sm btn-m3-icon-only" onclick="closeWebViewer()" title="Cerrar visor">
@@ -1455,13 +1482,59 @@
                 </div>
             </div>
 
-            <!-- BOTÓN FLOTANTE EN PANTALLA COMPLETA (SOLO MÓVIL) -->
-            <div id="floatingVncControl" style="display: none; position: absolute; top: 12px; right: 12px; z-index: 999999; background: rgba(17, 24, 39, 0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.2); border-radius: var(--md-shape-corner-full); padding: 4px 8px; align-items: center; gap: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.7);" onclick="event.stopPropagation();">
+            <!-- MENÚ FLOTANTE M3 (INDEPENDIENTE DE LA CABECERA) -->
+            <div id="vncDropdownMenu" class="vnc-menu-popover" onclick="event.stopPropagation();">
+                <button class="vnc-menu-item" onclick="switchViewerMode('lite'); closeVncDropdown();">
+                    <span class="material-symbols-rounded">bolt</span>
+                    <span>Modo Lite</span>
+                </button>
+                <button class="vnc-menu-item" onclick="switchViewerMode('full'); closeVncDropdown();">
+                    <span class="material-symbols-rounded">tune</span>
+                    <span>Modo Completo</span>
+                </button>
+                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
+                <button class="vnc-menu-item" onclick="sendIframeVncAction('toggle_resize'); closeVncDropdown();">
+                    <span class="material-symbols-rounded">aspect_ratio</span>
+                    <span>Resolución Dinámica</span>
+                </button>
+                <button class="vnc-menu-item" onclick="toggleDesktopUiScale(); closeVncDropdown();">
+                    <span class="material-symbols-rounded">format_size</span>
+                    <span>Escalar UI Escritorio (1x / 2x)</span>
+                </button>
+                <button class="vnc-menu-item" onclick="sendIframeVncAction('ctrl_alt_del'); closeVncDropdown();">
+                    <span class="material-symbols-rounded">keyboard</span>
+                    <span>Enviar Ctrl+Alt+Del</span>
+                </button>
+                <button class="vnc-menu-item" onclick="sendIframeVncAction('reconnect'); closeVncDropdown();">
+                    <span class="material-symbols-rounded">refresh</span>
+                    <span>Reconectar noVNC</span>
+                </button>
+                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
+                <button class="vnc-menu-item" onclick="switchDisplayProfile('pc');">
+                    <span class="material-symbols-rounded">computer</span>
+                    <span>Perfil PC (1920x1080, 1x)</span>
+                </button>
+                <button class="vnc-menu-item" onclick="switchDisplayProfile('mobile');">
+                    <span class="material-symbols-rounded">smartphone</span>
+                    <span>Perfil Móvil (1080x2400, 2x)</span>
+                </button>
+                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
+                <a id="lnkOpenNewTab" href="#" target="_blank" class="vnc-menu-item" onclick="closeVncDropdown();" style="text-decoration: none;">
+                    <span class="material-symbols-rounded">open_in_new</span>
+                    <span>Abrir en Pestaña</span>
+                </a>
+            </div>
+
+            <!-- BOTÓN FLOTANTE EN PANTALLA COMPLETA (ARRASTRABLE Y SNAP A BORDES) -->
+            <div id="floatingVncControl" style="display: none; position: fixed; top: 14px; right: 0; z-index: 999999;" onclick="event.stopPropagation();">
+                <div id="indexPillDragHandle" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 32px; color: #a8c7fa; cursor: grab;">
+                    <span class="material-symbols-rounded" style="font-size: 1.1rem;">drag_indicator</span>
+                </div>
                 <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="toggleModalFullscreen()" style="padding: 0.25rem 0.65rem; font-size: 0.75rem; height: 32px; background: rgba(255,255,255,0.18); border-radius: var(--md-shape-corner-full);">
                     <span class="material-symbols-rounded" style="font-size: 1.05rem;">fullscreen_exit</span>
                     <span>Salir</span>
                 </button>
-                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="toggleVncDropdownMenu()" style="width: 32px; height: 32px; background: rgba(255,255,255,0.18); border-radius: 50%;">
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" id="btnFloatingVncMore" onclick="toggleVncDropdownMenu(event)" style="width: 32px; height: 32px; background: rgba(255,255,255,0.18); border-radius: 50%;">
                     <span class="material-symbols-rounded" style="font-size: 1.05rem;">more_vert</span>
                 </button>
             </div>
@@ -1500,6 +1573,22 @@
 
     <!-- JAVASCRIPT CORE -->
     <script>
+        // Prefijo base dinámico para soporte transparente de Reverse Proxy (/aabbcc/) y acceso directo (/)
+        const BASE_PATH = (() => {
+            const p = window.location.pathname;
+            if (p === '/aabbcc' || p.startsWith('/aabbcc/')) return '/aabbcc';
+            return '';
+        })();
+
+        function apiPath(url) {
+            if (!url) return '';
+            if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('ws://') || url.startsWith('wss://')) {
+                return url;
+            }
+            const clean = url.startsWith('/') ? url : '/' + url;
+            return BASE_PATH + clean;
+        }
+
         let selectedBackend = 'termux-x11';
         let preferredViewerMode = 'lite';
         let userSelectedBackendManually = false;
@@ -1519,6 +1608,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initLocalWs();
             initPwa();
+            initIndexFloatingVncDragging();
             
             // Sondeo periódico de ping / estado cada 3s
             if (pingInterval) clearInterval(pingInterval);
@@ -1604,7 +1694,7 @@
 
         function initLocalWs() {
             const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${proto}//${window.location.host}/ws/local`;
+            const wsUrl = `${proto}//${window.location.host}${apiPath('/ws/local')}`;
             try {
                 if (localWs) {
                     try { localWs.close(); } catch(e){}
@@ -1710,7 +1800,7 @@
             }
             // Fallback REST si WebSocket no está conectado
             try {
-                const res = await fetch('/api/status');
+                const res = await fetch(apiPath('/api/status'));
                 if (!res.ok) throw new Error('Servidor local offline');
                 const data = await res.json();
                 lastStatusData = data;
@@ -1742,6 +1832,13 @@
                     document.querySelectorAll('.segment-btn').forEach(el => el.classList.remove('active'));
                     const activeSeg = document.getElementById(`seg-${selectedBackend}`);
                     if (activeSeg) activeSeg.classList.add('active');
+                }
+
+                if (data.version && data.version.version) {
+                    const badge = document.getElementById('lblHeaderVersion');
+                    if (badge) badge.innerText = `v${data.version.version}`;
+                    const fBadge = document.getElementById('lblFooterVersionBadge');
+                    if (fBadge) fBadge.innerText = `v${data.version.version}`;
                 }
 
                 const lanIp = data.network?.lan_ip || '127.0.0.1';
@@ -2064,10 +2161,10 @@
             const btnNewTab = document.getElementById('btnAccordionNewTab');
             const btnOpen = document.getElementById('btnAccordionOpenLocal');
 
-            const fullUrl = `${proto}//${host}:${port}/novnc/vnc_lite.html?autoconnect=true`;
+            const fullUrl = `${proto}//${host}${port ? (":" + port) : ""}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify`;
             if (ico) { ico.innerText = 'language'; ico.style.color = '#a8c7fa'; }
             if (title) title.innerText = 'Visor Web noVNC (HTML5)';
-            if (sub) sub.innerText = `Acceso a pantalla gráfica en red LAN: ${host}:${port}`;
+            if (sub) sub.innerText = `Acceso a pantalla gráfica en red LAN: ${host}${port ? (":" + port) : ""}`;
             if (txtUrl) { txtUrl.innerText = fullUrl; txtUrl.style.color = '#6dd58c'; }
             if (btnNewTab) btnNewTab.href = fullUrl;
             if (btnOpen) {
@@ -2292,7 +2389,7 @@
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('cancel_install');
                 } else {
-                    const res = await fetch('/api/install/cancel', { method: 'POST' });
+                    const res = await fetch(apiPath('/api/install/cancel'), { method: 'POST' });
                     await res.json();
                 }
                 showToast('Instalación cancelada y revertida con éxito.', 'check_circle');
@@ -2307,7 +2404,7 @@
         async function apiRequestAndroidPermissions() {
             try {
                 showToast('Solicitando permisos de Android en tu móvil...', 'smartphone');
-                const res = await fetch('/api/system/permissions', { method: 'POST' });
+                const res = await fetch(apiPath('/api/system/permissions'), { method: 'POST' });
                 const d = await res.json();
                 if (d.success) {
                     showToast(d.message || 'Pantalla de permisos abierta en tu móvil', 'check_circle');
@@ -2333,14 +2430,14 @@
                     if (localWs && localWs.readyState === WebSocket.OPEN) {
                         await sendWsRpc('stop_screen');
                     } else {
-                        await fetch('/api/screen/stop', { method: 'POST' });
+                        await fetch(apiPath('/api/screen/stop'), { method: 'POST' });
                     }
                 } catch(e) {}
 
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('install_desktop', { desktop: selectedDesktop });
                 } else {
-                    const res = await fetch('/api/install/desktop', {
+                    const res = await fetch(apiPath('/api/install/desktop'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ desktop: selectedDesktop })
@@ -2374,7 +2471,7 @@
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('uninstall_desktop', { desktop: targetDesktop });
                 } else {
-                    const res = await fetch('/api/uninstall/desktop', {
+                    const res = await fetch(apiPath('/api/uninstall/desktop'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ desktop: targetDesktop })
@@ -2406,7 +2503,7 @@
             if (logBox) logBox.innerText = `[TDM Update] Iniciando actualización del backend a ${cleanVer}...\n`;
 
             try {
-                const res = await fetch('/api/update', {
+                const res = await fetch(apiPath('/api/update'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
@@ -2432,16 +2529,52 @@
             }
         }
 
+        function getOptimalClientDisplay() {
+            const isMobile = isMobileDevice();
+            const isPortrait = window.innerHeight > window.innerWidth;
+            const dpr = window.devicePixelRatio || 1;
+
+            // Calcular resolución nativa según pantalla y orientación
+            let screenW = window.screen?.width || window.innerWidth || 1080;
+            let screenH = window.screen?.height || window.innerHeight || 2400;
+
+            let realW = Math.round(screenW * dpr);
+            let realH = Math.round(screenH * dpr);
+
+            if (isMobile) {
+                // Para smartphones en vertical (ej. POCO F3 1080x2400)
+                if (isPortrait) {
+                    const w = Math.min(realW, realH);
+                    const h = Math.max(realW, realH);
+                    // DPI 160 permite que botones y textos de XFCE tengan un tamaño táctil ideal en smartphones
+                    const dpi = dpr >= 2.5 ? 160 : dpr >= 1.75 ? 140 : 120;
+                    return { resolution: `${w}x${h}`, dpi: dpi, isMobile: true, orientation: 'portrait' };
+                } else {
+                    // Smartphone en horizontal (ej. 2400x1080)
+                    const w = Math.max(realW, realH);
+                    const h = Math.min(realW, realH);
+                    const dpi = dpr >= 2.5 ? 140 : 120;
+                    return { resolution: `${w}x${h}`, dpi: dpi, isMobile: true, orientation: 'landscape' };
+                }
+            }
+
+            // Para PC / Escritorio
+            const w = (realW >= 1280 && realW <= 3840) ? realW : 1920;
+            const h = (realH >= 720 && realH <= 2160) ? realH : 1080;
+            return { resolution: `${w}x${h}`, dpi: 96, isMobile: false, orientation: 'desktop' };
+        }
+
         async function apiStartScreen() {
-            showToast(`Iniciando ${selectedBackend.toUpperCase()}...`, 'rocket_launch');
+            const optDisplay = getOptimalClientDisplay();
+            showToast(`Iniciando ${selectedBackend.toUpperCase()} (${optDisplay.resolution})...`, 'rocket_launch');
             const payload = {
                 backend: selectedBackend,
                 mode: 'desktop',
                 desktop: selectedDesktop,
-                resolution: '1080x2400',
-                dpi: 96,
+                resolution: optDisplay.resolution,
+                dpi: optDisplay.dpi,
                 audio: true,
-                virgl: true
+                virgl: false
             };
             try {
                 let d;
@@ -2449,7 +2582,7 @@
                     const res = await sendWsRpc('start_screen', payload);
                     d = res.data || res;
                 } else {
-                    const res = await fetch('/api/screen/start', {
+                    const res = await fetch(apiPath('/api/screen/start'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -2458,7 +2591,7 @@
                 }
 
                 if (d.status === 'running' || d.started || d.server_pid) {
-                    showToast('¡Pantalla Iniciada con éxito!', 'check_circle');
+                    showToast(`¡Pantalla Iniciada (${optDisplay.resolution})!`, 'check_circle');
                     if (selectedBackend === 'novnc') {
                         setTimeout(() => openWebViewer(), 600);
                     }
@@ -2478,7 +2611,7 @@
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('stop_screen');
                 } else {
-                    await fetch('/api/screen/stop', { method: 'POST' });
+                    await fetch(apiPath('/api/screen/stop'), { method: 'POST' });
                 }
                 showToast('Pantalla Detenida al 100%', 'check_circle');
                 refreshStatus();
@@ -2495,7 +2628,7 @@
                 if (localWs && localWs.readyState === WebSocket.OPEN) {
                     await sendWsRpc('stop_service');
                 } else {
-                    await fetch('/api/service/stop', { method: 'POST' });
+                    await fetch(apiPath('/api/service/stop'), { method: 'POST' });
                 }
                 showToast('Entornos y procesos apagados al 100%', 'check_circle');
                 refreshStatus();
@@ -2535,16 +2668,241 @@
             sendIframeVncAction('set_scale', { scale: scaleVal });
         }
 
-        function toggleVncDropdownMenu() {
+        let currentUiScale = 2;
+        async function toggleDesktopUiScale() {
+            currentUiScale = (currentUiScale === 2) ? 1 : 2;
+            showToast(`Cambiando tamaño de interfaz a ${currentUiScale}x...`, 'aspect_ratio');
+            try {
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    await sendWsRpc('set_desktop_scale', { scale: currentUiScale });
+                } else {
+                    await fetch(apiPath('/api/screen/scale'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scale: currentUiScale })
+                    });
+                }
+                showToast(`Interfaz escalada a ${currentUiScale}x con éxito`, 'check_circle');
+            } catch(e) {
+                showToast('Error al escalar UI de escritorio', 'error');
+            }
+        }
+
+        async function switchDisplayProfile(profile) {
+            closeVncDropdown();
+            if (profile === 'pc') {
+                showToast('Cambiando a Perfil PC (1920x1080 @ UI 1x)...', 'computer');
+                await apiStartScreenWithOptions('1920x1080', 96);
+            } else if (profile === 'mobile') {
+                showToast('Cambiando a Perfil Móvil (1080x2400 @ UI 2x)...', 'smartphone');
+                await apiStartScreenWithOptions('1080x2400', 160);
+            }
+        }
+
+        async function apiStartScreenWithOptions(resolution, dpi) {
+            const payload = {
+                backend: selectedBackend,
+                mode: 'desktop',
+                desktop: selectedDesktop,
+                resolution: resolution,
+                dpi: dpi,
+                audio: true,
+                virgl: false
+            };
+            try {
+                let d;
+                if (localWs && localWs.readyState === WebSocket.OPEN) {
+                    const res = await sendWsRpc('start_screen', payload);
+                    d = res.data || res;
+                } else {
+                    const res = await fetch(apiPath('/api/screen/start'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    d = await res.json();
+                }
+                showToast(`Perfil aplicado (${resolution})`, 'check_circle');
+                setTimeout(() => openWebViewer(), 600);
+            } catch(e) {
+                showToast('Error al aplicar perfil de pantalla', 'error');
+            }
+        }
+
+        let isDraggingIndexPill = false;
+        let startXIndex = 0, startYIndex = 0, origXIndex = 0, origYIndex = 0;
+        let indexPillMoved = false;
+        let currentIndexPillEdge = 'right';
+        let indexPillDockTimer = null;
+
+        function expandIndexPill() {
+            const pill = document.getElementById('floatingVncControl');
+            if (!pill) return;
+            clearTimeout(indexPillDockTimer);
+            pill.classList.remove('docked-left', 'docked-right');
+            pill.classList.add('expanded');
+        }
+
+        function scheduleIndexPillDock(delay = 3500) {
+            clearTimeout(indexPillDockTimer);
             const menu = document.getElementById('vncDropdownMenu');
-            if (menu) {
-                menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+            if (menu && menu.style.display === 'flex') return;
+
+            indexPillDockTimer = setTimeout(() => {
+                const pill = document.getElementById('floatingVncControl');
+                if (!pill) return;
+                const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+                if (!isFs) return;
+
+                pill.classList.remove('expanded');
+                if (currentIndexPillEdge === 'left') {
+                    pill.classList.add('docked-left');
+                } else {
+                    pill.classList.add('docked-right');
+                }
+            }, delay);
+        }
+
+        function initIndexFloatingVncDragging() {
+            const pill = document.getElementById('floatingVncControl');
+            if (!pill) return;
+
+            function onStart(e) {
+                isDraggingIndexPill = true;
+                indexPillMoved = false;
+                expandIndexPill();
+                pill.style.transition = 'none';
+
+                const pt = e.touches ? e.touches[0] : e;
+                startXIndex = pt.clientX;
+                startYIndex = pt.clientY;
+
+                const rect = pill.getBoundingClientRect();
+                origXIndex = rect.left;
+                origYIndex = rect.top;
+            }
+
+            function onMove(e) {
+                if (!isDraggingIndexPill) return;
+                const pt = e.touches ? e.touches[0] : e;
+                const dx = pt.clientX - startXIndex;
+                const dy = pt.clientY - startYIndex;
+
+                if (Math.hypot(dx, dy) > 8) {
+                    indexPillMoved = true;
+                }
+
+                if (indexPillMoved) {
+                    if (e.cancelable) e.preventDefault();
+                    let curX = origXIndex + dx;
+                    let curY = origYIndex + dy;
+
+                    const pillW = pill.offsetWidth;
+                    const pillH = pill.offsetHeight;
+                    curX = Math.max(0, Math.min(window.innerWidth - pillW, curX));
+                    curY = Math.max(4, Math.min(window.innerHeight - pillH - 4, curY));
+
+                    pill.style.left = curX + 'px';
+                    pill.style.top = curY + 'px';
+                    pill.style.right = 'auto';
+                    pill.style.bottom = 'auto';
+                }
+            }
+
+            function onEnd(e) {
+                if (!isDraggingIndexPill) return;
+                isDraggingIndexPill = false;
+
+                const rect = pill.getBoundingClientRect();
+                const pillW = pill.offsetWidth;
+                const pillH = pill.offsetHeight;
+                const centerX = rect.left + pillW / 2;
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+
+                pill.style.transition = 'left 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), top 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease';
+
+                let targetX;
+                if (centerX < screenW / 2) {
+                    targetX = 0;
+                    currentIndexPillEdge = 'left';
+                } else {
+                    targetX = screenW - pillW;
+                    currentIndexPillEdge = 'right';
+                }
+
+                let targetY = Math.max(8, Math.min(screenH - pillH - 8, rect.top));
+
+                pill.style.left = targetX + 'px';
+                pill.style.top = targetY + 'px';
+                pill.style.right = 'auto';
+                pill.style.bottom = 'auto';
+
+                scheduleIndexPillDock(3500);
+
+                setTimeout(() => { indexPillMoved = false; }, 50);
+            }
+
+            pill.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove, { passive: false });
+            window.addEventListener('mouseup', onEnd);
+
+            pill.addEventListener('touchstart', onStart, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: false });
+            window.addEventListener('touchend', onEnd);
+            window.addEventListener('touchcancel', onEnd);
+
+            pill.addEventListener('mouseenter', expandIndexPill);
+            pill.addEventListener('mouseleave', () => scheduleIndexPillDock(2500));
+        }
+
+        function toggleVncDropdownMenu(e) {
+            if (indexPillMoved) return;
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            expandIndexPill();
+            clearTimeout(indexPillDockTimer);
+
+            const menu = document.getElementById('vncDropdownMenu');
+            if (!menu) return;
+
+            const isShown = (menu.style.display === 'flex');
+            if (isShown) {
+                menu.style.display = 'none';
+                scheduleIndexPillDock(3000);
+            } else {
+                const btn = (e && e.currentTarget) ? e.currentTarget : (document.getElementById('btnFloatingVncMore') || document.getElementById('btnVncMoreMenu'));
+                const rect = btn ? btn.getBoundingClientRect() : { right: window.innerWidth - 10, left: 10, top: 20, bottom: 50 };
+                const menuW = 200;
+                const screenW = window.innerWidth;
+                const screenH = window.innerHeight;
+
+                menu.style.display = 'flex';
+                const menuH = menu.offsetHeight || 260;
+
+                if (rect.right + menuW > screenW) {
+                    menu.style.left = Math.max(8, rect.right - menuW) + 'px';
+                } else if (rect.left < 8) {
+                    menu.style.left = '8px';
+                } else {
+                    menu.style.left = Math.max(8, rect.left) + 'px';
+                }
+                menu.style.right = 'auto';
+
+                if (rect.bottom + menuH > screenH) {
+                    menu.style.top = Math.max(8, rect.top - menuH - 4) + 'px';
+                } else {
+                    menu.style.top = (rect.bottom + 6) + 'px';
+                }
             }
         }
 
         function closeVncDropdown() {
             const menu = document.getElementById('vncDropdownMenu');
             if (menu) menu.style.display = 'none';
+            scheduleIndexPillDock(3000);
         }
 
         // Cerrar menú emergente al tocar/hacer clic fuera
@@ -2555,6 +2913,7 @@
             if (menu && menu.style.display === 'flex') {
                 if (!menu.contains(e.target) && !btnMore?.contains(e.target) && !floating?.contains(e.target)) {
                     menu.style.display = 'none';
+                    scheduleIndexPillDock(3000);
                 }
             }
         });
@@ -2569,6 +2928,12 @@
                 if (dot) {
                     dot.className = "status-dot " + (data.state === 'online' ? 'online' : data.state === 'offline' ? 'offline' : '');
                 }
+                if (data.state === 'online') {
+                    const sel = document.getElementById('selVncScale');
+                    const defaultVal = isMobileDevice() ? 'fill' : 'auto';
+                    const chosen = (sel && sel.value) ? sel.value : defaultVal;
+                    changeVncScale(chosen);
+                }
             }
         });
 
@@ -2579,21 +2944,46 @@
 
         function openWebViewer(ip) {
             const host = ip || window.location.hostname || '127.0.0.1';
-            const port = window.location.port || 19050;
+            let port = window.location.port;
+            if (!port && window.location.protocol !== 'https:') {
+                port = '19050';
+            }
+            const isMobile = isMobileDevice();
             const isLite = (preferredViewerMode === 'lite');
             const page = isLite ? 'vnc_lite.html' : 'vnc.html';
-            const extraParams = isLite ? '&scale=true&resize=true&embedded=true' : '&resize=remote&autoconnect=true&embedded=true';
-            const url = `/novnc/${page}?host=${host}&port=${port}&path=websockify${extraParams}`;
+            const wsPrefix = BASE_PATH ? (BASE_PATH.replace(/^\/+|\/+$/g, '') + '/') : '';
+            const resizeVal = isMobile ? 'false' : 'true';
+            const scaleMode = isMobile ? 'fill' : 'dynamic';
+            const extraParams = isLite ? `&scale=true&resize=${resizeVal}&scale_mode=${scaleMode}&embedded=true` : `&resize=${isMobile ? 'false' : 'remote'}&autoconnect=true&embedded=true`;
+            const portParam = port ? `&port=${port}` : '';
+            const url = `${BASE_PATH}/novnc/${page}?host=${host}${portParam}&path=${wsPrefix}websockify${extraParams}`;
 
             const selScale = document.getElementById('selVncScale');
-            if (selScale) selScale.value = 'auto';
+            if (selScale) {
+                selScale.value = isMobile ? 'fill' : 'dynamic';
+            }
+
+            // Si es PC, asegurar que la UI del escritorio esté en 1x para máxima nitidez y espacio
+            if (!isMobile) {
+                try {
+                    if (localWs && localWs.readyState === WebSocket.OPEN) {
+                        sendWsRpc('set_desktop_scale', { scale: 1 });
+                    } else {
+                        fetch(apiPath('/api/screen/scale'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ scale: 1 })
+                        });
+                    }
+                } catch(e){}
+            }
 
             const ifr = document.getElementById('novncIframe');
             ifr.onload = () => {
                 const sel = document.getElementById('selVncScale');
-                if (sel && sel.value !== 'auto') {
-                    changeVncScale(sel.value);
-                }
+                const defaultVal = isMobile ? 'fill' : 'dynamic';
+                const chosen = (sel && sel.value) ? sel.value : defaultVal;
+                changeVncScale(chosen);
             };
             ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
@@ -2620,12 +3010,12 @@
                 : (window.location.hostname || '127.0.0.1');
             const port = window.location.port || '19050';
             const proto = window.location.protocol || 'http:';
-            const url = `/terminal/`;
+            const url = `${BASE_PATH}/terminal/`;
 
             const ifr = document.getElementById('termIframe');
             if (ifr) ifr.src = url;
             const lnk = document.getElementById('lnkOpenTermNewTab');
-            if (lnk) lnk.href = `${proto}//${host}:${port}/terminal/`;
+            if (lnk) lnk.href = `${proto}//${host}:${port}${BASE_PATH}/terminal/`;
 
             document.getElementById('webTerminalModal').classList.add('active');
         }
@@ -2667,19 +3057,22 @@
 
         function updateFullscreenUI() {
             const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            const isMob = isMobileDevice();
             const header = document.getElementById('vncModalHeader');
             const floating = document.getElementById('floatingVncControl');
             const icoFs = document.querySelector('#btnModalFullscreen .material-symbols-rounded');
 
-            if (isMob) {
-                // En móvil: en pantalla completa ocultar barra superior y mostrar botón flotante
-                if (header) header.style.display = isFs ? 'none' : 'flex';
-                if (floating) floating.style.display = isFs ? 'flex' : 'none';
-            } else {
-                // En PC/Desktop: la barra superior SIEMPRE visible, el botón flotante NUNCA visible
-                if (header) header.style.display = 'flex';
-                if (floating) floating.style.display = 'none';
+            // En pantalla completa (tanto en PC como en Móvil): ocultar la barra superior fija al 100%
+            if (header) header.style.display = isFs ? 'none' : 'flex';
+            // Y mostrar el botón flotante minimalista para salir o configurar
+            if (floating) {
+                floating.style.display = isFs ? 'flex' : 'none';
+                if (isFs) {
+                    expandIndexPill();
+                    scheduleIndexPillDock(4000);
+                } else {
+                    floating.classList.remove('docked-left', 'docked-right', 'expanded');
+                    closeVncDropdown();
+                }
             }
 
             if (icoFs) {
@@ -2708,7 +3101,9 @@
                         window.location.reload();
                     }
                 });
-                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                const swPath = apiPath('/sw.js');
+                const swScope = BASE_PATH ? `${BASE_PATH}/` : '/';
+                navigator.serviceWorker.register(swPath, { scope: swScope }).then((reg) => {
                     reg.update().catch(() => {});
                 }).catch(() => {});
             }
@@ -2768,10 +3163,10 @@
 
         async function fetchVersion() {
             try {
-                const resp = await fetch('/api/version');
+                const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.59';
+                    const curVer = res.version || '0.0.63';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

@@ -42,7 +42,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~1.6 GB",
         "ram_usage": "~250 MB",
         "exec_candidates": ["mate-session"],
-        "packages": ["mate-desktop", "mate-session-manager", "mate-panel", "mate-terminal"],
+        "packages": ["mate-desktop", "mate-session-manager", "mate-panel", "mate-terminal", "mate-settings-daemon", "marco", "caja"],
         "icon": "mate",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "MATE",
@@ -58,7 +58,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~1.2 GB",
         "ram_usage": "~150 MB",
         "exec_candidates": ["xfce4-session", "startxfce4"],
-        "packages": ["xfce4", "xfce4-terminal", "thunar"],
+        "packages": ["xfce4", "xfce4-terminal", "thunar", "libxres"],
         "icon": "xfce",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "XFCE",
@@ -89,7 +89,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~350 MB",
         "ram_usage": "~50 MB",
         "exec_candidates": ["i3"],
-        "packages": ["i3", "i3status", "dmenu", "xterm"],
+        "packages": ["i3", "i3status", "dmenu", "aterm"],
         "icon": "i3",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "i3",
@@ -104,7 +104,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~450 MB",
         "ram_usage": "~70 MB",
         "exec_candidates": ["openbox-session", "openbox"],
-        "packages": ["openbox", "obconf", "tint2", "xterm"],
+        "packages": ["openbox", "obconf-qt", "tint2", "aterm"],
         "icon": "openbox",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "OPENBOX",
@@ -116,8 +116,8 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "name": "Modo Terminal X11 (Ultraligero)",
         "type": "terminal",
         "description": "Sesión gráfica pura ejecutando emulador de terminal a pantalla completa.",
-        "exec_candidates": ["konsole", "mate-terminal", "xfce4-terminal", "qterminal", "xterm"],
-        "packages": ["xterm"],
+        "exec_candidates": ["aterm", "st", "xfce4-terminal", "mate-terminal", "qterminal", "konsole", "xterm"],
+        "packages": ["aterm"],
         "icon": "terminal",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "TERMINAL",
