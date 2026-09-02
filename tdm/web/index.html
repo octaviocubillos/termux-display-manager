@@ -402,15 +402,23 @@
             flex-direction: column;
             justify-content: space-between;
             gap: 0.25rem;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 0;
             overflow: hidden;
             box-sizing: border-box;
+            cursor: pointer;
+            position: relative;
         }
 
         .telemetry-card:hover {
-            border-color: rgba(168, 199, 250, 0.3);
-            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(168, 199, 250, 0.45);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .telemetry-card:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .telemetry-card-header {
@@ -481,39 +489,84 @@
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 8px;
-            padding: 0.25rem 0.35rem;
+            padding: 0.35rem 0.45rem;
             display: flex;
             flex-direction: column;
             gap: 0.1rem;
         }
 
+        /* MODAL POPUP DE TELEMETRÍA DETALLADA */
+        .telemetry-modal-card {
+            max-width: 520px;
+            padding: 1.35rem 1.4rem;
+            background: rgba(18, 24, 38, 0.98);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: var(--md-shape-corner-xl);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+        }
+
+        .telemetry-detail-card {
+            background: rgba(0, 0, 0, 0.32);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 0.8rem 0.9rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            transition: all 0.3s ease;
+        }
+
+        .telemetry-detail-card.highlighted {
+            border-color: rgba(96, 165, 250, 0.6);
+            background: rgba(59, 130, 246, 0.12);
+            box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+            transform: scale(1.01);
+        }
+
         @media (max-width: 600px) {
             .telemetry-grid {
                 grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                gap: 0.25rem !important;
+                gap: 0.35rem !important;
             }
             .telemetry-card {
-                padding: 0.4rem 0.25rem !important;
-                border-radius: 8px !important;
+                padding: 0.5rem 0.25rem !important;
+                border-radius: 10px !important;
                 gap: 0.15rem !important;
+                text-align: center !important;
+                align-items: center !important;
+                justify-content: center !important;
             }
             .telemetry-card-header {
-                font-size: 0.62rem !important;
+                justify-content: center !important;
+                font-size: 0.66rem !important;
                 gap: 0.15rem !important;
             }
             .telemetry-card-header .material-symbols-rounded {
-                font-size: 0.78rem !important;
+                font-size: 0.85rem !important;
+            }
+            .telemetry-card-header span:last-child {
+                display: none !important;
             }
             .telemetry-card-value {
-                font-size: 0.76rem !important;
+                font-size: 0.85rem !important;
                 font-weight: 800 !important;
+                margin: 0.05rem 0 !important;
             }
             .telemetry-progress-bg {
                 height: 3px !important;
                 margin: 0.05rem 0 !important;
+                width: 90% !important;
             }
             .telemetry-card-sub {
-                font-size: 0.56rem !important;
+                display: none !important;
+            }
+            .telemetry-modal-card {
+                width: 95% !important;
+                max-width: 95% !important;
+                padding: 1.15rem 1rem !important;
+                border-radius: 18px !important;
             }
         }
 
@@ -1057,7 +1110,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.73</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.74</span>
                                 <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
                                     <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
                                     <span id="txtBatteryVal">--%</span>
@@ -1095,7 +1148,7 @@
                 <!-- TELEMETRY METRICS GRID (CPU, RAM, DISCO, RED - 4 EN LA MISMA FILA) -->
                 <div class="telemetry-grid" id="boxTelemetryGrid">
                     <!-- CPU -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="openTelemetryModal('cpu')" title="Toca para ver detalles de CPU">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.2rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #60a5fa;">memory</span>
@@ -1111,7 +1164,7 @@
                     </div>
 
                     <!-- RAM -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="openTelemetryModal('ram')" title="Toca para ver detalles de RAM">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.2rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #4ade80;">view_in_ar</span>
@@ -1127,7 +1180,7 @@
                     </div>
 
                     <!-- STORAGE -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="openTelemetryModal('storage')" title="Toca para ver detalles de Almacenamiento">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.2rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #fde047;">storage</span>
@@ -1143,7 +1196,7 @@
                     </div>
 
                     <!-- NETWORK & PING -->
-                    <div class="telemetry-card">
+                    <div class="telemetry-card" onclick="openTelemetryModal('network')" title="Toca para ver detalles de Red y Conectividad">
                         <div class="telemetry-card-header">
                             <span style="display: flex; align-items: center; gap: 0.2rem;">
                                 <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #38bdf8;">wifi</span>
@@ -1627,6 +1680,142 @@
         </div>
     </div>
 
+    <!-- POPUP / MODAL DE DETALLES DE TELEMETRÍA -->
+    <div class="modal-overlay" id="telemetryDetailModal" onclick="if (event.target === this) closeTelemetryModal()">
+        <div class="modal-card telemetry-modal-card">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.65rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="display: flex; align-items: center; gap: 0.55rem;">
+                    <div style="width: 34px; height: 34px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #60a5fa;">
+                        <span class="material-symbols-rounded" style="font-size: 1.25rem;">analytics</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.92rem; font-weight: 800; color: #fff;">Telemetría del Sistema</div>
+                        <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);" id="txtModalTelemetrySub">Métricas de hardware y red en tiempo real</div>
+                    </div>
+                </div>
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="closeTelemetryModal()" title="Cerrar">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+
+            <!-- Modal Content: Detalle de las 4 métricas -->
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 68vh; overflow-y: auto; padding-right: 0.2rem; margin-top: 0.35rem;">
+                <!-- CPU Detail Card -->
+                <div class="telemetry-detail-card" id="detailCardCpu">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #60a5fa; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" style="font-size: 1.05rem;">memory</span>
+                            <span>Procesador (CPU)</span>
+                        </span>
+                        <span id="txtModalCpuVal" style="font-size: 0.88rem; font-weight: 800; color: #fff;">--%</span>
+                    </div>
+                    <div class="telemetry-progress-bg" style="height: 5px; margin-bottom: 0.45rem;">
+                        <div class="telemetry-progress-fill" id="barModalCpu" style="width: 0%; background: #60a5fa;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; text-align: center;">
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Temperatura</span>
+                            <strong id="txtModalCpuTemp" style="font-size: 0.72rem; color: #cbd5e1;">--°C</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Núcleos</span>
+                            <strong id="txtModalCpuCores" style="font-size: 0.72rem; color: #cbd5e1;">-- Cores</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Arquitectura</span>
+                            <strong id="txtModalCpuArch" style="font-size: 0.72rem; color: #cbd5e1;">ARM64</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RAM Detail Card -->
+                <div class="telemetry-detail-card" id="detailCardRam">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #4ade80; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" style="font-size: 1.05rem;">view_in_ar</span>
+                            <span>Memoria RAM</span>
+                        </span>
+                        <span id="txtModalRamPct" style="font-size: 0.88rem; font-weight: 800; color: #fff;">--%</span>
+                    </div>
+                    <div class="telemetry-progress-bg" style="height: 5px; margin-bottom: 0.45rem;">
+                        <div class="telemetry-progress-fill" id="barModalRam" style="width: 0%; background: #4ade80;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; text-align: center;">
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">En Uso</span>
+                            <strong id="txtModalRamUsed" style="font-size: 0.72rem; color: #cbd5e1;">-- MB</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Disponible</span>
+                            <strong id="txtModalRamFree" style="font-size: 0.72rem; color: #cbd5e1;">-- MB</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Total</span>
+                            <strong id="txtModalRamTotal" style="font-size: 0.72rem; color: #cbd5e1;">-- MB</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DISCO Detail Card -->
+                <div class="telemetry-detail-card" id="detailCardStorage">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #fde047; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" style="font-size: 1.05rem;">storage</span>
+                            <span>Almacenamiento (Disco)</span>
+                        </span>
+                        <span id="txtModalStoragePct" style="font-size: 0.88rem; font-weight: 800; color: #fff;">--%</span>
+                    </div>
+                    <div class="telemetry-progress-bg" style="height: 5px; margin-bottom: 0.45rem;">
+                        <div class="telemetry-progress-fill" id="barModalStorage" style="width: 0%; background: #fde047;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; text-align: center;">
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Espacio Usado</span>
+                            <strong id="txtModalStorageUsed" style="font-size: 0.72rem; color: #cbd5e1;">-- GB</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Espacio Libre</span>
+                            <strong id="txtModalStorageFree" style="font-size: 0.72rem; color: #cbd5e1;">-- GB</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Capacidad</span>
+                            <strong id="txtModalStorageTotal" style="font-size: 0.72rem; color: #cbd5e1;">-- GB</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RED Detail Card -->
+                <div class="telemetry-detail-card" id="detailCardNetwork">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                        <span style="font-weight: 700; font-size: 0.8rem; color: #38bdf8; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" style="font-size: 1.05rem;">wifi</span>
+                            <span>Red & Conectividad</span>
+                        </span>
+                        <span id="txtModalPingVal" style="font-size: 0.88rem; font-weight: 800; color: #4ade80;">--</span>
+                    </div>
+                    <div class="telemetry-progress-bg" style="height: 5px; margin-bottom: 0.45rem;">
+                        <div class="telemetry-progress-fill" id="barModalNet" style="width: 100%; background: #38bdf8;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; text-align: center;">
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Dirección IP</span>
+                            <strong id="txtModalLanIp" style="font-size: 0.7rem; color: #cbd5e1; word-break: break-all;">127.0.0.1</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Dispositivo</span>
+                            <strong id="txtModalDevModel" style="font-size: 0.7rem; color: #cbd5e1;">Android</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Estado Enlace</span>
+                            <strong id="txtModalNetStatus" style="font-size: 0.7rem; color: #4ade80;">Conectado</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div class="toast-box" id="toastBox">
         <span class="material-symbols-rounded filled" id="toastIco">info</span>
@@ -1972,6 +2161,12 @@
                 if (txtDevModelName) txtDevModelName.innerText = `${dev.brand || 'Android'} ${dev.model || ''}`.trim() || 'Android';
                 if (barPing) {
                     barPing.style.background = (clientPingMs !== null && clientPingMs > 150) ? '#f59e0b' : '#38bdf8';
+                }
+
+                // Sincronizar Popup de Telemetría si está abierto
+                const modalTelem = document.getElementById('telemetryDetailModal');
+                if (modalTelem && modalTelem.classList.contains('active')) {
+                    renderTelemetryModalDetails(data);
                 }
                 // 5. BATERÍA Y DISPOSITIVO FÍSICO
                 const bat = data.battery || (data.device_status && data.device_status.battery) || {};
@@ -3104,6 +3299,110 @@
             document.getElementById('webTerminalModal').classList.remove('active');
         }
 
+        function openTelemetryModal(targetMetric) {
+            const modal = document.getElementById('telemetryDetailModal');
+            if (!modal) return;
+            
+            // Renderizar datos actuales
+            renderTelemetryModalDetails(lastStatusData);
+            
+            // Resaltar tarjeta seleccionada
+            document.querySelectorAll('.telemetry-detail-card').forEach(el => el.classList.remove('highlighted'));
+            if (targetMetric) {
+                const map = {
+                    'cpu': 'detailCardCpu',
+                    'ram': 'detailCardRam',
+                    'storage': 'detailCardStorage',
+                    'network': 'detailCardNetwork'
+                };
+                const cardId = map[targetMetric];
+                const cardEl = document.getElementById(cardId);
+                if (cardEl) {
+                    cardEl.classList.add('highlighted');
+                    setTimeout(() => {
+                        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 100);
+                }
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeTelemetryModal() {
+            const modal = document.getElementById('telemetryDetailModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function renderTelemetryModalDetails(data) {
+            if (!data) return;
+            
+            // 1. CPU
+            const cpu = data.cpu || {};
+            const cpuPct = cpu.percent || 0;
+            const txtModalCpuVal = document.getElementById('txtModalCpuVal');
+            const barModalCpu = document.getElementById('barModalCpu');
+            const txtModalCpuTemp = document.getElementById('txtModalCpuTemp');
+            const txtModalCpuCores = document.getElementById('txtModalCpuCores');
+            const txtModalCpuArch = document.getElementById('txtModalCpuArch');
+            if (txtModalCpuVal) txtModalCpuVal.innerText = `${cpuPct}%`;
+            if (barModalCpu) {
+                barModalCpu.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
+                barModalCpu.style.background = cpuPct > 85 ? '#ef4444' : cpuPct > 65 ? '#f59e0b' : '#60a5fa';
+            }
+            if (txtModalCpuTemp) txtModalCpuTemp.innerText = cpu.temperature_formatted || (cpu.temperature ? `${cpu.temperature}°C` : '--°C');
+            if (txtModalCpuCores) txtModalCpuCores.innerText = `${cpu.cores || 8} Cores`;
+            if (txtModalCpuArch) txtModalCpuArch.innerText = cpu.model ? (cpu.model.length > 18 ? cpu.model.substring(0, 18) + '…' : cpu.model) : (cpu.architecture || 'ARM64');
+
+            // 2. RAM
+            const mem = data.memory || {};
+            const txtModalRamPct = document.getElementById('txtModalRamPct');
+            const barModalRam = document.getElementById('barModalRam');
+            const txtModalRamUsed = document.getElementById('txtModalRamUsed');
+            const txtModalRamFree = document.getElementById('txtModalRamFree');
+            const txtModalRamTotal = document.getElementById('txtModalRamTotal');
+            const ramPct = mem.percent || 0;
+            if (txtModalRamPct) txtModalRamPct.innerText = `${ramPct}%`;
+            if (barModalRam) {
+                barModalRam.style.width = `${Math.min(100, Math.max(0, ramPct))}%`;
+                barModalRam.style.background = ramPct > 85 ? '#ef4444' : '#4ade80';
+            }
+            if (txtModalRamUsed) txtModalRamUsed.innerText = `${mem.used_mb || 0} MB`;
+            if (txtModalRamFree) txtModalRamFree.innerText = `${mem.available_mb || 0} MB`;
+            if (txtModalRamTotal) txtModalRamTotal.innerText = `${mem.total_mb || 0} MB`;
+
+            // 3. STORAGE
+            const storage = data.storage || {};
+            const storagePct = storage.percent || 0;
+            const txtModalStoragePct = document.getElementById('txtModalStoragePct');
+            const barModalStorage = document.getElementById('barModalStorage');
+            const txtModalStorageUsed = document.getElementById('txtModalStorageUsed');
+            const txtModalStorageFree = document.getElementById('txtModalStorageFree');
+            const txtModalStorageTotal = document.getElementById('txtModalStorageTotal');
+            if (txtModalStoragePct) txtModalStoragePct.innerText = `${storagePct}%`;
+            if (barModalStorage) {
+                barModalStorage.style.width = `${Math.min(100, Math.max(0, storagePct))}%`;
+                barModalStorage.style.background = storagePct > 85 ? '#ef4444' : '#fde047';
+            }
+            if (txtModalStorageUsed) txtModalStorageUsed.innerText = `${storage.used_gb || 0} GB`;
+            if (txtModalStorageFree) txtModalStorageFree.innerText = `${storage.free_gb || 0} GB`;
+            if (txtModalStorageTotal) txtModalStorageTotal.innerText = `${storage.total_gb || 0} GB`;
+
+            // 4. NETWORK & DEV
+            const dev = data.device || {};
+            const net = data.network || {};
+            const txtModalPingVal = document.getElementById('txtModalPingVal');
+            const barModalNet = document.getElementById('barModalNet');
+            const txtModalLanIp = document.getElementById('txtModalLanIp');
+            const txtModalDevModel = document.getElementById('txtModalDevModel');
+            const txtModalNetStatus = document.getElementById('txtModalNetStatus');
+            const pingStr = isLocalHost ? 'Localhost' : (clientPingMs !== null ? `${clientPingMs} ms` : 'Activo');
+            if (txtModalPingVal) txtModalPingVal.innerText = pingStr;
+            if (barModalNet) barModalNet.style.background = (clientPingMs !== null && clientPingMs > 150) ? '#f59e0b' : '#38bdf8';
+            if (txtModalLanIp) txtModalLanIp.innerText = net.lan_ip || '127.0.0.1';
+            if (txtModalDevModel) txtModalDevModel.innerText = `${dev.brand || 'Android'} ${dev.model || ''}`.trim() || 'Android';
+            if (txtModalNetStatus) txtModalNetStatus.innerText = 'En Línea';
+        }
+
         function isMobileDevice() {
             return window.innerWidth < 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         }
@@ -3267,7 +3566,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.73';
+                    const curVer = res.version || '0.0.74';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');
