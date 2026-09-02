@@ -237,6 +237,17 @@ class PackageInstaller:
         norm = "xfce" if desktop in ["xfce", "xfce4"] else ("i3" if desktop in ["i3", "i3wm"] else desktop)
         self.active_target = norm
 
+        # Comprobar si el controlador 3D está instalado; si no, configurarlo automáticamente
+        try:
+            from tdm.core.gpu_manager import gpu_manager
+            if not gpu_manager.is_3d_installed():
+                self._broadcast_log("[*] Verificando hardware e instalando controlador 3D compatible...")
+                setup_3d_script = SCRIPTS_DIR / "setup_3d.sh"
+                if setup_3d_script.exists():
+                    await self.run_script("setup_3d.sh")
+        except Exception as e:
+            self._broadcast_log(f"[*] Verificación 3D: {e}")
+
         # Limpiar otros entornos previos antes de instalar el nuevo
         for other in ["xfce", "kde", "mate", "lxqt", "i3", "openbox", "terminal"]:
             if other != norm:

@@ -255,7 +255,11 @@ async def handle_agent(args):
     await agent.run()
 
 async def handle_install(args):
-    if getattr(args, "minimal", False) or getattr(args, "dependencies", False) or getattr(args, "full", False):
+    if getattr(args, "driver_3d", False) or getattr(args, "gpu", False):
+        print("🎮 [TDM] Detectando GPU y configurando controlador 3D...")
+        success = await installer_service.run_script("setup_3d.sh")
+        print("✅ Controlador 3D listo." if success else "❌ Error configurando controlador 3D.")
+    elif getattr(args, "minimal", False) or getattr(args, "dependencies", False) or getattr(args, "full", False):
         print("⚡ [TDM] Instalando dependencias y servidores gráficos...")
         success = await installer_service.run_script("install_server.sh", ["all"])
         print("✅ Dependencias listas." if success else "❌ Error instalando dependencias.")
@@ -498,6 +502,25 @@ async def handle_scale(args):
     print(f"✅ Escala {scale_factor}x configurada correctamente.")
     return {"success": True, "scale": scale_factor, "panel_size": panel_size}
 
+async def handle_3d(args):
+    from tdm.core.gpu_manager import gpu_manager
+    info = gpu_manager.get_gpu_info()
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(info, indent=2))
+        return
+    print("=====================================================")
+    print("🎮 [TDM] Estado del Controlador 3D y GPU")
+    print("=====================================================")
+    print(f"  • GPU Detectada: {info.get('gpu_model', 'N/A')} ({info.get('gpu_vendor', 'N/A')})")
+    print(f"  • Controlador:   {info.get('driver_name', 'N/A')}")
+    print(f"  • Estado:        {'✅ Instalado' if info.get('installed') else '❌ No instalado'}")
+    print(f"  • VirGL 3D:      {'✅ Compatible' if info.get('virgl_supported') else '❌ No compatible'}")
+    print("=====================================================")
+    if getattr(args, "install", False):
+        print("📦 Configurando controlador 3D...")
+        await installer_service.run_script("setup_3d.sh", ["--force"] if getattr(args, "force", False) else [])
+
 async def handle_cancel_install():
     print("🛑 [TDM] Cancelando instalación y revirtiendo paquetes...")
     res = await installer_service.cancel_and_revert()
@@ -511,6 +534,12 @@ def build_cli_parser():
     # tdm status
     status_parser = subparsers.add_parser("status", help="Muestra el estado de la pantalla y el entorno activo")
     status_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
+    # tdm 3d / gpu
+    gpu_parser = subparsers.add_parser("3d", aliases=["gpu"], help="Muestra y gestiona el controlador 3D de la GPU")
+    gpu_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+    gpu_parser.add_argument("--install", "-i", action="store_true", help="Instala el controlador 3D para la GPU detectada")
+    gpu_parser.add_argument("--force", "-f", action="store_true", help="Fuerza la reinstalación")
 
     # tdm scale [1|2]
     scale_parser = subparsers.add_parser("scale", help="Ajusta la escala de interfaz del escritorio (1 para PC, 2 para Móvil/HiDPI)")
@@ -584,6 +613,7 @@ def build_cli_parser():
     install_parser.add_argument("--dependencies", "-d", action="store_true", help="Alias de --minimal")
     install_parser.add_argument("--server", "-s", choices=["termux-x11", "novnc", "vnc", "rdp", "audio"], help="Instala un servidor gráfico específico")
     install_parser.add_argument("--desktop", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox"], help="Instala un escritorio específico")
+    install_parser.add_argument("--driver-3d", "--3d", "--gpu", dest="driver_3d", action="store_true", help="Instala el controlador de aceleración 3D para la GPU detectada")
     install_parser.add_argument("--full", "-f", action="store_true", help="Instala todos los servidores y utilidades")
     install_parser.add_argument("--cancel", "-c", action="store_true", help="Cancela y revierte la instalación en curso")
 
@@ -629,6 +659,12 @@ async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
     elif args.command in ["desktop", "env", "de"]:
         de = display_manager.get_installed_desktop()
         return {"success": True, "data": de}
+    elif args.command in ["3d", "gpu"]:
+        from tdm.core.gpu_manager import gpu_manager
+        if getattr(args, "install", False):
+            res = await installer_service.run_script("setup_3d.sh", ["--force"] if getattr(args, "force", False) else [])
+            return {"success": res, "data": gpu_manager.get_gpu_info()}
+        return {"success": True, "data": gpu_manager.get_gpu_info()}
     elif args.command == "status":
         st = display_manager.get_status()
         return {"success": True, "data": st}
@@ -688,6 +724,8 @@ def main():
 
     if args.command in ["desktop", "env", "de"]:
         handle_desktop(args)
+    elif args.command in ["3d", "gpu"]:
+        asyncio.run(handle_3d(args))
     elif args.command == "status":
         asyncio.run(handle_status(args))
     elif args.command == "scale":

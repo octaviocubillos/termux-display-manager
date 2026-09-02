@@ -340,9 +340,11 @@ class DisplayManager:
         from tdm.version import get_version_info
         from tdm.core.installer import installer_service
         from tdm.core.updater import get_cached_update_info
+        from tdm.core.gpu_manager import gpu_manager
         ver_info = get_version_info()
         installer_info = installer_service.get_status()
         update_info = get_cached_update_info()
+        gpu_info = gpu_manager.get_gpu_info()
 
         return {
             "installed_desktop": installed_de,
@@ -352,6 +354,7 @@ class DisplayManager:
             "cpu": cpu_info,
             "memory": mem_info,
             "storage": storage_info,
+            "gpu": gpu_info,
             "version": ver_info,
             "is_screen_active": is_screen_active,
             "active_screen": session_dict,
@@ -447,7 +450,13 @@ class DisplayManager:
             session.status = DisplayStatus.FAILED
             session.error_message = f"Fallo al iniciar el servidor {backend}"
             log_event("display", f"ERROR: Fallo al iniciar servidor {backend}", level="ERROR")
-            return session.to_dict()
+        # Iniciar servicio de aceleración 3D VirGL si está habilitado
+        if config.virgl:
+            try:
+                from tdm.core.gpu_manager import gpu_manager
+                await gpu_manager.start_3d_services(config.display_num)
+            except Exception as e:
+                log_event("display", f"Aviso al iniciar VirGL 3D: {e}")
 
         # 4. Construir y lanzar la sesión de escritorio (ej. openbox o xfce4) sobre el Display
         session_script = build_session_script(config.display_num, config.desktop_id, config.custom_command, backend=config.backend, dpi=config.dpi)
@@ -557,12 +566,19 @@ class DisplayManager:
             except Exception:
                 pass
 
+        # 4. Detener servicios de aceleración 3D VirGL
+        try:
+            from tdm.core.gpu_manager import gpu_manager
+            await gpu_manager.stop_3d_services()
+        except Exception:
+            pass
+
         # 4. Barrido de respaldo con pkill por nombres exactos de proceso (-x)
         exact_procs = [
             "xfce4-session", "xfce4-panel", "xfwm4", "xfdesktop", "thunar", "wrapper-2.0", "xfsettingsd",
             "plasmashell", "startplasma-x11", "kwin_x11", "mate-session", "mate-panel", "marco", "caja",
             "startlxqt", "lxqt-session", "pcmanfm-qt", "lxqt-panel", "openbox", "i3", "i3bar", "i3status",
-            "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server", "pulseaudio", "xsetroot",
+            "termux-x11", "Xvnc", "xrdp", "websockify", "virgl_test_server", "virgl_test_server_android", "pulseaudio", "xsetroot",
             "aterm", "xterm", "qterminal", "mate-terminal", "xfce4-terminal", "konsole"
         ]
         for proc in exact_procs:

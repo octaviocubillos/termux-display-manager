@@ -63,8 +63,9 @@ def prepare_environment(display_num: int, desktop_id: str, audio: bool = True, v
     # 5. Soporte de Aceleración Gráfica (VirGL / Software fallback)
     if virgl:
         env["GALLIUM_DRIVER"] = "virpipe"
-        env["MESA_GL_VERSION_OVERRIDE"] = "3.3"
-        env["MESA_GLSL_VERSION_OVERRIDE"] = "330"
+        env["MESA_GL_VERSION_OVERRIDE"] = "4.0"
+        env["MESA_GLSL_VERSION_OVERRIDE"] = "400"
+        env["VIRGL_SERVER"] = "127.0.0.1"
     else:
         env["LIBGL_ALWAYS_SOFTWARE"] = "1"
         env["GALLIUM_DRIVER"] = "llvmpipe"
