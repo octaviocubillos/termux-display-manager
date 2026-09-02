@@ -17,8 +17,10 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando paquetes de MATE]"
-    pkg install -y mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon || true
+    echo "[TDM_PROGRESS:60:Instalando paquetes de MATE, audio y batería]"
+    pkg install -y mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon mate-media mate-power-manager mate-applets pavucontrol pulseaudio || {
+        for p in mate-desktop mate-panel mate-session-manager mate-terminal marco caja mate-settings-daemon mate-media mate-power-manager mate-applets pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
     $SUDO apk add mate-desktop mate-panel mate-session-manager mate-terminal marco caja || true

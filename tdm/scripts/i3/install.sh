@@ -17,8 +17,10 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando paquetes de i3]"
-    pkg install -y i3 i3status dmenu aterm || true
+    echo "[TDM_PROGRESS:60:Instalando paquetes de i3, audio y batería]"
+    pkg install -y i3 i3status dmenu aterm pavucontrol pulseaudio || {
+        for p in i3 i3status dmenu aterm pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
     $SUDO apk add i3wm i3status dmenu xterm || true

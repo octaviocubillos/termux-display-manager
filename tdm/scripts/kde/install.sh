@@ -17,8 +17,10 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando plasma-desktop, konsole, dolphin]"
-    pkg install -y plasma-desktop plasma-workspace breeze konsole dolphin || true
+    echo "[TDM_PROGRESS:60:Instalando plasma-desktop, konsole, dolphin, audio y batería]"
+    pkg install -y plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio || {
+        for p in plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
     $SUDO apk add plasma-desktop plasma-workspace konsole dolphin || true

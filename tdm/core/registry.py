@@ -24,7 +24,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~2.8 GB",
         "ram_usage": "~450 MB",
         "exec_candidates": ["startplasma-x11", "plasma-session", "startplasma-wayland"],
-        "packages": ["plasma-desktop", "plasma-workspace", "konsole", "dolphin"],
+        "packages": ["plasma-desktop", "plasma-workspace", "konsole", "dolphin", "powerdevil", "pavucontrol"],
         "icon": "kde",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "KDE",
@@ -42,7 +42,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~1.6 GB",
         "ram_usage": "~250 MB",
         "exec_candidates": ["mate-session"],
-        "packages": ["mate-desktop", "mate-session-manager", "mate-panel", "mate-terminal", "mate-settings-daemon", "marco", "caja"],
+        "packages": ["mate-desktop", "mate-session-manager", "mate-panel", "mate-terminal", "mate-settings-daemon", "marco", "caja", "mate-media", "mate-power-manager", "mate-applets", "pavucontrol"],
         "icon": "mate",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "MATE",
@@ -74,7 +74,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~1.1 GB",
         "ram_usage": "~180 MB",
         "exec_candidates": ["startlxqt", "lxqt-session"],
-        "packages": ["lxqt-session", "lxqt", "qterminal", "pcmanfm-qt"],
+        "packages": ["lxqt-session", "lxqt", "qterminal", "pcmanfm-qt", "lxqt-powermanagement", "pavucontrol"],
         "icon": "lxqt",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "LXQt",
@@ -89,7 +89,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~350 MB",
         "ram_usage": "~50 MB",
         "exec_candidates": ["i3"],
-        "packages": ["i3", "i3status", "dmenu", "aterm"],
+        "packages": ["i3", "i3status", "dmenu", "aterm", "pavucontrol", "pulseaudio"],
         "icon": "i3",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "i3",
@@ -104,7 +104,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~450 MB",
         "ram_usage": "~70 MB",
         "exec_candidates": ["openbox-session", "openbox"],
-        "packages": ["openbox", "obconf-qt", "tint2", "aterm"],
+        "packages": ["openbox", "obconf-qt", "tint2", "aterm", "pavucontrol", "pulseaudio"],
         "icon": "openbox",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "OPENBOX",

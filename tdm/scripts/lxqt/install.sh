@@ -17,8 +17,10 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando paquetes de LXQt]"
-    pkg install -y lxqt lxqt-session qterminal pcmanfm-qt || true
+    echo "[TDM_PROGRESS:60:Instalando paquetes de LXQt, audio y batería]"
+    pkg install -y lxqt lxqt-session qterminal pcmanfm-qt lxqt-powermanagement pavucontrol pulseaudio || {
+        for p in lxqt lxqt-session qterminal pcmanfm-qt lxqt-powermanagement pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
     $SUDO apk add lxqt-desktop lxqt-session qterminal pcmanfm-qt || true

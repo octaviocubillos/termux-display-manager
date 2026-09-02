@@ -17,8 +17,10 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando paquetes de Openbox]"
-    pkg install -y openbox obconf-qt tint2 aterm || true
+    echo "[TDM_PROGRESS:60:Instalando paquetes de Openbox, audio y batería]"
+    pkg install -y openbox obconf-qt tint2 aterm pavucontrol pulseaudio || {
+        for p in openbox obconf-qt tint2 aterm pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
     $SUDO apk add openbox tint2 xterm || true
