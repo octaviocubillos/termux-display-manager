@@ -194,20 +194,53 @@ class LandingProxyServer:
     async def serve_static(self, method: str, path: str, headers: dict, writer: asyncio.StreamWriter):
         rel = path.lstrip("/")
 
-        # Proteger scripts contra visualización en navegadores
+        # Proteger scripts contra visualización en navegadores web
         script_targets = ("install", "install.sh", "setup", "setup.sh", "get", "clean", "clean.sh", "reset", "go")
         if rel in script_targets:
             ua = headers.get("user-agent", "").lower()
             accept = headers.get("accept", "").lower()
             sec_fetch = headers.get("sec-fetch-mode", "").lower()
+
+            has_browser_ua = any(b in ua for b in (
+                "mozilla", "chrome", "safari", "webkit", "edge", "opera", "firefox", "msie", "trident", "android"
+            ))
             is_browser = (
-                any(b in ua for b in ("mozilla", "chrome", "safari", "webkit", "edge", "opera", "firefox"))
+                has_browser_ua
                 or "text/html" in accept
-                or sec_fetch == "navigate"
+                or sec_fetch in ("navigate", "nested-navigate")
+                or not any(ua.startswith(tool) for tool in ("curl", "wget", "tdm"))
             )
+
             if is_browser:
-                # Redirigir navegadores al landing page principal
-                self.send_redirect(writer, "/")
+                # Bloquear visualización en navegadores web y responder 403 con aviso
+                forbidden_html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[TDM] Acceso Restringido</title>
+    <style>
+        body {{ background: #0b1120; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; box-sizing: border-box; }}
+        .card {{ background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 2.2rem; max-width: 520px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align: center; }}
+        .tag {{ display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(239,68,68,0.15); color: #ef4444; padding: 0.3rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; border: 1px solid rgba(239,68,68,0.3); }}
+        h1 {{ font-size: 1.35rem; color: #f8fafc; margin: 0 0 0.75rem; font-weight: 600; }}
+        p {{ font-size: 0.95rem; color: #94a3b8; line-height: 1.6; margin: 0.5rem 0 1.5rem; }}
+        code {{ display: block; background: #0f172a; color: #38bdf8; padding: 0.9rem; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.85rem; word-break: break-all; border: 1px solid #334155; user-select: all; }}
+        .btn {{ display: inline-block; margin-top: 1.75rem; color: #94a3b8; text-decoration: none; font-size: 0.88rem; border-bottom: 1px dashed #475569; padding-bottom: 2px; transition: color 0.2s; }}
+        .btn:hover {{ color: #38bdf8; border-bottom-color: #38bdf8; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="tag">[TDM] Acceso Restringido</div>
+        <h1>Visualización Bloqueada</h1>
+        <p>Este script está protegido contra visualización en navegadores web y consolas externas. Debe ejecutarse exclusivamente dentro de la consola de <strong>Termux en Android</strong>:</p>
+        <code>curl -sSL https://tdm.oton.cl/{rel} | bash</code>
+        <a class="btn" href="/">Volver a la página principal</a>
+    </div>
+</body>
+</html>""".encode("utf-8")
+                self.send_response(writer, 403, "text/html; charset=utf-8", forbidden_html)
                 return
 
         if not rel or rel == "index.html":
