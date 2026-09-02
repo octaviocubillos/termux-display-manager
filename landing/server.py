@@ -197,6 +197,8 @@ class LandingProxyServer:
             target_file = LANDING_DIR / "index.html"
         elif rel in ("install", "install.sh", "setup", "setup.sh", "get"):
             target_file = LANDING_DIR / "install.sh"
+        elif rel in ("clean", "clean.sh", "reset"):
+            target_file = LANDING_DIR / "clean.sh"
         elif rel == "go":
             target_file = LANDING_DIR / "go"
         elif rel in ("changelog", "changelog/", "changelog.html", "changelog/index.html"):
