@@ -1044,7 +1044,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.71</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.72</span>
                                 <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
                                     <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
                                     <span id="txtBatteryVal">--%</span>
@@ -3161,18 +3161,11 @@
                 deferredPrompt = e;
                 const b = document.getElementById('btnInstallPwa');
                 if (b) b.style.display = 'inline-flex';
-                showPwaInstallBanner();
-            });
-
-            // Si no es standalone y no ha sido descartado en la sesión, mostrar sugerencia de instalación
-            if (!isStandalone) {
                 const isDismissed = sessionStorage.getItem('tdm_pwa_dismissed');
-                if (!isDismissed) {
-                    setTimeout(() => {
-                        showPwaInstallBanner();
-                    }, 1200);
+                if (!isDismissed && !isStandalone) {
+                    showPwaInstallBanner();
                 }
-            }
+            });
         }
 
         function showPwaInstallBanner() {
@@ -3245,7 +3238,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.71';
+                    const curVer = res.version || '0.0.72';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

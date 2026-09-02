@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tdm-pwa-v0.0.70';
+const CACHE_NAME = 'tdm-pwa-v0.0.72';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -31,37 +31,53 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Ignorar peticiones no HTTP/HTTPS (extensiones de chrome, data:, blob:, etc.)
-  if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) {
+  const req = event.request;
+  if (!req || !req.url) return;
+
+  // 1. Filtrar explícitamente cualquier esquema no HTTP/HTTPS (extensiones de Chrome, data:, blob:, moz-extension:, etc.)
+  if (!req.url.startsWith('http://') && !req.url.startsWith('https://')) {
     return;
   }
 
-  // Solo interceptar peticiones GET
-  if (event.request.method !== 'GET') {
+  // 2. Solo interceptar peticiones GET
+  if (req.method !== 'GET') {
     return;
   }
 
-  const url = new URL(event.request.url);
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch (e) {
+    return;
+  }
 
-  // Ignorar peticiones dinámicas de API, WebSockets y streaming (incluso bajo sub-rutas /aabbcc/api/...)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // 3. Ignorar llamadas de telemetría dinámica de la API, WebSockets y streaming
   if (url.pathname.includes('/api/') || url.pathname.includes('/ws/') || url.pathname.includes('/websockify')) {
     return;
   }
 
-  // Estrategia Network-First para asegurar siempre la versión más reciente
+  // 4. Estrategia Network-First con protección absoluta de caché
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((response) => {
-        if (response && response.status === 200 && event.request.method === 'GET') {
+        if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone).catch(() => {});
+            try {
+              if (req.url.startsWith('http://') || req.url.startsWith('https://')) {
+                cache.put(req, responseClone).catch(() => {});
+              }
+            } catch (err) {}
           }).catch(() => {});
         }
         return response;
       })
       .catch(() => {
-        return caches.match(event.request);
+        return caches.match(req);
       })
   );
 });
