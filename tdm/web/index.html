@@ -1130,7 +1130,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.77</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.78</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -1145,6 +1145,14 @@
                     </div>
 
                     <div class="island-actions">
+                        <!-- PILL DE BATERÍA & VOLUMEN (ABRE MODAL DE CONTROL DEL DISPOSITIVO) -->
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" id="btnDeviceControlPill" onclick="openDeviceControlModal()" title="Control del Dispositivo: Batería y Volumen" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.65rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.12); cursor: pointer; transition: all 0.2s ease;">
+                            <span class="material-symbols-rounded" id="hdrBatIcon" style="font-size: 0.95rem; color: #4ade80;">battery_charging_full</span>
+                            <span id="hdrBatVal" style="font-size: 0.72rem; font-weight: 700; color: #cbd5e1;">--%</span>
+                            <span style="opacity: 0.25; font-size: 0.7rem; color: #fff;">|</span>
+                            <span class="material-symbols-rounded" id="hdrVolIcon" style="font-size: 0.95rem; color: #60a5fa;">volume_up</span>
+                            <span id="hdrVolVal" style="font-size: 0.72rem; font-weight: 700; color: #cbd5e1;">--%</span>
+                        </button>
                         <button class="btn-m3 btn-m3-error btn-m3-sm btn-responsive-stop" id="btnHeaderStopAll" onclick="apiStopAllService()" style="display: none;" title="Apagar pantalla y cerrar sesión gráfica de Termux">
                             <span class="material-symbols-rounded">desktop_access_disabled</span>
                             <span class="btn-text">Apagar Pantalla</span>
@@ -1222,102 +1230,6 @@
                             <div class="telemetry-progress-fill" id="barPing" style="width: 100%; background: #4ade80;"></div>
                         </div>
                         <div class="telemetry-card-sub" id="txtDevModelName">Android</div>
-                    </div>
-                </div>
-
-                <!-- ACCORDEON DESPLEGABLE: CONTROL DEL DISPOSITIVO (BATERÍA, VOLUMEN, HARDWARE) -->
-                <div id="boxDeviceControlsAccordion" style="background: rgba(17, 24, 39, 0.6); border: 1px solid var(--md-sys-color-outline-variant); border-radius: var(--md-shape-corner-lg); overflow: hidden; margin-top: 0.65rem; transition: all 0.2s ease;">
-                    <!-- CABECERA DEL DESPLEGABLE -->
-                    <div id="deviceAccordionHeader" onclick="toggleDeviceAccordion()" style="padding: 0.6rem 0.85rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; background: rgba(255, 255, 255, 0.02);">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; min-width: 0;">
-                            <span class="material-symbols-rounded" style="font-size: 1.15rem; color: #60a5fa;">tune</span>
-                            <div style="min-width: 0; display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #fff;">Control del Dispositivo</span>
-                                <span id="hdrBatBadge" style="font-size: 0.68rem; font-weight: 700; color: #4ade80; background: rgba(34, 197, 94, 0.12); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.25); display: inline-flex; align-items: center; gap: 0.2rem;">
-                                    <span class="material-symbols-rounded" id="hdrBatIcon" style="font-size: 0.85rem;">battery_charging_full</span>
-                                    <span id="hdrBatVal">--%</span>
-                                </span>
-                                <span id="hdrVolBadge" style="font-size: 0.68rem; font-weight: 700; color: #60a5fa; background: rgba(59, 130, 246, 0.12); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.25); display: inline-flex; align-items: center; gap: 0.2rem;">
-                                    <span class="material-symbols-rounded" id="hdrVolIcon" style="font-size: 0.85rem;">volume_up</span>
-                                    <span id="hdrVolVal">--%</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 0.35rem;">
-                            <span class="material-symbols-rounded" id="icoDeviceChevron" style="font-size: 1.25rem; color: #94a3b8; transition: transform 0.2s ease;">keyboard_arrow_down</span>
-                        </div>
-                    </div>
-
-                    <!-- CONTENIDO DESPLEGABLE (OCULTO POR DEFECTO / TOGGLEABLE) -->
-                    <div id="deviceAccordionBody" style="display: none; padding: 0.75rem 0.85rem; border-top: 1px solid rgba(255, 255, 255, 0.08); flex-direction: column; gap: 0.65rem; background: rgba(0, 0, 0, 0.25);">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.65rem;">
-                            <!-- BATERÍA Y ENERGÍA -->
-                            <div class="device-control-box">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                                    <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem;">
-                                        <span class="material-symbols-rounded" id="cardBatIcon" style="font-size: 1rem; color: #4ade80;">battery_charging_full</span>
-                                        <span>Batería</span>
-                                    </span>
-                                    <span id="txtCardBatStatus" style="font-size: 0.7rem; font-weight: 700; color: #4ade80; background: rgba(34, 197, 94, 0.12); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(34, 197, 94, 0.25);">--</span>
-                                </div>
-                                <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-bottom: 0.45rem;">
-                                    <div id="barCardBattery" style="width: 100%; height: 100%; background: #4ade80; border-radius: 9999px; transition: width 0.4s ease;"></div>
-                                </div>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem; text-align: center;">
-                                    <div class="device-sub-pill">
-                                        <span style="font-size: 0.6rem; color: #64748b;">Temp</span>
-                                        <strong id="txtCardBatTemp" style="font-size: 0.7rem; color: #cbd5e1;">--°C</strong>
-                                    </div>
-                                    <div class="device-sub-pill">
-                                        <span style="font-size: 0.6rem; color: #64748b;">Salud</span>
-                                        <strong id="txtCardBatHealth" style="font-size: 0.7rem; color: #cbd5e1;">--</strong>
-                                    </div>
-                                    <div class="device-sub-pill">
-                                        <span style="font-size: 0.6rem; color: #64748b;">Fuente</span>
-                                        <strong id="txtCardBatPlugged" style="font-size: 0.7rem; color: #cbd5e1;">--</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- VOLUMEN MULTIMEDIA -->
-                            <div class="device-control-box">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                                    <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem;">
-                                        <span class="material-symbols-rounded" id="cardVolIcon" style="font-size: 1rem; color: #60a5fa;">volume_up</span>
-                                        <span>Volumen</span>
-                                    </span>
-                                    <span id="txtCardVolVal" style="font-size: 0.7rem; font-weight: 700; color: #60a5fa; background: rgba(59, 130, 246, 0.12); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(59, 130, 246, 0.25);">--%</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.45rem;">
-                                    <input type="range" id="rngCardVolume" min="0" max="100" value="75" oninput="apiSetVolume(this.value)" style="flex: 1; accent-color: #3b82f6; cursor: pointer; height: 5px;">
-                                </div>
-                                <div style="display: flex; gap: 0.25rem; align-items: center;">
-                                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(0)" style="flex: 1; height: 26px; font-size: 0.68rem; padding: 0;" title="Silenciar">
-                                        <span class="material-symbols-rounded" style="font-size: 0.8rem;">volume_off</span>
-                                        <span>0%</span>
-                                    </button>
-                                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(50)" style="flex: 1; height: 26px; font-size: 0.68rem; padding: 0;" title="50% Volumen">
-                                        <span class="material-symbols-rounded" style="font-size: 0.8rem;">volume_down</span>
-                                        <span>50%</span>
-                                    </button>
-                                    <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(100)" style="flex: 1; height: 26px; font-size: 0.68rem; padding: 0;" title="100% Volumen">
-                                        <span class="material-symbols-rounded" style="font-size: 0.8rem;">volume_up</span>
-                                        <span>100%</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- BANNER TERMUX:API SI NO ESTÁ LISTO -->
-                        <div id="bannerInstallApi" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.45rem 0.75rem; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
-                            <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: #fde68a;">
-                                <span class="material-symbols-rounded" style="color: #fbbf24; font-size: 0.95rem;">info</span>
-                                <span>Instala <strong>Termux:API</strong> para control directo de volumen y batería.</span>
-                            </div>
-                            <button class="btn-m3 btn-m3-filled btn-m3-sm" onclick="apiInstallTermuxApi()" style="background: #f59e0b; color: #000; font-weight: 700; height: 24px; font-size: 0.68rem; padding: 0 0.5rem;">
-                                <span>Instalar</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -1830,6 +1742,109 @@
                             <strong id="txtModalNetStatus" style="font-size: 0.7rem; color: #4ade80;">Conectado</strong>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POPUP / MODAL DE CONTROL DEL DISPOSITIVO (BATERÍA, VOLUMEN, HARDWARE) -->
+    <div class="modal-overlay" id="deviceControlModal" onclick="if (event.target === this) closeDeviceControlModal()">
+        <div class="modal-card telemetry-modal-card">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.65rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 0.85rem;">
+                <div style="display: flex; align-items: center; gap: 0.55rem;">
+                    <div style="width: 34px; height: 34px; border-radius: 10px; background: rgba(96, 165, 250, 0.15); display: flex; align-items: center; justify-content: center; color: #60a5fa;">
+                        <span class="material-symbols-rounded" style="font-size: 1.25rem;">tune</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.95rem; font-weight: 800; color: #fff;">Control del Dispositivo</div>
+                        <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);">Batería, volumen y subsistemas de Termux</div>
+                    </div>
+                </div>
+                <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="closeDeviceControlModal()" title="Cerrar">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 70vh; overflow-y: auto; padding-right: 0.15rem;">
+                <!-- BATERÍA Y ENERGÍA -->
+                <div class="telemetry-detail-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 700; font-size: 0.82rem; color: #4ade80; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" id="cardBatIcon" style="font-size: 1.1rem;">battery_charging_full</span>
+                            <span>Batería y Energía</span>
+                        </span>
+                        <span id="txtCardBatStatus" style="font-size: 0.72rem; font-weight: 700; color: #4ade80; background: rgba(34, 197, 94, 0.12); padding: 0.12rem 0.45rem; border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.25);">--</span>
+                    </div>
+                    <div class="telemetry-progress-bg" style="height: 6px; margin-bottom: 0.55rem;">
+                        <div class="telemetry-progress-fill" id="barCardBattery" style="width: 100%; background: #4ade80;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem; text-align: center;">
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Temperatura</span>
+                            <strong id="txtCardBatTemp" style="font-size: 0.72rem; color: #cbd5e1;">--°C</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Salud</span>
+                            <strong id="txtCardBatHealth" style="font-size: 0.72rem; color: #cbd5e1;">--</strong>
+                        </div>
+                        <div class="device-sub-pill">
+                            <span style="font-size: 0.6rem; color: #64748b;">Fuente</span>
+                            <strong id="txtCardBatPlugged" style="font-size: 0.72rem; color: #cbd5e1;">--</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VOLUMEN MULTIMEDIA -->
+                <div class="telemetry-detail-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-weight: 700; font-size: 0.82rem; color: #60a5fa; display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="material-symbols-rounded" id="cardVolIcon" style="font-size: 1.1rem;">volume_up</span>
+                            <span>Volumen Multimedia</span>
+                        </span>
+                        <span id="txtCardVolVal" style="font-size: 0.74rem; font-weight: 800; color: #60a5fa; background: rgba(59, 130, 246, 0.12); padding: 0.12rem 0.45rem; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.25);">--%</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem;">
+                        <input type="range" id="rngCardVolume" min="0" max="100" value="75" oninput="apiSetVolume(this.value)" style="flex: 1; accent-color: #3b82f6; cursor: pointer; height: 6px;">
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem;">
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(0)" style="height: 32px; font-size: 0.72rem; justify-content: center; gap: 0.25rem;" title="Silenciar">
+                            <span class="material-symbols-rounded" style="font-size: 0.85rem;">volume_off</span>
+                            <span>0%</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(50)" style="height: 32px; font-size: 0.72rem; justify-content: center; gap: 0.25rem;" title="50% Volumen">
+                            <span class="material-symbols-rounded" style="font-size: 0.85rem;">volume_down</span>
+                            <span>50%</span>
+                        </button>
+                        <button class="btn-m3 btn-m3-tonal btn-m3-sm" onclick="apiSetVolumeQuick(100)" style="height: 32px; font-size: 0.72rem; justify-content: center; gap: 0.25rem;" title="100% Volumen">
+                            <span class="material-symbols-rounded" style="font-size: 0.85rem;">volume_up</span>
+                            <span>100%</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ESTADO DE SUBSISTEMA TERMUX:API -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 0.55rem 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.45rem;">
+                        <span class="material-symbols-rounded" style="font-size: 1rem; color: #a8c7fa;">terminal</span>
+                        <span style="font-size: 0.75rem; font-weight: 600; color: #cbd5e1;">Termux:API Subsystem</span>
+                    </div>
+                    <div id="badgeTermuxApiStatus" class="version-badge" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 0.7rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+                        <span class="material-symbols-rounded" style="font-size: 0.85rem;">check_circle</span>
+                        <span>Activo</span>
+                    </div>
+                </div>
+
+                <!-- BANNER TERMUX:API SI NO ESTÁ LISTO -->
+                <div id="bannerInstallApi" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 0.6rem 0.8rem; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: #fde68a;">
+                        <span class="material-symbols-rounded" style="color: #fbbf24; font-size: 1rem;">info</span>
+                        <span>Instala <strong>Termux:API</strong> para soporte directo de hardware.</span>
+                    </div>
+                    <button class="btn-m3 btn-m3-filled btn-m3-sm" onclick="apiInstallTermuxApi()" style="background: #f59e0b; color: #000; font-weight: 700; height: 26px; font-size: 0.7rem; padding: 0 0.6rem;">
+                        <span>Instalar</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -2464,23 +2479,18 @@
             }
         }
 
-        let isDeviceAccordionOpen = false;
+        function openDeviceControlModal() {
+            const modal = document.getElementById('deviceControlModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeDeviceControlModal() {
+            const modal = document.getElementById('deviceControlModal');
+            if (modal) modal.classList.remove('active');
+        }
 
         function toggleDeviceAccordion(forceState) {
-            const body = document.getElementById('deviceAccordionBody');
-            const chevron = document.getElementById('icoDeviceChevron');
-            if (!body) return;
-
-            if (forceState !== undefined) {
-                isDeviceAccordionOpen = forceState;
-            } else {
-                isDeviceAccordionOpen = (body.style.display !== 'flex');
-            }
-
-            body.style.display = isDeviceAccordionOpen ? 'flex' : 'none';
-            if (chevron) {
-                chevron.style.transform = isDeviceAccordionOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
+            openDeviceControlModal();
         }
 
         let isWebAccordionOpen = false;
@@ -3593,7 +3603,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.77';
+                    const curVer = res.version || '0.0.78';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');
