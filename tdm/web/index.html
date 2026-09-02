@@ -598,7 +598,7 @@
             padding: 0.35rem;
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.35rem;
+            gap: 0.4rem;
             width: 100%;
             box-sizing: border-box;
         }
@@ -606,13 +606,14 @@
         @media (max-width: 600px) {
             .segmented-bar {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.35rem;
             }
         }
 
         .segment-btn {
             background: transparent;
-            border: none;
-            padding: 0.65rem 0.4rem;
+            border: 1px solid transparent;
+            padding: 0.7rem 0.4rem;
             border-radius: var(--md-shape-corner-md);
             color: var(--md-sys-color-on-surface-variant);
             font-size: 0.8rem;
@@ -621,11 +622,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.3rem;
-            transition: all 0.2s var(--ease-m3);
+            justify-content: center;
+            gap: 0.35rem;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
             min-width: 0;
             overflow: hidden;
             box-sizing: border-box;
+            position: relative;
+            user-select: none;
         }
 
         .segment-btn span:last-child {
@@ -637,13 +641,43 @@
 
         .segment-btn:hover {
             color: #fff;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .segment-btn:active {
+            transform: scale(0.96);
         }
 
         .segment-btn.active {
-            background: var(--md-sys-color-surface-container-highest);
-            color: var(--md-sys-color-primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            background: rgba(168, 199, 250, 0.12);
+            border-color: rgba(168, 199, 250, 0.4);
+            color: #a8c7fa;
+            box-shadow: 0 0 14px rgba(168, 199, 250, 0.16);
+        }
+
+        .segment-btn.active .material-symbols-rounded {
+            color: #a8c7fa;
+            transform: scale(1.1);
+        }
+
+        .segment-btn.is-running::after {
+            content: '';
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 8px #4ade80;
+            animation: pulse-green 1.8s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
         }
 
         /* DESKTOP ENVIRONMENT SUMMARY CARD */
@@ -1130,7 +1164,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.78</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.79</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -2416,6 +2450,15 @@
             const act = data ? data.active_screen : null;
             const currentBackend = act?.backend || null;
 
+            // Sincronizar indicador de backend corriendo en las pestañas del selector
+            document.querySelectorAll('.segment-btn').forEach(bEl => {
+                bEl.classList.remove('is-running');
+            });
+            if (isScreenOn && currentBackend) {
+                const runningBtn = document.getElementById(`seg-${currentBackend}`);
+                if (runningBtn) runningBtn.classList.add('is-running');
+            }
+
             // CASO 1: SE ESTÁ INSTALANDO UN ENTORNO
             if (isInstalling) {
                 btn.style.display = 'flex';
@@ -2525,11 +2568,9 @@
                 return;
             }
 
-            const host = (lastStatusData?.network?.lan_ip && lastStatusData.network.lan_ip !== '127.0.0.1') 
-                ? lastStatusData.network.lan_ip 
-                : (window.location.hostname || '127.0.0.1');
-            const port = window.location.port || '19050';
-            const proto = window.location.protocol || 'http:';
+            const origin = window.location.origin;
+            const wsPrefix = BASE_PATH ? (BASE_PATH.replace(/^\/+|\/+$/g, '') + '/') : '';
+            const fullUrl = `${origin}${BASE_PATH}/novnc/vnc.html?autoconnect=true&resize=remote&path=${encodeURIComponent(wsPrefix + 'websockify')}`;
 
             const ico = document.getElementById('icoAccordionType');
             const title = document.getElementById('txtAccordionTitle');
@@ -2538,10 +2579,9 @@
             const btnNewTab = document.getElementById('btnAccordionNewTab');
             const btnOpen = document.getElementById('btnAccordionOpenLocal');
 
-            const fullUrl = `${proto}//${host}${port ? (":" + port) : ""}/novnc/vnc.html?autoconnect=true&resize=remote&path=websockify`;
             if (ico) { ico.innerText = 'language'; ico.style.color = '#a8c7fa'; }
             if (title) title.innerText = 'Visor Web noVNC (HTML5)';
-            if (sub) sub.innerText = `Acceso a pantalla gráfica en red LAN: ${host}${port ? (":" + port) : ""}`;
+            if (sub) sub.innerText = `Acceso web directo: ${window.location.host}${BASE_PATH}`;
             if (txtUrl) { txtUrl.innerText = fullUrl; txtUrl.style.color = '#6dd58c'; }
             if (btnNewTab) btnNewTab.href = fullUrl;
             if (btnOpen) {
@@ -3281,7 +3321,7 @@
         function openWebViewer(ip) {
             const host = ip || window.location.hostname || '127.0.0.1';
             let port = window.location.port;
-            if (!port && window.location.protocol !== 'https:') {
+            if (!port && window.location.protocol === 'http:' && !BASE_PATH && (host === '127.0.0.1' || host === 'localhost')) {
                 port = '19050';
             }
             const isLite = (preferredViewerMode === 'lite');
@@ -3289,12 +3329,13 @@
             const wsPrefix = BASE_PATH ? (BASE_PATH.replace(/^\/+|\/+$/g, '') + '/') : '';
             const extraParams = isLite ? '&scale=false&resize=remote&embedded=true' : '&scale=false&resize=remote&autoconnect=true&embedded=true';
             const portParam = port ? `&port=${port}` : '';
-            const url = `${BASE_PATH}/novnc/${page}?host=${host}${portParam}&path=${wsPrefix}websockify${extraParams}`;
+            const wsPathEncoded = encodeURIComponent(wsPrefix + 'websockify');
+            const url = `${BASE_PATH}/novnc/${page}?host=${host}${portParam}&path=${wsPathEncoded}${extraParams}`;
 
             const ifr = document.getElementById('novncIframe');
-            ifr.src = url;
+            if (ifr) ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
-            if (link) link.href = url;
+            if (link) link.href = `${window.location.origin}${url}`;
 
             const title = document.getElementById('lblModalViewerTitle');
             if (title) title.innerText = isLite ? 'noVNC Display (Lite)' : 'noVNC Display (Completo)';
@@ -3603,7 +3644,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.78';
+                    const curVer = res.version || '0.0.79';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');
