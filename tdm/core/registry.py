@@ -150,7 +150,7 @@ BACKEND_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "id": BACKEND_VNC,
-        "name": "TigerVNC / VNC Server",
+        "name": "VNC Server",
         "description": "Servidor VNC estándar en protocolo RFB. Permite clientes como bVNC en Android o RealVNC en PC.",
         "exec_candidates": ["Xvnc", "vncserver", "tightvncserver"],
         "packages": ["tigervnc", "xorg-xauth", "xorg-xsetroot"],

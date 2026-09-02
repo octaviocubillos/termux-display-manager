@@ -4,6 +4,7 @@ import signal
 import time
 import subprocess
 import shutil
+import json
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -14,7 +15,7 @@ from tdm.discovery.network import discover_network_interfaces
 from tdm.backends import create_backend, BaseDisplayBackend
 from tdm.runners.session_builder import build_session_script
 from tdm.runners.env_helper import prepare_environment
-from tdm.config import TDM_LOGS_DIR, HOME
+from tdm.config import TDM_LOGS_DIR, TDM_RUN_DIR, HOME
 from tdm.logger import log_event
 from tdm.constants import (
     DEFAULT_DISPLAY_NUM,
@@ -27,6 +28,32 @@ from tdm.constants import (
     PORT_RDP_DEFAULT,
     PORT_TDM_SERVER,
 )
+
+SESSION_STATE_FILE = TDM_RUN_DIR / "active_session.json"
+
+def _save_session_state(session_dict: Dict[str, Any]) -> None:
+    try:
+        TDM_RUN_DIR.mkdir(parents=True, exist_ok=True)
+        with open(SESSION_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(session_dict, f, indent=2)
+    except Exception:
+        pass
+
+def _clear_session_state() -> None:
+    try:
+        if SESSION_STATE_FILE.exists():
+            SESSION_STATE_FILE.unlink()
+    except Exception:
+        pass
+
+def _load_session_state() -> Optional[Dict[str, Any]]:
+    try:
+        if SESSION_STATE_FILE.exists():
+            with open(SESSION_STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return None
 
 def get_memory_info() -> Dict[str, Any]:
     """Obtiene la telemetría de memoria RAM del sistema en tiempo real (/proc/meminfo)."""
@@ -269,6 +296,15 @@ class DisplayManager:
 
         # Requiere al menos un backend gráfico activo O un entorno de escritorio activo
         if detected_backend or detected_desktop:
+            # Recuperar backend exacto guardado (ej. 'novnc') si coincide con la familia de procesos activos
+            saved_state = _load_session_state()
+            if saved_state and saved_state.get("backend"):
+                if (detected_backend in ["vnc", "novnc"] and saved_state.get("backend") in ["vnc", "novnc"]) or not detected_backend:
+                    detected_backend = saved_state["backend"]
+                if saved_state.get("desktop_id") and not detected_desktop:
+                    detected_desktop = saved_state["desktop_id"]
+                    detected_desktop_name = saved_state.get("desktop_name")
+
             if not detected_backend:
                 detected_backend = "termux-x11"
             if not detected_desktop:
@@ -481,6 +517,7 @@ class DisplayManager:
         session.urls = backend_obj.get_connection_urls()
 
         self.active_session = session
+        _save_session_state(session.to_dict())
         log_event("display", f"Pantalla activa en Display :{config.display_num} (PID Servidor: {session.server_pid}, PID Sesión: {session.session_pid})")
         return session.to_dict()
 
@@ -627,6 +664,7 @@ class DisplayManager:
         except Exception:
             pass
 
+        _clear_session_state()
         if self.active_session:
             self.active_session.status = DisplayStatus.STOPPED
             self.active_session = None
