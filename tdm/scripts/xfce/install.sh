@@ -18,9 +18,9 @@ if command -v pkg >/dev/null 2>&1; then
     echo "[TDM_PROGRESS:30:Actualizando repositorio e instalando XFCE4 en Termux]"
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Descargando paquetes xfce4, xfce4-terminal, thunar, libxres]"
-    pkg install -y xfce4 xfce4-terminal thunar libxres || {
-        for p in xfce4 xfce4-terminal thunar libxres; do pkg install -y "$p" || true; done
+    echo "[TDM_PROGRESS:60:Descargando paquetes xfce4, terminal, thunar, audio y batería]"
+    pkg install -y xfce4 xfce4-terminal thunar libxres xfce4-pulseaudio-plugin xfce4-battery-plugin xfce4-power-manager pavucontrol || {
+        for p in xfce4 xfce4-terminal thunar libxres xfce4-pulseaudio-plugin xfce4-battery-plugin xfce4-power-manager pavucontrol; do pkg install -y "$p" || true; done
     }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     echo "[TDM_PROGRESS:50:Instalando XFCE4 en Alpine / postmarketOS]"

@@ -1054,7 +1054,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.67</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.68</span>
                                 <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
                                     <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
                                     <span id="txtBatteryVal">--%</span>
@@ -1520,26 +1520,15 @@
             <div id="vncModalHeader" style="padding: 0.35rem 0.65rem; background: #11151e; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); z-index: 20; min-height: 40px; flex-shrink: 0;">
                 <!-- ESTADO Y TÍTULO -->
                 <div style="display: flex; align-items: center; gap: 0.45rem; min-width: 0;">
-                    <span style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="lblModalViewerTitle">noVNC Display</span>
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="lblModalViewerTitle">noVNC Display (Nativo)</span>
                 </div>
 
-                <!-- CONTROLES COMPACTOS -->
+                <!-- CONTROLES COMPACTOS NATIVOS -->
                 <div style="display: flex; gap: 0.35rem; align-items: center;">
-                    <!-- SELECTOR DE ESCALA (1x hasta 2x y Auto) -->
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #94a3b8; position: absolute; left: 6px; pointer-events: none;">zoom_in</span>
-                        <select id="selVncScale" onchange="changeVncScale(this.value)" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: var(--md-shape-corner-sm); padding: 0.25rem 0.45rem 0.25rem 1.4rem; font-size: 0.76rem; font-weight: 600; outline: none; cursor: pointer;">
-                            <option value="dynamic">🖥️ Dinámica (PC)</option>
-                            <option value="fill">📱 Llenar (Móvil)</option>
-                            <option value="fit-width">↔️ Ajustar Ancho</option>
-                            <option value="auto">📐 Proporcional</option>
-                            <option value="1.0">1.0x (100%)</option>
-                            <option value="1.25">1.25x</option>
-                            <option value="1.5">1.5x</option>
-                            <option value="1.75">1.75x</option>
-                            <option value="2.0">2.0x</option>
-                        </select>
-                    </div>
+                    <!-- RECONECTAR -->
+                    <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" onclick="sendIframeVncAction('reconnect')" title="Reconectar noVNC">
+                        <span class="material-symbols-rounded">refresh</span>
+                    </button>
 
                     <!-- PANTALLA COMPLETA -->
                     <button class="btn-m3 btn-m3-tonal btn-m3-sm btn-m3-icon-only" id="btnModalFullscreen" onclick="toggleModalFullscreen()" title="Pantalla Completa">
@@ -1569,10 +1558,6 @@
                     <span>Modo Completo</span>
                 </button>
                 <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
-                <button class="vnc-menu-item" onclick="sendIframeVncAction('toggle_resize'); closeVncDropdown();">
-                    <span class="material-symbols-rounded">aspect_ratio</span>
-                    <span>Resolución Dinámica</span>
-                </button>
                 <button class="vnc-menu-item" onclick="sendIframeVncAction('ctrl_alt_del'); closeVncDropdown();">
                     <span class="material-symbols-rounded">keyboard</span>
                     <span>Enviar Ctrl+Alt+Del</span>
@@ -1580,15 +1565,6 @@
                 <button class="vnc-menu-item" onclick="sendIframeVncAction('reconnect'); closeVncDropdown();">
                     <span class="material-symbols-rounded">refresh</span>
                     <span>Reconectar noVNC</span>
-                </button>
-                <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
-                <button class="vnc-menu-item" onclick="switchDisplayProfile('pc');">
-                    <span class="material-symbols-rounded">computer</span>
-                    <span>Perfil PC (1920x1080, 1x)</span>
-                </button>
-                <button class="vnc-menu-item" onclick="switchDisplayProfile('mobile');">
-                    <span class="material-symbols-rounded">smartphone</span>
-                    <span>Perfil Móvil (1080x2400, 2x)</span>
                 </button>
                 <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0;"></div>
                 <a id="lnkOpenNewTab" href="#" target="_blank" class="vnc-menu-item" onclick="closeVncDropdown();" style="text-decoration: none;">
@@ -2833,21 +2809,6 @@
             }
         }
 
-        function changeVncScale(scaleVal) {
-            sendIframeVncAction('set_scale', { scale: scaleVal });
-        }
-
-        async function switchDisplayProfile(profile) {
-            closeVncDropdown();
-            if (profile === 'pc') {
-                showToast('Cambiando a Perfil PC (1920x1080 Nativo)...', 'computer');
-                await apiStartScreenWithOptions('1920x1080', 96);
-            } else if (profile === 'mobile') {
-                showToast('Cambiando a Perfil Móvil (1080x2400 Nativo)...', 'smartphone');
-                await apiStartScreenWithOptions('1080x2400', 96);
-            }
-        }
-
         async function apiStartScreenWithOptions(resolution, dpi) {
             const payload = {
                 backend: selectedBackend,
@@ -3077,12 +3038,6 @@
                 if (dot) {
                     dot.className = "status-dot " + (data.state === 'online' ? 'online' : data.state === 'offline' ? 'offline' : '');
                 }
-                if (data.state === 'online') {
-                    const sel = document.getElementById('selVncScale');
-                    const defaultVal = isMobileDevice() ? 'fill' : 'auto';
-                    const chosen = (sel && sel.value) ? sel.value : defaultVal;
-                    changeVncScale(chosen);
-                }
             }
         });
 
@@ -3097,28 +3052,14 @@
             if (!port && window.location.protocol !== 'https:') {
                 port = '19050';
             }
-            const isMobile = isMobileDevice();
             const isLite = (preferredViewerMode === 'lite');
             const page = isLite ? 'vnc_lite.html' : 'vnc.html';
             const wsPrefix = BASE_PATH ? (BASE_PATH.replace(/^\/+|\/+$/g, '') + '/') : '';
-            const resizeVal = isMobile ? 'false' : 'true';
-            const scaleMode = isMobile ? 'fill' : 'dynamic';
-            const extraParams = isLite ? `&scale=true&resize=${resizeVal}&scale_mode=${scaleMode}&embedded=true` : `&resize=${isMobile ? 'false' : 'remote'}&autoconnect=true&embedded=true`;
+            const extraParams = isLite ? '&scale=false&resize=remote&embedded=true' : '&scale=false&resize=remote&autoconnect=true&embedded=true';
             const portParam = port ? `&port=${port}` : '';
             const url = `${BASE_PATH}/novnc/${page}?host=${host}${portParam}&path=${wsPrefix}websockify${extraParams}`;
 
-            const selScale = document.getElementById('selVncScale');
-            if (selScale) {
-                selScale.value = isMobile ? 'fill' : 'dynamic';
-            }
-
             const ifr = document.getElementById('novncIframe');
-            ifr.onload = () => {
-                const sel = document.getElementById('selVncScale');
-                const defaultVal = isMobile ? 'fill' : 'dynamic';
-                const chosen = (sel && sel.value) ? sel.value : defaultVal;
-                changeVncScale(chosen);
-            };
             ifr.src = url;
             const link = document.getElementById('lnkOpenNewTab');
             if (link) link.href = url;
@@ -3333,7 +3274,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.67';
+                    const curVer = res.version || '0.0.68';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

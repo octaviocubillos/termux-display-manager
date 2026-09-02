@@ -58,7 +58,7 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "required_disk": "~1.2 GB",
         "ram_usage": "~150 MB",
         "exec_candidates": ["xfce4-session", "startxfce4"],
-        "packages": ["xfce4", "xfce4-terminal", "thunar", "libxres"],
+        "packages": ["xfce4", "xfce4-terminal", "thunar", "libxres", "xfce4-pulseaudio-plugin", "xfce4-battery-plugin", "xfce4-power-manager", "pavucontrol"],
         "icon": "xfce",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "XFCE",
