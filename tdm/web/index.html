@@ -321,6 +321,39 @@
             line-height: 1.3;
         }
 
+        .header-telemetry-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            margin: 0.2rem 0;
+        }
+
+        .mini-telemetry-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            padding: 0.15rem 0.45rem;
+            line-height: 1.25;
+            transition: all 0.2s ease;
+            cursor: default;
+        }
+
+        .mini-telemetry-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .mini-telemetry-pill .material-symbols-rounded {
+            font-size: 0.88rem;
+        }
+
         .island-actions {
             display: flex;
             align-items: center;
@@ -1051,19 +1084,45 @@
             <section class="status-island">
                 <div class="island-header">
                     <div class="device-info-box">
-                        <div style="display: flex; flex-direction: column; min-width: 0;">
+                        <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.68</span>
-                                <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
-                                    <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
-                                    <span id="txtBatteryVal">--%</span>
-                                </span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.69</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
                                 </button>
                             </div>
+
+                            <!-- TIRA DE MINI PILLS DE TELEMETRÍA (CPU, RAM, DISCO, RED, BATERÍA) -->
+                            <div class="header-telemetry-strip" id="boxHeaderTelemetry">
+                                <!-- CPU Pill -->
+                                <span class="mini-telemetry-pill" id="pillCpu" title="Uso y Temperatura de CPU">
+                                    <span class="material-symbols-rounded" style="color: #60a5fa;">memory</span>
+                                    <span id="txtCpuPill">CPU: --%</span>
+                                </span>
+                                <!-- RAM Pill -->
+                                <span class="mini-telemetry-pill" id="pillRam" title="Memoria RAM">
+                                    <span class="material-symbols-rounded" style="color: #4ade80;">view_in_ar</span>
+                                    <span id="txtRamPill">RAM: --%</span>
+                                </span>
+                                <!-- Disco Pill -->
+                                <span class="mini-telemetry-pill" id="pillStorage" title="Almacenamiento Termux">
+                                    <span class="material-symbols-rounded" style="color: #fde047;">storage</span>
+                                    <span id="txtStoragePill">Disco: --%</span>
+                                </span>
+                                <!-- Red / Ping Pill -->
+                                <span class="mini-telemetry-pill" id="pillNet" title="IP de Red y Latencia">
+                                    <span class="material-symbols-rounded" style="color: #38bdf8;">wifi</span>
+                                    <span id="txtNetPill">Red: --</span>
+                                </span>
+                                <!-- Batería Pill -->
+                                <span class="mini-telemetry-pill" id="pillDeviceBattery" title="Batería del dispositivo" style="color: #4ade80; border-color: rgba(74, 222, 128, 0.3);">
+                                    <span class="material-symbols-rounded" id="iconBattery">battery_charging_full</span>
+                                    <span id="txtBatteryVal">--%</span>
+                                </span>
+                            </div>
+
                             <div class="device-subtitle" style="display: flex; align-items: center; gap: 0.4rem;">
                                 <span class="status-dot online" id="devStatusDot"></span>
                                 <span id="txtDevSubtitle">Termux Local • Conectando...</span>
@@ -1089,77 +1148,6 @@
                         <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="refreshStatus()" title="Refrescar Estado">
                             <span class="material-symbols-rounded">refresh</span>
                         </button>
-                    </div>
-                </div>
-
-                <!-- TELEMETRY METRICS GRID (CPU, RAM, DISCO, RED) -->
-                <div class="telemetry-grid" id="boxTelemetryGrid" onclick="toggleAllTelemetry()" title="Toca para expandir / contraer detalles de telemetría">
-                    <!-- CPU -->
-                    <div class="telemetry-card">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.25rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #a8c7fa;">memory</span>
-                                <span>CPU</span>
-                            </span>
-                            <span id="txtCpuTemp" class="header-extra" style="font-size: 0.7rem; color: #6dd58c; font-weight: 700;">-- °C</span>
-                        </div>
-                        <div class="telemetry-card-value telemetry-full-val" id="txtCpuVal">-- %</div>
-                        <div class="telemetry-compact-val" id="txtCpuValCompact">-- %</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barCpu" style="width: 0%;"></div>
-                        </div>
-                        <div class="telemetry-card-sub" id="txtCpuModel">Detectando procesador...</div>
-                    </div>
-
-                    <!-- RAM -->
-                    <div class="telemetry-card">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.25rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #c4eed0;">view_in_ar</span>
-                                <span>RAM</span>
-                            </span>
-                            <span id="txtRamPct" class="header-extra" style="font-size: 0.7rem; font-weight: 700; color: #c4eed0;">-- %</span>
-                        </div>
-                        <div class="telemetry-card-value telemetry-full-val" id="txtRamVal">-- / -- MB</div>
-                        <div class="telemetry-compact-val" id="txtRamValCompact" style="color: #c4eed0;">-- %</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barRam" style="width: 0%;"></div>
-                        </div>
-                        <div class="telemetry-card-sub" id="txtRamSub">Calculando...</div>
-                    </div>
-
-                    <!-- STORAGE -->
-                    <div class="telemetry-card">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.25rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #fde293;">storage</span>
-                                <span>DISCO</span>
-                            </span>
-                            <span id="txtStoragePct" class="header-extra" style="font-size: 0.7rem; font-weight: 700; color: #fde293;">-- %</span>
-                        </div>
-                        <div class="telemetry-card-value telemetry-full-val" id="txtStorageVal">-- / -- GB</div>
-                        <div class="telemetry-compact-val" id="txtStorageValCompact" style="color: #fde293;">-- %</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barStorage" style="width: 0%;"></div>
-                        </div>
-                        <div class="telemetry-card-sub" id="txtStorageSub">Termux Home</div>
-                    </div>
-
-                    <!-- NETWORK & PING -->
-                    <div class="telemetry-card">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.25rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #ffb4ab;">wifi</span>
-                                <span>RED</span>
-                            </span>
-                            <span id="txtClientPing" class="header-extra" style="font-size: 0.7rem; font-weight: 800; color: #22c55e;">-- ms</span>
-                        </div>
-                        <div class="telemetry-card-value telemetry-full-val" id="txtNetIp" style="font-size: 0.95rem;">127.0.0.1</div>
-                        <div class="telemetry-compact-val" id="txtNetValCompact" style="color: #22c55e;">-- ms</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barPing" style="width: 100%; background: #22c55e;"></div>
-                        </div>
-                        <div class="telemetry-card-sub" id="txtDevModelName">POCO F3 • Android 13</div>
                     </div>
                 </div>
 
@@ -1903,97 +1891,37 @@
                     sub.innerText = `Termux Local • IP: ${lanIp} • Apagado`;
                 }
 
-                // TELEMETRÍA EN TIEMPO REAL:
+                // TELEMETRÍA COMPACTA (PILLS EN CABECERA JUNTO AL TÍTULO):
                 // 1. CPU
                 const cpu = data.cpu || {};
                 const cpuPct = cpu.percent || 0;
-                const txtCpuVal = document.getElementById('txtCpuVal');
-                const txtCpuValCompact = document.getElementById('txtCpuValCompact');
-                const txtCpuTemp = document.getElementById('txtCpuTemp');
-                const txtCpuModel = document.getElementById('txtCpuModel');
-                const barCpu = document.getElementById('barCpu');
-                if (txtCpuVal) txtCpuVal.innerText = `${cpuPct}%`;
-                if (txtCpuValCompact) txtCpuValCompact.innerText = `${cpuPct}%`;
-                if (txtCpuTemp) txtCpuTemp.innerText = cpu.temperature_formatted || '';
-                if (txtCpuModel) txtCpuModel.innerText = `${cpu.cores || 1} Núcleos • ${cpu.model || 'ARM64'}`;
-                if (barCpu) {
-                    barCpu.style.width = `${Math.min(100, Math.max(0, cpuPct))}%`;
-                    barCpu.style.background = cpuPct > 85 ? '#ef4444' : cpuPct > 60 ? '#eab308' : 'var(--md-sys-color-primary)';
-                }
+                const txtCpuPill = document.getElementById('txtCpuPill');
+                const pillCpu = document.getElementById('pillCpu');
+                if (txtCpuPill) txtCpuPill.innerText = `CPU: ${cpuPct}%`;
+                if (pillCpu) pillCpu.title = `CPU: ${cpuPct}% • ${cpu.temperature_formatted ? 'Temp: ' + cpu.temperature_formatted : ''} • ${cpu.cores || 1} Núcleos (${cpu.model || 'ARM64'})`;
 
                 // 2. RAM
                 const mem = data.memory || {};
-                const txtRamVal = document.getElementById('txtRamVal');
-                const txtRamValCompact = document.getElementById('txtRamValCompact');
-                const txtRamPct = document.getElementById('txtRamPct');
-                const txtRamSub = document.getElementById('txtRamSub');
-                const barRam = document.getElementById('barRam');
-                if (txtRamVal) txtRamVal.innerText = `${mem.used_mb || 0} / ${mem.total_mb || 0} MB`;
-                if (txtRamValCompact) txtRamValCompact.innerText = `${mem.percent || 0}%`;
-                if (txtRamPct) txtRamPct.innerText = `${mem.percent || 0}%`;
-                if (txtRamSub) txtRamSub.innerText = `${mem.available_mb || 0} MB libres`;
-                if (barRam) {
-                    barRam.style.width = `${Math.min(100, Math.max(0, mem.percent || 0))}%`;
-                    barRam.style.background = (mem.percent || 0) > 85 ? '#ef4444' : (mem.percent || 0) > 70 ? '#eab308' : '#22c55e';
-                }
+                const txtRamPill = document.getElementById('txtRamPill');
+                const pillRam = document.getElementById('pillRam');
+                if (txtRamPill) txtRamPill.innerText = `RAM: ${mem.percent || 0}%`;
+                if (pillRam) pillRam.title = `RAM: ${mem.percent || 0}% • ${mem.used_mb || 0} / ${mem.total_mb || 0} MB (${mem.available_mb || 0} MB libres)`;
 
                 // 3. Almacenamiento
                 const storage = data.storage || {};
-                const txtStorageVal = document.getElementById('txtStorageVal');
-                const txtStorageValCompact = document.getElementById('txtStorageValCompact');
-                const txtStoragePct = document.getElementById('txtStoragePct');
-                const txtStorageSub = document.getElementById('txtStorageSub');
-                const barStorage = document.getElementById('barStorage');
-                if (txtStorageVal) txtStorageVal.innerText = `${storage.used_gb || 0} / ${storage.total_gb || 0} GB`;
-                if (txtStorageValCompact) txtStorageValCompact.innerText = `${storage.percent || 0}%`;
-                if (txtStoragePct) txtStoragePct.innerText = `${storage.percent || 0}%`;
-                if (txtStorageSub) txtStorageSub.innerText = `${storage.free_gb || 0} GB disponibles`;
-                if (barStorage) {
-                    barStorage.style.width = `${Math.min(100, Math.max(0, storage.percent || 0))}%`;
-                    barStorage.style.background = (storage.percent || 0) > 90 ? '#ef4444' : '#3b82f6';
-                }
+                const txtStoragePill = document.getElementById('txtStoragePill');
+                const pillStorage = document.getElementById('pillStorage');
+                if (txtStoragePill) txtStoragePill.innerText = `Disco: ${storage.percent || 0}%`;
+                if (pillStorage) pillStorage.title = `Disco: ${storage.percent || 0}% • ${storage.used_gb || 0} / ${storage.total_gb || 0} GB (${storage.free_gb || 0} GB libres)`;
 
-                // 4. Red, Dispositivo y Ping Web -> Backend
+                // 4. Red, Dispositivo y Ping
                 const dev = data.device || {};
                 const net = data.network || {};
-                const txtNetIp = document.getElementById('txtNetIp');
-                const txtDevModelName = document.getElementById('txtDevModelName');
-                const txtClientPing = document.getElementById('txtClientPing');
-                const txtNetValCompact = document.getElementById('txtNetValCompact');
-                const barPing = document.getElementById('barPing');
-
-                if (txtNetIp) txtNetIp.innerText = `IP: ${net.lan_ip || '127.0.0.1'}`;
-                if (txtDevModelName) txtDevModelName.innerText = dev.os_details || `${dev.brand || 'Android'} ${dev.model || ''}`;
-
-                if (txtClientPing) {
-                    if (isLocalHost) {
-                        txtClientPing.innerText = '0 ms (Local)';
-                        txtClientPing.style.color = '#22c55e';
-                        if (txtNetValCompact) {
-                            txtNetValCompact.innerText = 'Local';
-                            txtNetValCompact.style.color = '#22c55e';
-                        }
-                        if (barPing) {
-                            barPing.style.background = '#22c55e';
-                            barPing.style.width = '100%';
-                        }
-                    } else if (clientPingMs !== null) {
-                        txtClientPing.innerText = `${clientPingMs} ms`;
-                        txtClientPing.style.color = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
-                        if (txtNetValCompact) {
-                            txtNetValCompact.innerText = `${clientPingMs} ms`;
-                            txtNetValCompact.style.color = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
-                        }
-                        if (barPing) {
-                            barPing.style.background = clientPingMs < 50 ? '#22c55e' : clientPingMs < 120 ? '#eab308' : '#ef4444';
-                            const quality = Math.max(15, Math.min(100, 100 - Math.round(clientPingMs / 2)));
-                            barPing.style.width = `${quality}%`;
-                        }
-                    } else {
-                        txtClientPing.innerText = '-- ms';
-                        if (txtNetValCompact) txtNetValCompact.innerText = net.lan_ip ? 'Online' : '--';
-                    }
-                }
+                const txtNetPill = document.getElementById('txtNetPill');
+                const pillNet = document.getElementById('pillNet');
+                const pingStr = isLocalHost ? 'Local' : (clientPingMs !== null ? `${clientPingMs} ms` : '-- ms');
+                if (txtNetPill) txtNetPill.innerText = `Red: ${net.lan_ip || '127.0.0.1'} (${pingStr})`;
+                if (pillNet) pillNet.title = `Dispositivo: ${dev.brand || 'Android'} ${dev.model || ''} • IP: ${net.lan_ip || '127.0.0.1'} • Latencia: ${pingStr}`;
                 // 5. BATERÍA Y DISPOSITIVO FÍSICO
                 const bat = data.battery || (data.device_status && data.device_status.battery) || {};
                 const batPct = (bat.percentage !== undefined) ? bat.percentage : 100;
@@ -3274,7 +3202,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.68';
+                    const curVer = res.version || '0.0.69';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');
