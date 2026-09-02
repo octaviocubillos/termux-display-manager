@@ -46,6 +46,7 @@ if command -v rsync &>/dev/null; then
         "${SCRIPT_DIR}/index.html" \
         "${SCRIPT_DIR}/install.sh" \
         "${SCRIPT_DIR}/clean.sh" \
+        "${SCRIPT_DIR}/clean" \
         "${SCRIPT_DIR}/go" \
         "${SCRIPT_DIR}/nginx.conf" \
         "${SCRIPT_DIR}/Caddyfile" \
@@ -55,7 +56,7 @@ if command -v rsync &>/dev/null; then
     [ -d "${SCRIPT_DIR}/changelog" ] && rsync -avz "${SCRIPT_DIR}/changelog/" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/changelog/"
     [ -d "${SCRIPT_DIR}/icons" ]    && rsync -avz "${SCRIPT_DIR}/icons/"    "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/icons/"
 else
-    scp "${SCRIPT_DIR}/index.html" "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/clean.sh" "${SCRIPT_DIR}/go" "${SCRIPT_DIR}/tdm-bundle.tar.gz" \
+    scp "${SCRIPT_DIR}/index.html" "${SCRIPT_DIR}/install.sh" "${SCRIPT_DIR}/clean.sh" "${SCRIPT_DIR}/clean" "${SCRIPT_DIR}/go" "${SCRIPT_DIR}/tdm-bundle.tar.gz" \
         "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/"
 fi
 
