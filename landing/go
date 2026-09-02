@@ -6,14 +6,22 @@
 
 set -e
 
+# ------------------------------------------------------------------------------
+# Verificación de entorno: Solo ejecutable dentro de Termux en Android
+# ------------------------------------------------------------------------------
+if [ ! -d "/data/data/com.termux" ] || { [ -z "$TERMUX_VERSION" ] && [ ! -f "/data/data/com.termux/files/usr/bin/bash" ]; }; then
+    echo "[TDM] Error: Este script está protegido y solo puede ejecutarse dentro del entorno Termux en Android." >&2
+    exit 1
+fi
+
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
 SYSTEM_DIR="$PREFIX/opt/termux-display-manager"
 TDM_HOST="${TDM_HOST:-https://tdm.oton.cl}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Termux Display Manager (v0.0.70)"
-echo "🌐 Origen: $TDM_HOST"
+echo "[TDM] Instalando Termux Display Manager"
+echo "Origen: $TDM_HOST"
 echo "====================================================="
 
 # 1. Configurar propiedades de Termux (comunicación externa)
@@ -143,11 +151,11 @@ fi
 # Solicitar permisos de Android para inicio automático de Termux:X11
 if [ -d "/data/data/com.termux" ]; then
     echo "====================================================="
-    echo "📱 [Permisos de Android] Configuración de inicio automático de X11"
+    echo "[Android] Configuración de inicio automático de X11"
     echo "====================================================="
-    echo "ℹ️  Para que la app gráfica Termux:X11 se abra automáticamente al iniciar,"
-    echo "   Android requiere el permiso 'Mostrar sobre otras aplicaciones'."
-    echo "🚀 Abriendo pantalla de permisos de Android en tu móvil..."
+    echo "• Para que la app gráfica Termux:X11 se abra automáticamente al iniciar,"
+    echo "  Android requiere el permiso 'Mostrar sobre otras aplicaciones'."
+    echo "• Abriendo pantalla de permisos de Android en tu móvil..."
     
     am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux" 2>/dev/null || \
     am start -a android.settings.APPLICATION_DETAILS_SETTINGS -d "package:com.termux" 2>/dev/null || \
@@ -156,11 +164,11 @@ if [ -d "/data/data/com.termux" ]; then
     if pm list packages 2>/dev/null | grep -q "com.termux.x11"; then
         am start -a android.settings.action.MANAGE_OVERLAY_PERMISSION -d "package:com.termux.x11" 2>/dev/null || true
     fi
-    echo "💡 Activa 'Permitir' en la pantalla de ajustes de tu teléfono."
+    echo "• Activa 'Permitir' en la pantalla de ajustes de tu teléfono."
 fi
 
 echo "====================================================="
-echo "✅ [TDM] Instalación completada con éxito!"
-echo "🌐 Dashboard Web y Control: http://localhost:19050"
-echo "👉 Comandos disponibles: tdm start, tdm stop, tdm permissions"
+echo "[TDM] Instalación completada con éxito."
+echo "Dashboard Web: http://localhost:19050"
+echo "Comandos disponibles: tdm start, tdm stop, tdm permissions"
 echo "====================================================="

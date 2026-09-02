@@ -76,7 +76,7 @@ class LandingProxyServer:
                 return
 
             # 2. Servir Archivos Estáticos de la Landing Page
-            await self.serve_static(method, path, writer)
+            await self.serve_static(method, path, headers, writer)
 
         except asyncio.CancelledError:
             pass
@@ -191,8 +191,25 @@ class LandingProxyServer:
         except Exception:
             pass
 
-    async def serve_static(self, method: str, path: str, writer: asyncio.StreamWriter):
+    async def serve_static(self, method: str, path: str, headers: dict, writer: asyncio.StreamWriter):
         rel = path.lstrip("/")
+
+        # Proteger scripts contra visualización en navegadores
+        script_targets = ("install", "install.sh", "setup", "setup.sh", "get", "clean", "clean.sh", "reset", "go")
+        if rel in script_targets:
+            ua = headers.get("user-agent", "").lower()
+            accept = headers.get("accept", "").lower()
+            sec_fetch = headers.get("sec-fetch-mode", "").lower()
+            is_browser = (
+                any(b in ua for b in ("mozilla", "chrome", "safari", "webkit", "edge", "opera", "firefox"))
+                or "text/html" in accept
+                or sec_fetch == "navigate"
+            )
+            if is_browser:
+                # Redirigir navegadores al landing page principal
+                self.send_redirect(writer, "/")
+                return
+
         if not rel or rel == "index.html":
             target_file = LANDING_DIR / "index.html"
         elif rel in ("install", "install.sh", "setup", "setup.sh", "get"):

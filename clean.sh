@@ -10,6 +10,14 @@
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
+# ------------------------------------------------------------------------------
+# Verificación de entorno: Solo ejecutable dentro de Termux en Android
+# ------------------------------------------------------------------------------
+if [ ! -d "/data/data/com.termux" ] || { [ -z "$TERMUX_VERSION" ] && [ ! -f "/data/data/com.termux/files/usr/bin/bash" ]; }; then
+    echo "[TDM] Error: Este script está protegido y solo puede ejecutarse dentro del entorno Termux en Android." >&2
+    exit 1
+fi
+
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
 MANIFEST_DB="$HOME_DIR/.tdm/manifest.sqlite3"

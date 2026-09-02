@@ -8,6 +8,14 @@
 
 set -e
 
+# ------------------------------------------------------------------------------
+# Verificación de entorno: Solo ejecutable dentro de Termux en Android
+# ------------------------------------------------------------------------------
+if [ ! -d "/data/data/com.termux" ] || { [ -z "$TERMUX_VERSION" ] && [ ! -f "/data/data/com.termux/files/usr/bin/bash" ]; }; then
+    echo "[TDM] Error: Este script está protegido y solo puede ejecutarse dentro del entorno Termux en Android." >&2
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/pyproject.toml" ]; then
     DIR="$SCRIPT_DIR"
@@ -18,7 +26,7 @@ PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 HOME_DIR="${HOME:-/data/data/com.termux/files/home}"
 
 echo "====================================================="
-echo "🚀 [TDM] Instalando Backend de Termux Display Manager"
+echo "[TDM] Instalando Backend de Termux Display Manager"
 echo "====================================================="
 
 # 1. Habilitar permisos de comunicación externa para el APK
@@ -45,7 +53,7 @@ if [ "$DIR" != "$SYSTEM_DIR" ] && [ -f "$DIR/pyproject.toml" ]; then
     cp -rf "$DIR"/* "$SYSTEM_DIR"/ 2>/dev/null || true
     rm -rf "$SYSTEM_DIR/landing" "$SYSTEM_DIR/.git" "$SYSTEM_DIR/dist" 2>/dev/null || true
 elif [ ! -f "$SYSTEM_DIR/pyproject.toml" ]; then
-    echo "⬇️  Descargando paquete oficial de TDM..."
+    echo "• Descargando paquete oficial de TDM..."
     curl -sSL "https://tdm.oton.cl/tdm-bundle.tar.gz" -o "/tmp/tdm-bundle.tar.gz" 2>/dev/null && \
         tar -xzf "/tmp/tdm-bundle.tar.gz" -C "$SYSTEM_DIR" 2>/dev/null && rm -f "/tmp/tdm-bundle.tar.gz" || \
     curl -sSL "https://github.com/octaviocubillos/termux-display-manager/archive/refs/heads/main.tar.gz" | \
@@ -71,7 +79,7 @@ apt-get update -y || pkg update -y || true
 pkg install -y python dbus tigervnc xorg-xauth xorg-xsetroot procps tmux || true
 apt-get --only-upgrade install -y libc++ >/dev/null 2>&1 || true
 
-echo "🧹 [TDM] Optimizando espacio en disco (autoremove & autoclean)..."
+echo "[TDM] Optimizando espacio en disco..."
 apt-get autoremove -y --purge >/dev/null 2>&1 || true
 apt-get autoclean -y >/dev/null 2>&1 || true
 apt-get clean >/dev/null 2>&1 || true
@@ -112,12 +120,12 @@ chmod +x "$BIN_PATH" || true
 chmod +x "$SYSTEM_DIR"/tdm/scripts/*.sh "$SYSTEM_DIR"/*.sh 2>/dev/null || true
 
 echo "====================================================="
-echo "✅ [TDM] Backend instalado con éxito en el sistema ($SYSTEM_DIR)!"
-echo "🚀 Iniciando TDM Service en segundo plano..."
+echo "[TDM] Backend instalado con éxito en el sistema ($SYSTEM_DIR)"
+echo "[TDM] Iniciando TDM Service en segundo plano..."
 echo "====================================================="
 
 pkill -f "tdm.cli.main" 2>/dev/null || true
 sleep 0.5
 PYTHONPATH="$SYSTEM_DIR" "$BIN_PATH" service restart
 
-echo "🎉 TDM Core activo. Abre el navegador en http://127.0.0.1:19050"
+echo "[TDM] Core activo. Acceso Web: http://127.0.0.1:19050"
