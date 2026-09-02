@@ -409,86 +409,142 @@
             user-select: none;
         }
 
-        .telemetry-card {
-            background: var(--md-sys-color-surface-container);
-            border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: var(--md-shape-corner-md);
-            padding: 0.65rem 0.75rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            gap: 0.25rem;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 0;
-            overflow: hidden;
+        /* NUEVO ENFOQUE: MODERN TELEMETRY CHIPS */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.6rem;
+            width: 100%;
             box-sizing: border-box;
-            cursor: pointer;
-            position: relative;
         }
 
-        .telemetry-card:hover {
-            border-color: rgba(168, 199, 250, 0.45);
-            background: rgba(255, 255, 255, 0.05);
+        @media (max-width: 680px) {
+            .telemetry-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                gap: 0.5rem !important;
+            }
+        }
+
+        .telemetry-chip {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: var(--md-shape-corner-md);
+            padding: 0.55rem 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+            min-width: 0;
+            box-sizing: border-box;
+            position: relative;
+            user-select: none;
+        }
+
+        .telemetry-chip:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
             transform: translateY(-1px);
         }
 
-        .telemetry-card:active {
+        .telemetry-chip:active {
             transform: scale(0.97);
             background: rgba(255, 255, 255, 0.08);
         }
 
-        .telemetry-card-header {
+        .telemetry-chip-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .telemetry-chip-icon .material-symbols-rounded {
+            font-size: 1.15rem;
+        }
+
+        .telemetry-chip-icon.cpu {
+            background: rgba(59, 130, 246, 0.14);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .telemetry-chip-icon.ram {
+            background: rgba(34, 197, 94, 0.14);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+        }
+        .telemetry-chip-icon.storage {
+            background: rgba(245, 158, 11, 0.14);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+        .telemetry-chip-icon.net {
+            background: rgba(56, 189, 248, 0.14);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .telemetry-chip-content {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+            gap: 0.1rem;
+        }
+
+        .telemetry-chip-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.72rem;
+            min-width: 0;
+            gap: 0.25rem;
+        }
+
+        .telemetry-chip-title {
+            font-size: 0.68rem;
             font-weight: 700;
             color: #94a3b8;
-            min-width: 0;
-            gap: 0.2rem;
-        }
-
-        .telemetry-card-header span {
-            min-width: 0;
+            letter-spacing: 0.3px;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        .telemetry-card-value {
-            font-size: 1.05rem;
+        .telemetry-chip-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+
+        .telemetry-chip-val {
+            font-size: 0.88rem;
             font-weight: 800;
-            color: #fff;
-            letter-spacing: -0.2px;
+            color: #ffffff;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             line-height: 1.2;
         }
 
-        .telemetry-progress-bg {
+        .telemetry-chip-bar {
             width: 100%;
-            height: 4px;
+            height: 3px;
             background: rgba(255, 255, 255, 0.08);
             border-radius: 9999px;
             overflow: hidden;
-            margin: 0.1rem 0;
+            margin-top: 0.15rem;
         }
 
-        .telemetry-progress-fill {
+        .telemetry-chip-fill {
             height: 100%;
-            background: var(--md-sys-color-primary);
             border-radius: 9999px;
             transition: width 0.4s ease;
         }
-
-        .telemetry-card-sub {
-            font-size: 0.65rem;
-            color: var(--md-sys-color-on-surface-variant);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .telemetry-chip-fill.cpu { background: #60a5fa; }
+        .telemetry-chip-fill.ram { background: #4ade80; }
+        .telemetry-chip-fill.storage { background: #fbbf24; }
+        .telemetry-chip-fill.net { background: #38bdf8; }
 
         .device-control-box {
             background: rgba(0, 0, 0, 0.25);
@@ -540,48 +596,6 @@
             box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
             transform: scale(1.01);
         }
-
-        @media (max-width: 600px) {
-            .telemetry-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-                gap: 0.35rem !important;
-            }
-            .telemetry-card {
-                padding: 0.45rem 0.2rem !important;
-                border-radius: 10px !important;
-                gap: 0.12rem !important;
-                text-align: center !important;
-                align-items: center !important;
-                justify-content: center !important;
-            }
-            .telemetry-card-header {
-                justify-content: center !important;
-                font-size: 0.58rem !important;
-                font-weight: 700 !important;
-                letter-spacing: 0.1px !important;
-                gap: 0.15rem !important;
-            }
-            .telemetry-card-header .material-symbols-rounded {
-                font-size: 0.75rem !important;
-            }
-            .telemetry-card-header span:last-child {
-                display: none !important;
-            }
-            .telemetry-card-value {
-                font-size: 0.72rem !important;
-                font-weight: 800 !important;
-                line-height: 1.15 !important;
-                letter-spacing: -0.2px !important;
-                margin: 0.04rem 0 !important;
-            }
-            .telemetry-progress-bg {
-                height: 3px !important;
-                margin: 0.04rem 0 !important;
-                width: 85% !important;
-            }
-            .telemetry-card-sub {
-                display: none !important;
-            }
             .telemetry-modal-card {
                 width: 95% !important;
                 max-width: 95% !important;
@@ -1164,7 +1178,7 @@
                         <div style="display: flex; flex-direction: column; min-width: 0; gap: 0.35rem;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.79</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.80</span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -1200,70 +1214,74 @@
                     </div>
                 </div>
 
-                <!-- TELEMETRY METRICS GRID (CPU, RAM, DISCO, RED - 4 EN LA MISMA FILA) -->
+                <!-- TELEMETRY METRICS GRID (CHIPS / CAPSULES MODERNAS) -->
                 <div class="telemetry-grid" id="boxTelemetryGrid">
-                    <!-- CPU -->
-                    <div class="telemetry-card" onclick="openTelemetryModal('cpu')" title="Toca para ver detalles de CPU">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.2rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #60a5fa;">memory</span>
-                                <span>CPU</span>
-                            </span>
-                            <span id="txtCpuTemp" style="font-size: 0.68rem; color: #4ade80; font-weight: 700;">--°C</span>
+                    <!-- CPU CHIP -->
+                    <div class="telemetry-chip" onclick="openTelemetryModal('cpu')" title="Toca para ver detalles de CPU">
+                        <div class="telemetry-chip-icon cpu">
+                            <span class="material-symbols-rounded">memory</span>
                         </div>
-                        <div class="telemetry-card-value" id="txtCpuVal">--%</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barCpu" style="width: 0%;"></div>
+                        <div class="telemetry-chip-content">
+                            <div class="telemetry-chip-row">
+                                <span class="telemetry-chip-title">CPU</span>
+                                <span class="telemetry-chip-tag" id="txtCpuTemp">--°C</span>
+                            </div>
+                            <div class="telemetry-chip-val" id="txtCpuVal">--%</div>
+                            <div class="telemetry-chip-bar">
+                                <div class="telemetry-chip-fill cpu" id="barCpu" style="width: 0%;"></div>
+                            </div>
                         </div>
-                        <div class="telemetry-card-sub" id="txtCpuModel">Procesador</div>
                     </div>
 
-                    <!-- RAM -->
-                    <div class="telemetry-card" onclick="openTelemetryModal('ram')" title="Toca para ver detalles de RAM">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.2rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #4ade80;">developer_board</span>
-                                <span>RAM</span>
-                            </span>
-                            <span id="txtRamPct" style="font-size: 0.68rem; font-weight: 700; color: #4ade80;">--%</span>
+                    <!-- RAM CHIP -->
+                    <div class="telemetry-chip" onclick="openTelemetryModal('ram')" title="Toca para ver detalles de RAM">
+                        <div class="telemetry-chip-icon ram">
+                            <span class="material-symbols-rounded">developer_board</span>
                         </div>
-                        <div class="telemetry-card-value" id="txtRamVal">-- MB</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barRam" style="width: 0%;"></div>
+                        <div class="telemetry-chip-content">
+                            <div class="telemetry-chip-row">
+                                <span class="telemetry-chip-title">RAM</span>
+                                <span class="telemetry-chip-tag" id="txtRamPct">--%</span>
+                            </div>
+                            <div class="telemetry-chip-val" id="txtRamVal">-- MB</div>
+                            <div class="telemetry-chip-bar">
+                                <div class="telemetry-chip-fill ram" id="barRam" style="width: 0%;"></div>
+                            </div>
                         </div>
-                        <div class="telemetry-card-sub" id="txtRamSub">Memoria</div>
                     </div>
 
-                    <!-- STORAGE -->
-                    <div class="telemetry-card" onclick="openTelemetryModal('storage')" title="Toca para ver detalles de Almacenamiento">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.2rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #fde047;">storage</span>
-                                <span>DISCO</span>
-                            </span>
-                            <span id="txtStoragePct" style="font-size: 0.68rem; font-weight: 700; color: #fde047;">--%</span>
+                    <!-- STORAGE CHIP -->
+                    <div class="telemetry-chip" onclick="openTelemetryModal('storage')" title="Toca para ver detalles de Almacenamiento">
+                        <div class="telemetry-chip-icon storage">
+                            <span class="material-symbols-rounded">storage</span>
                         </div>
-                        <div class="telemetry-card-value" id="txtStorageVal">-- GB</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barStorage" style="width: 0%;"></div>
+                        <div class="telemetry-chip-content">
+                            <div class="telemetry-chip-row">
+                                <span class="telemetry-chip-title">DISCO</span>
+                                <span class="telemetry-chip-tag" id="txtStoragePct">--%</span>
+                            </div>
+                            <div class="telemetry-chip-val" id="txtStorageVal">-- GB</div>
+                            <div class="telemetry-chip-bar">
+                                <div class="telemetry-chip-fill storage" id="barStorage" style="width: 0%;"></div>
+                            </div>
                         </div>
-                        <div class="telemetry-card-sub" id="txtStorageSub">Almacenamiento</div>
                     </div>
 
-                    <!-- NETWORK & PING -->
-                    <div class="telemetry-card" onclick="openTelemetryModal('network')" title="Toca para ver detalles de Red y Conectividad">
-                        <div class="telemetry-card-header">
-                            <span style="display: flex; align-items: center; gap: 0.2rem;">
-                                <span class="material-symbols-rounded" style="font-size: 0.95rem; color: #38bdf8;">wifi</span>
-                                <span>RED</span>
-                            </span>
-                            <span id="txtClientPing" style="font-size: 0.68rem; font-weight: 800; color: #4ade80;">--</span>
+                    <!-- NETWORK CHIP -->
+                    <div class="telemetry-chip" onclick="openTelemetryModal('network')" title="Toca para ver detalles de Red y Conectividad">
+                        <div class="telemetry-chip-icon net">
+                            <span class="material-symbols-rounded">wifi</span>
                         </div>
-                        <div class="telemetry-card-value" id="txtNetIp">127.0.0.1</div>
-                        <div class="telemetry-progress-bg">
-                            <div class="telemetry-progress-fill" id="barPing" style="width: 100%; background: #4ade80;"></div>
+                        <div class="telemetry-chip-content">
+                            <div class="telemetry-chip-row">
+                                <span class="telemetry-chip-title">RED</span>
+                                <span class="telemetry-chip-tag" id="txtClientPing">--</span>
+                            </div>
+                            <div class="telemetry-chip-val" id="txtNetIp">127.0.0.1</div>
+                            <div class="telemetry-chip-bar">
+                                <div class="telemetry-chip-fill net" id="barPing" style="width: 100%;"></div>
+                            </div>
                         </div>
-                        <div class="telemetry-card-sub" id="txtDevModelName">Android</div>
                     </div>
                 </div>
 
@@ -3644,7 +3662,7 @@
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.79';
+                    const curVer = res.version || '0.0.80';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');
