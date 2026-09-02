@@ -2,8 +2,10 @@
 Termux Display Manager (TDM) - Información de Versionado
 """
 
-__version__ = "0.0.84"
-__version_code__ = 84
+__version__ = "0.0.85"
+__version_code__ = 85
+__author__ = "Octavio Cubillos"
+__description__ = "Termux Display Manager - Gestor autónomo y universal de pantallas y escritorios para Termux"
 MANIFEST_SCHEMA_VERSION = 1
 
 def get_version_info() -> dict:

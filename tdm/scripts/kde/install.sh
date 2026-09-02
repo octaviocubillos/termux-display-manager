@@ -17,9 +17,9 @@ fi
 if command -v pkg >/dev/null 2>&1; then
     pkg install -y x11-repo || true
     pkg update -y || true
-    echo "[TDM_PROGRESS:60:Instalando plasma-desktop, konsole, dolphin, audio y batería]"
-    pkg install -y plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio || {
-        for p in plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio; do pkg install -y "$p" || true; done
+    echo "[TDM_PROGRESS:60:Instalando plasma-desktop, konsole, dolphin, audio y utilidades]"
+    pkg install -y plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio xorg-setxkbmap xorg-xrandr xorg-xsetroot || {
+        for p in plasma-desktop plasma-workspace breeze konsole dolphin powerdevil pavucontrol pulseaudio xorg-setxkbmap xorg-xrandr xorg-xsetroot; do pkg install -y "$p" || true; done
     }
 elif [ -f "/etc/alpine-release" ] || command -v apk >/dev/null 2>&1; then
     $SUDO apk update || true
@@ -31,6 +31,11 @@ elif command -v pacman >/dev/null 2>&1; then
     $SUDO pacman -Sy --noconfirm plasma-desktop plasma-workspace konsole dolphin breeze || true
 elif command -v dnf >/dev/null 2>&1; then
     $SUDO dnf install -y @kde-desktop-environment || true
+fi
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$DIR/configure.sh" ]; then
+    bash "$DIR/configure.sh" 96 || true
 fi
 
 echo "[TDM_PROGRESS:100:KDE Plasma instalado con éxito]"

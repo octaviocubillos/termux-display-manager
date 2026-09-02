@@ -23,15 +23,16 @@ DESKTOP_CATALOG: List[Dict[str, Any]] = [
         "description": "Entorno de escritorio moderno, completo y visualmente refinado.",
         "required_disk": "~2.8 GB",
         "ram_usage": "~450 MB",
-        "exec_candidates": ["startplasma-x11", "plasma-session", "startplasma-wayland"],
+        "exec_candidates": ["startplasma-x11", "plasma_session", "plasma-session", "startplasma-wayland"],
         "packages": ["plasma-desktop", "plasma-workspace", "konsole", "dolphin", "powerdevil", "pavucontrol"],
         "icon": "kde",
         "env_vars": {
             "XDG_CURRENT_DESKTOP": "KDE",
             "DESKTOP_SESSION": "plasma",
             "KDE_FULL_SESSION": "true",
-            "KDE_SESSION_VERSION": "5",
-            "QT_AUTO_SCREEN_SCALE_FACTOR": "0"
+            "KDE_SESSION_VERSION": "6",
+            "QT_AUTO_SCREEN_SCALE_FACTOR": "0",
+            "QT_QPA_PLATFORM": "xcb"
         }
     },
     {

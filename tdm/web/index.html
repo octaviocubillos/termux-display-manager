@@ -2387,12 +2387,15 @@
                     if (btnCancelDe) btnCancelDe.style.display = 'none';
                     if (btnInstallAction) btnInstallAction.style.display = 'none';
                 } else if (isDeInstalled || isScreenOn) {
-                    const deTitle = (de?.name || de?.id?.toUpperCase() || 'Entorno') + ' Desktop';
+                    const deId = (de && (de.id === 'xfce4' || de.id === 'xfce')) ? 'xfce' : (de?.id || 'kde');
+                    if (!window._userSelectedDesktopManually) {
+                        selectedDesktop = deId;
+                    }
+                    const deTitle = (de?.name || deId.toUpperCase() || 'Entorno') + ' Desktop';
                     document.getElementById('txtDeName').innerText = deTitle;
                     document.getElementById('txtDePath').innerText = de?.executable || 'Listo para ejecutar';
                     const imgLogo = document.getElementById('imgDeLogo');
                     if (imgLogo && de) {
-                        const deId = (de.id === 'xfce4' || de.id === 'xfce') ? 'xfce' : de.id;
                         imgLogo.src = `assets/logos/${deId}.svg`;
                         imgLogo.alt = de.name || de.id;
                     }
@@ -2701,6 +2704,7 @@
         }
 
         function pickDe(id, name, icon, el) {
+            window._userSelectedDesktopManually = true;
             selectedDesktop = id;
             document.querySelectorAll('.de-pill-card').forEach(c => c.classList.remove('selected'));
             if (el) el.classList.add('selected');
@@ -3009,10 +3013,14 @@
         async function apiStartScreen() {
             const optDisplay = getOptimalClientDisplay();
             showToast(`Iniciando ${selectedBackend.toUpperCase()} (${optDisplay.resolution})...`, 'rocket_launch');
+            const de = lastStatusData?.installed_desktop;
+            const targetDe = (de && de.installed && de.id && (!window._userSelectedDesktopManually || !selectedDesktop))
+                ? ((de.id === 'xfce4') ? 'xfce' : de.id)
+                : (selectedDesktop || 'kde');
             const payload = {
                 backend: selectedBackend,
                 mode: 'desktop',
-                desktop: selectedDesktop,
+                desktop: targetDe,
                 resolution: optDisplay.resolution,
                 dpi: optDisplay.dpi,
                 audio: true,
@@ -3098,10 +3106,14 @@
         }
 
         async function apiStartScreenWithOptions(resolution, dpi) {
+            const de = lastStatusData?.installed_desktop;
+            const targetDe = (de && de.installed && de.id && (!window._userSelectedDesktopManually || !selectedDesktop))
+                ? ((de.id === 'xfce4') ? 'xfce' : de.id)
+                : (selectedDesktop || 'kde');
             const payload = {
                 backend: selectedBackend,
                 mode: 'desktop',
-                desktop: selectedDesktop,
+                desktop: targetDe,
                 resolution: resolution,
                 dpi: dpi,
                 audio: true,

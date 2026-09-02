@@ -1,4 +1,5 @@
-const CACHE_NAME = 'tdm-pwa-v0.0.84';
+// Service Worker para Termux Display Manager (TDM) PWA
+const CACHE_NAME = 'tdm-pwa-v0.0.85';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
