@@ -160,12 +160,13 @@ BACKEND_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "id": BACKEND_RDP,
-        "name": "xrdp (Remote Desktop)",
-        "description": "Protocolo RDP oficial de Microsoft. Máxima compresión y compatible con la app Microsoft RD Client.",
-        "exec_candidates": ["xrdp"],
-        "packages": ["xrdp", "pulseaudio"],
-        "protocols": ["RDP"],
+        "name": "RDP / Remote Desktop",
+        "description": "Acceso remoto con Microsoft RD Client (Android/PC). Levanta Xvnc en :5900 + xrdp si está instalado.",
+        "exec_candidates": ["xrdp", "Xvnc", "vncserver"],
+        "packages": ["tigervnc", "xrdp"],
+        "protocols": ["RDP", "RFB (VNC)"],
         "default_port": PORT_RDP_DEFAULT,
+        "vnc_fallback_port": PORT_VNC_DEFAULT,
         "icon": "desktop"
     }
 ]

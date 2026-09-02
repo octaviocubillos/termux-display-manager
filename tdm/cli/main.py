@@ -245,9 +245,28 @@ async def handle_doctor():
         print(f"  [i] Tailscale Mesh VPN:    No detectado (Opcional para acceso fuera de casa)")
 
 async def handle_server(args, is_hub=False):
+    import faulthandler
+    faulthandler.enable()  # Captura segfaults con backtrace completo en stderr
+
     from tdm.server.http_server import AsyncHTTPServer
-    server = AsyncHTTPServer(host=args.host, port=args.port, is_hub=is_hub)
-    await server.start()
+
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            server = AsyncHTTPServer(host=args.host, port=args.port, is_hub=is_hub)
+            await server.start()
+            return
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                if attempt < max_attempts:
+                    print(f"⚠️  Puerto {args.port} en uso. Liberando... (intento {attempt}/{max_attempts})")
+                    subprocess.run(["fuser", "-k", f"{args.port}/tcp"], capture_output=True)
+                    await asyncio.sleep(1.5)
+                else:
+                    print(f"❌ Puerto {args.port} ocupado tras {max_attempts} intentos. Abortando.")
+                    raise
+            else:
+                raise
 
 async def handle_agent(args):
     from tdm.agent.client import TDMAgent
