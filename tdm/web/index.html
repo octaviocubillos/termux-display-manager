@@ -1054,7 +1054,11 @@
                         <div style="display: flex; flex-direction: column; min-width: 0;">
                             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                                 <span class="device-title" id="txtDevTitle">Termux Display Manager</span>
-                                <span id="lblHeaderVersion" class="version-badge">v0.0.64</span>
+                                <span id="lblHeaderVersion" class="version-badge">v0.0.65</span>
+                                <span id="pillDeviceBattery" class="version-badge" style="background: rgba(34, 197, 94, 0.12); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;" title="Batería del dispositivo">
+                                    <span class="material-symbols-rounded" id="iconBattery" style="font-size: 0.95rem;">battery_charging_full</span>
+                                    <span id="txtBatteryVal">--%</span>
+                                </span>
                                 <button class="btn-update-badge" id="btnHeaderUpdate" onclick="apiTriggerUpdate()" style="display: none;" title="Nueva versión disponible. Toca para actualizar el backend de TDM.">
                                     <span class="material-symbols-rounded" style="font-size: 0.95rem;">system_update_alt</span>
                                     <span id="txtHeaderUpdateVersion">Actualizar</span>
@@ -1249,6 +1253,78 @@
                             </a>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- DISPOSITIVO & HARDWARE CONTROLS (BATERÍA, VOLUMEN, API) -->
+            <section class="card-surface" id="secDeviceControls" style="padding: 0.95rem 1.15rem; margin-bottom: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(59, 130, 246, 0.15); display: flex; align-items: center; justify-content: center; color: #60a5fa;">
+                            <span class="material-symbols-rounded" style="font-size: 1.15rem;">smartphone</span>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">Control del Dispositivo</div>
+                            <div style="font-size: 0.72rem; color: var(--md-sys-color-on-surface-variant);" id="txtDevControlSub">Batería, volumen y telemetría de hardware</div>
+                        </div>
+                    </div>
+                    <div id="badgeTermuxApiStatus" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: 600; display: flex; align-items: center; gap: 0.3rem;">
+                        <span class="material-symbols-rounded" style="font-size: 0.85rem;">check_circle</span>
+                        <span>Termux:API Activo</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem;">
+                    <!-- BATERÍA Y ENERGÍA -->
+                    <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <span style="font-size: 0.76rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" id="cardBatIcon" style="font-size: 1.05rem; color: #4ade80;">battery_charging_full</span>
+                                <span>Batería</span>
+                            </span>
+                            <span id="txtCardBatStatus" style="font-size: 0.72rem; font-weight: 700; color: #4ade80;">Cargando (92%)</span>
+                        </div>
+                        <div style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 9999px; overflow: hidden; margin-bottom: 0.45rem;">
+                            <div id="barCardBattery" style="width: 92%; height: 100%; background: #4ade80; border-radius: 9999px; transition: width 0.4s ease;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: #64748b;">
+                            <span>Temp: <strong id="txtCardBatTemp" style="color: #cbd5e1;">--°C</strong></span>
+                            <span>Salud: <strong id="txtCardBatHealth" style="color: #cbd5e1;">--</strong></span>
+                            <span>Tipo: <strong id="txtCardBatPlugged" style="color: #cbd5e1;">--</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- CONTROL DE VOLUMEN MULTIMEDIA -->
+                    <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <span style="font-size: 0.76rem; font-weight: 700; color: #94a3b8; display: flex; align-items: center; gap: 0.3rem;">
+                                <span class="material-symbols-rounded" id="cardVolIcon" style="font-size: 1.05rem; color: #60a5fa;">volume_up</span>
+                                <span>Volumen Multimedia</span>
+                            </span>
+                            <span id="txtCardVolVal" style="font-size: 0.72rem; font-weight: 700; color: #60a5fa;">75%</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="apiSetVolumeQuick(0)" title="Silenciar / Mute" style="width: 28px; height: 28px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem;">volume_off</span>
+                            </button>
+                            <input type="range" id="rngCardVolume" min="0" max="100" value="75" oninput="apiSetVolume(this.value)" style="flex: 1; accent-color: #3b82f6; cursor: pointer;">
+                            <button class="btn-m3 btn-m3-tonal btn-m3-icon-only btn-m3-sm" onclick="apiSetVolumeQuick(100)" title="Volumen Máximo" style="width: 28px; height: 28px;">
+                                <span class="material-symbols-rounded" style="font-size: 0.95rem;">volume_up</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BANNER PARA INSTALAR TERMUX:API SI NO ESTÁ LISTO -->
+                <div id="bannerInstallApi" style="display: none; margin-top: 0.75rem; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 0.55rem 0.85rem; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.76rem; color: #fde68a;">
+                        <span class="material-symbols-rounded" style="color: #fbbf24; font-size: 1.05rem;">info</span>
+                        <span>Instala <strong>Termux:API</strong> para habilitar el control directo de volumen y batería.</span>
+                    </div>
+                    <button class="btn-m3 btn-m3-filled btn-m3-sm" onclick="apiInstallTermuxApi()" style="background: #f59e0b; color: #000; font-weight: 700; height: 28px; font-size: 0.72rem;">
+                        <span class="material-symbols-rounded" style="font-size: 0.9rem;">download</span>
+                        <span>Instalar Termux:API</span>
+                    </button>
                 </div>
             </section>
 
@@ -1927,6 +2003,84 @@
                     } else {
                         txtClientPing.innerText = '-- ms';
                         if (txtNetValCompact) txtNetValCompact.innerText = net.lan_ip ? 'Online' : '--';
+                // 5. BATERÍA Y DISPOSITIVO FÍSICO
+                const bat = data.battery || (data.device_status && data.device_status.battery) || {};
+                const batPct = (bat.percentage !== undefined) ? bat.percentage : 100;
+                const isCharging = !!bat.is_charging;
+                
+                let batIconName = 'battery_full';
+                if (isCharging) {
+                    batIconName = 'battery_charging_full';
+                } else if (batPct <= 15) {
+                    batIconName = 'battery_alert';
+                } else if (batPct <= 35) {
+                    batIconName = 'battery_2_bar';
+                } else if (batPct <= 60) {
+                    batIconName = 'battery_4_bar';
+                } else if (batPct <= 85) {
+                    batIconName = 'battery_5_bar';
+                } else {
+                    batIconName = 'battery_full';
+                }
+
+                const pillBat = document.getElementById('pillDeviceBattery');
+                const txtBatVal = document.getElementById('txtBatteryVal');
+                const iconBat = document.getElementById('iconBattery');
+                if (txtBatVal) txtBatVal.innerText = `${batPct}%`;
+                if (iconBat) iconBat.innerText = batIconName;
+                if (pillBat) {
+                    pillBat.style.color = isCharging ? '#4ade80' : batPct <= 20 ? '#f87171' : '#cbd5e1';
+                    pillBat.style.borderColor = isCharging ? 'rgba(74, 222, 128, 0.4)' : batPct <= 20 ? 'rgba(248, 113, 113, 0.4)' : 'rgba(255, 255, 255, 0.15)';
+                    pillBat.title = `Batería: ${batPct}% (${bat.status || 'Descargando'}) • Temp: ${bat.temperature || 25}°C • Salud: ${bat.health || 'Buena'}`;
+                }
+
+                const cardBatIcon = document.getElementById('cardBatIcon');
+                const txtCardBatStatus = document.getElementById('txtCardBatStatus');
+                const barCardBattery = document.getElementById('barCardBattery');
+                const txtCardBatTemp = document.getElementById('txtCardBatTemp');
+                const txtCardBatHealth = document.getElementById('txtCardBatHealth');
+                const txtCardBatPlugged = document.getElementById('txtCardBatPlugged');
+                if (cardBatIcon) cardBatIcon.innerText = batIconName;
+                if (txtCardBatStatus) {
+                    txtCardBatStatus.innerText = `${isCharging ? '⚡ Cargando' : 'Descargando'} (${batPct}%)`;
+                    txtCardBatStatus.style.color = isCharging ? '#4ade80' : batPct <= 20 ? '#f87171' : '#94a3b8';
+                }
+                if (barCardBattery) {
+                    barCardBattery.style.width = `${Math.min(100, Math.max(0, batPct))}%`;
+                    barCardBattery.style.background = isCharging ? '#4ade80' : batPct <= 20 ? '#ef4444' : '#3b82f6';
+                }
+                if (txtCardBatTemp) txtCardBatTemp.innerText = `${bat.temperature || 0}°C`;
+                if (txtCardBatHealth) txtCardBatHealth.innerText = bat.health || 'Buena';
+                if (txtCardBatPlugged) txtCardBatPlugged.innerText = bat.plugged || 'Desconectado';
+
+                // 6. VOLUMEN MULTIMEDIA
+                const vol = data.volume || (data.device_status && data.device_status.volume) || {};
+                const volPct = vol.music_percent !== undefined ? vol.music_percent : 75;
+                const txtCardVolVal = document.getElementById('txtCardVolVal');
+                const rngCardVolume = document.getElementById('rngCardVolume');
+                if (txtCardVolVal) txtCardVolVal.innerText = `${volPct}%`;
+                if (rngCardVolume && document.activeElement !== rngCardVolume) {
+                    rngCardVolume.value = volPct;
+                }
+
+                // 7. TERMUX:API STATUS
+                const devStat = data.device_status || {};
+                const apiInfo = devStat.api || {};
+                const badgeApi = document.getElementById('badgeTermuxApiStatus');
+                const bannerInstallApi = document.getElementById('bannerInstallApi');
+                if (badgeApi) {
+                    if (apiInfo.ready) {
+                        badgeApi.style.background = 'rgba(34, 197, 94, 0.15)';
+                        badgeApi.style.color = '#4ade80';
+                        badgeApi.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                        badgeApi.innerHTML = '<span class="material-symbols-rounded" style="font-size: 0.85rem;">check_circle</span><span>Termux:API Activo</span>';
+                        if (bannerInstallApi) bannerInstallApi.style.display = 'none';
+                    } else {
+                        badgeApi.style.background = 'rgba(245, 158, 11, 0.15)';
+                        badgeApi.style.color = '#fbbf24';
+                        badgeApi.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                        badgeApi.innerHTML = '<span class="material-symbols-rounded" style="font-size: 0.85rem;">warning</span><span>API Incompleta</span>';
+                        if (bannerInstallApi) bannerInstallApi.style.display = 'flex';
                     }
                 }
 
@@ -3161,12 +3315,45 @@
             }
         }
 
+        async function apiSetVolume(val) {
+            const txt = document.getElementById('txtCardVolVal');
+            if (txt) txt.innerText = `${val}%`;
+            try {
+                await fetch(apiPath('/api/device/volume'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({percent: parseInt(val), stream: 'music'})
+                });
+            } catch (e) {
+                console.warn('Error setting volume:', e);
+            }
+        }
+
+        async function apiSetVolumeQuick(val) {
+            const rng = document.getElementById('rngCardVolume');
+            if (rng) rng.value = val;
+            await apiSetVolume(val);
+        }
+
+        async function apiInstallTermuxApi() {
+            showToast('Instalando Termux:API en segundo plano...', 'download');
+            try {
+                const resp = await fetch(apiPath('/api/device/install-api'), {method: 'POST'});
+                if (resp.ok) {
+                    showToast('✅ Instalación de Termux:API solicitada.', 'check_circle');
+                    setTimeout(() => refreshStatus(), 2000);
+                }
+            } catch (e) {
+                showToast('❌ Error iniciando instalación de Termux:API', 'error');
+            }
+        }
+
         async function fetchVersion() {
             try {
                 const resp = await fetch(apiPath('/api/version'));
                 if (resp.ok) {
                     const res = await resp.json();
-                    const curVer = res.version || '0.0.64';
+                    const curVer = res.version || '0.0.65';
                     const badge = document.getElementById('lblHeaderVersion');
                     if (badge) badge.innerText = `v${curVer}`;
                     const fBadge = document.getElementById('lblFooterVersionBadge');

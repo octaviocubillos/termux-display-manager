@@ -842,7 +842,46 @@ class AsyncHTTPServer:
             self.send_json_response(writer, res)
             return
 
-        # 7. Endpoint de Versionado y Actualización
+        # 7. Endpoint de Integración de Dispositivo (Batería, Volumen, Brillo, Termux-API)
+        if path == "/api/device/battery" and method in ["GET", "HEAD"]:
+            from tdm.core.device_manager import device_manager
+            self.send_json_response(writer, {"success": True, "battery": device_manager.get_battery_status()})
+            return
+
+        if path == "/api/device/volume" and method in ["GET", "HEAD"]:
+            from tdm.core.device_manager import device_manager
+            self.send_json_response(writer, {"success": True, "volume": device_manager.get_volume_info()})
+            return
+
+        if path == "/api/device/volume" and method == "POST":
+            try:
+                req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+                vol_pct = int(req_data.get("percent", req_data.get("volume", 70)))
+                stream = req_data.get("stream", "music")
+                from tdm.core.device_manager import device_manager
+                res = device_manager.set_volume(vol_pct, stream)
+                self.send_json_response(writer, {"success": True, **res})
+            except Exception as e:
+                self.send_json_response(writer, {"success": False, "error": str(e)}, status_code=400)
+            return
+
+        if path == "/api/device/brightness" and method == "POST":
+            try:
+                req_data = json.loads(body_bytes.decode("utf-8") or "{}")
+                level = int(req_data.get("level", req_data.get("brightness", 150)))
+                from tdm.core.device_manager import device_manager
+                res = device_manager.set_brightness(level)
+                self.send_json_response(writer, {"success": True, **res})
+            except Exception as e:
+                self.send_json_response(writer, {"success": False, "error": str(e)}, status_code=400)
+            return
+
+        if path == "/api/device/install-api" and method == "POST":
+            res = await execute_cli_command(["install", "--api"])
+            self.send_json_response(writer, res)
+            return
+
+        # 8. Endpoint de Versionado y Actualización
         if path == "/api/version" and method in ["GET", "HEAD"]:
             from tdm.version import get_version_info
             self.send_json_response(writer, get_version_info())

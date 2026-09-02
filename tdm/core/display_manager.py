@@ -341,10 +341,12 @@ class DisplayManager:
         from tdm.core.installer import installer_service
         from tdm.core.updater import get_cached_update_info
         from tdm.core.gpu_manager import gpu_manager
+        from tdm.core.device_manager import device_manager
         ver_info = get_version_info()
         installer_info = installer_service.get_status()
         update_info = get_cached_update_info()
         gpu_info = gpu_manager.get_gpu_info()
+        full_dev = device_manager.get_full_device_info()
 
         return {
             "installed_desktop": installed_de,
@@ -355,6 +357,9 @@ class DisplayManager:
             "memory": mem_info,
             "storage": storage_info,
             "gpu": gpu_info,
+            "battery": full_dev.get("battery", {}),
+            "volume": full_dev.get("volume", {}),
+            "device_status": full_dev,
             "version": ver_info,
             "is_screen_active": is_screen_active,
             "active_screen": session_dict,

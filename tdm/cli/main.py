@@ -521,6 +521,62 @@ async def handle_3d(args):
         print("📦 Configurando controlador 3D...")
         await installer_service.run_script("setup_3d.sh", ["--force"] if getattr(args, "force", False) else [])
 
+def handle_battery(args):
+    from tdm.core.device_manager import device_manager
+    bat = device_manager.get_battery_status()
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(bat, indent=2))
+        return bat
+    icon = "⚡" if bat.get("is_charging") else "🔋"
+    print(f"{icon} Batería: {bat.get('percentage')}% • Estado: {bat.get('status')} • Salud: {bat.get('health')} • Temp: {bat.get('temperature')}°C ({bat.get('plugged')})")
+    return bat
+
+def handle_volume(args):
+    from tdm.core.device_manager import device_manager
+    level = getattr(args, "level", None)
+    stream = getattr(args, "stream", "music") or "music"
+    if level is not None:
+        res = device_manager.set_volume(level, stream)
+        print(f"🔊 Volumen '{stream}' fijado al {level}%")
+        return res
+    info = device_manager.get_volume_info()
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(info, indent=2))
+        return info
+    print(f"🔊 Volumen Multimedia: {info.get('music_percent')}% ({info.get('music_volume')}/{info.get('music_max')})")
+    return info
+
+def handle_brightness(args):
+    from tdm.core.device_manager import device_manager
+    level = getattr(args, "level", None)
+    if level is not None:
+        res = device_manager.set_brightness(level)
+        print(f"☀️ Brillo fijado a {level}/255" if res.get("success") else f"❌ Error: {res.get('error')}")
+        return res
+    print("Uso: tdm brightness <0-255>")
+    return {"success": False}
+
+def handle_device(args):
+    from tdm.core.device_manager import device_manager
+    dev = device_manager.get_full_device_info()
+    if getattr(args, "json", False):
+        import json
+        print(json.dumps(dev, indent=2))
+        return dev
+    bat = dev.get("battery", {})
+    vol = dev.get("volume", {})
+    api = dev.get("api", {})
+    print("=====================================================")
+    print("📱 [TDM] Estado del Dispositivo Físico")
+    print("=====================================================")
+    print(f"  • Batería:    {bat.get('percentage')}% ({bat.get('status')}, {bat.get('temperature')}°C)")
+    print(f"  • Volumen:    {vol.get('music_percent')}% (multimedia)")
+    print(f"  • Termux:API: {'✅ Listo' if api.get('ready') else '⚠️ Instalar con: pkg install termux-api'}")
+    print("=====================================================")
+    return dev
+
 async def handle_cancel_install():
     print("🛑 [TDM] Cancelando instalación y revirtiendo paquetes...")
     res = await installer_service.cancel_and_revert()
@@ -607,6 +663,24 @@ def build_cli_parser():
     agent_parser.add_argument("--hub", "-H", required=True, help="URL del servidor Hub (ej. https://tdm.oton.cl)")
     agent_parser.add_argument("--token", "-t", required=True, help="Token de emparejamiento")
 
+    # tdm device
+    dev_parser = subparsers.add_parser("device", help="Muestra el estado del dispositivo físico (batería, volumen, Termux-API)")
+    dev_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
+    # tdm battery
+    bat_parser = subparsers.add_parser("battery", aliases=["bat"], help="Muestra el estado de la batería del dispositivo")
+    bat_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
+    # tdm volume [level]
+    vol_parser = subparsers.add_parser("volume", aliases=["vol"], help="Consulta o ajusta el volumen del teléfono")
+    vol_parser.add_argument("level", nargs="?", type=int, help="Nivel de volumen en porcentaje (0-100)")
+    vol_parser.add_argument("--stream", "-s", choices=["music", "ring", "notification", "alarm", "call", "system"], default="music", help="Canal de audio (por defecto 'music')")
+    vol_parser.add_argument("--json", "-j", action="store_true", help="Salida en formato JSON")
+
+    # tdm brightness [level]
+    bright_parser = subparsers.add_parser("brightness", help="Ajusta el brillo de la pantalla (0-255)")
+    bright_parser.add_argument("level", nargs="?", type=int, help="Nivel de brillo (0-255)")
+
     # tdm install
     install_parser = subparsers.add_parser("install", help="Ejecuta instaladores del backend bajo demanda")
     install_parser.add_argument("--minimal", "-m", action="store_true", help="Instala solo dependencias mínimas fundamentales")
@@ -614,6 +688,7 @@ def build_cli_parser():
     install_parser.add_argument("--server", "-s", choices=["termux-x11", "novnc", "vnc", "rdp", "audio"], help="Instala un servidor gráfico específico")
     install_parser.add_argument("--desktop", choices=["kde", "mate", "xfce", "lxqt", "i3", "openbox"], help="Instala un escritorio específico")
     install_parser.add_argument("--driver-3d", "--3d", "--gpu", dest="driver_3d", action="store_true", help="Instala el controlador de aceleración 3D para la GPU detectada")
+    install_parser.add_argument("--api", action="store_true", help="Instala el paquete termux-api")
     install_parser.add_argument("--full", "-f", action="store_true", help="Instala todos los servidores y utilidades")
     install_parser.add_argument("--cancel", "-c", action="store_true", help="Cancela y revierte la instalación en curso")
 
@@ -701,6 +776,18 @@ async def execute_cli_command(cmd_args: list) -> Dict[str, Any]:
     elif args.command == "service":
         await handle_service(args.action)
         return {"success": True, "action": args.action}
+    elif args.command in ["device"]:
+        res = handle_device(args)
+        return {"success": True, "data": res}
+    elif args.command in ["battery", "bat"]:
+        res = handle_battery(args)
+        return {"success": True, "data": res}
+    elif args.command in ["volume", "vol"]:
+        res = handle_volume(args)
+        return {"success": True, "data": res}
+    elif args.command in ["brightness"]:
+        res = handle_brightness(args)
+        return {"success": True, "data": res}
     elif args.command == "doctor":
         await handle_doctor()
         return {"success": True}
@@ -726,6 +813,14 @@ def main():
         handle_desktop(args)
     elif args.command in ["3d", "gpu"]:
         asyncio.run(handle_3d(args))
+    elif args.command == "device":
+        handle_device(args)
+    elif args.command in ["battery", "bat"]:
+        handle_battery(args)
+    elif args.command in ["volume", "vol"]:
+        handle_volume(args)
+    elif args.command == "brightness":
+        handle_brightness(args)
     elif args.command == "status":
         asyncio.run(handle_status(args))
     elif args.command == "scale":
