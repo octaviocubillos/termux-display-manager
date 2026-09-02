@@ -200,12 +200,13 @@ class PackageInstaller:
         target = self.active_target
         if target:
             self._broadcast_log(f"[*] Revirtiendo instalación y limpiando paquetes de {target}...")
-            uninstall_script = SCRIPTS_DIR / "uninstall_desktop.sh"
+            norm = "xfce" if target in ["xfce", "xfce4"] else ("i3" if target in ["i3", "i3wm"] else target)
+            uninstall_script = SCRIPTS_DIR / norm / "uninstall.sh"
             if uninstall_script.exists():
                 try:
                     bash_bin = shutil.which("bash") or f"{prefix}/bin/bash"
                     proc = await asyncio.create_subprocess_exec(
-                        bash_bin, str(uninstall_script), target,
+                        bash_bin, str(uninstall_script),
                         stdout=asyncio.subprocess.PIPE,
                         stderr=asyncio.subprocess.STDOUT
                     )
@@ -232,8 +233,35 @@ class PackageInstaller:
             await display_manager.stop_screen()
         except Exception as e:
             self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
-        self.active_target = desktop
-        return await self.run_script("install_desktop.sh", [desktop])
+
+        norm = "xfce" if desktop in ["xfce", "xfce4"] else ("i3" if desktop in ["i3", "i3wm"] else desktop)
+        self.active_target = norm
+
+        # Limpiar otros entornos previos antes de instalar el nuevo
+        for other in ["xfce", "kde", "mate", "lxqt", "i3", "openbox", "terminal"]:
+            if other != norm:
+                other_uninst = SCRIPTS_DIR / other / "uninstall.sh"
+                if other_uninst.exists():
+                    try:
+                        bash_bin = shutil.which("bash") or "/data/data/com.termux/files/usr/bin/bash"
+                        subprocess.run([bash_bin, str(other_uninst)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    except Exception:
+                        pass
+
+        script_rel = f"{norm}/install.sh"
+        res = await self.run_script(script_rel)
+
+        # Registrar en Manifest
+        if res:
+            try:
+                from tdm.core.manifest import manifest_ledger
+                from tdm.core.registry import get_desktop_entry
+                de_info = get_desktop_entry(norm) or {}
+                pkgs = de_info.get("packages", [norm])
+                manifest_ledger.record_packages_if_new(pkgs, component=f"desktop:{norm}")
+            except Exception:
+                pass
+        return res
 
     async def uninstall_desktop(self, desktop: Optional[str] = None) -> bool:
         try:
@@ -242,9 +270,22 @@ class PackageInstaller:
             await display_manager.stop_screen()
         except Exception as e:
             self._broadcast_log(f"[*] Limpiando procesos de pantalla: {e}")
+
         target = desktop if desktop else "all"
         self.active_target = target
-        return await self.run_script("uninstall_desktop.sh", [target])
+
+        if target == "all":
+            all_ok = True
+            for de in ["xfce", "kde", "mate", "lxqt", "i3", "openbox", "terminal"]:
+                de_uninst = SCRIPTS_DIR / de / "uninstall.sh"
+                if de_uninst.exists():
+                    ok = await self.run_script(f"{de}/uninstall.sh")
+                    if not ok:
+                        all_ok = False
+            return all_ok
+        else:
+            norm = "xfce" if target in ["xfce", "xfce4"] else ("i3" if target in ["i3", "i3wm"] else target)
+            return await self.run_script(f"{norm}/uninstall.sh")
 
     async def install_server(self, server: str) -> bool:
         self.active_target = server

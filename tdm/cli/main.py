@@ -265,7 +265,7 @@ async def handle_install(args):
         print(f"✅ Servidor {args.server} instalado con éxito." if success else f"❌ Error instalando servidor {args.server}.")
     elif getattr(args, "desktop", None):
         print(f"🎨 [TDM] Instalando entorno de escritorio '{args.desktop}' bajo demanda...")
-        success = await installer_service.run_script("install_desktop.sh", [args.desktop])
+        success = await installer_service.install_desktop(args.desktop)
         print(f"✅ {args.desktop} instalado con éxito." if success else f"❌ Error instalando {args.desktop}.")
 
 async def handle_uninstall(args):
